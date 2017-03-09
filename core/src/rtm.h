@@ -277,7 +277,7 @@ RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm,
                             const char *hash, unsigned *ack_id);
 
 #if defined(USE_OPENSSL)
-void rtm_calculate_md5_hmac(char const *role_secret, char const *nonce, unsigned char *output_16bytes);
+RTM_API void rtm_calculate_md5_hmac(char const *role_secret, char const *nonce, unsigned char *output_16bytes);
 #else
 #define rtm_calculate_md5_hmac(...) _Pragma ("GCC error \"This function is only available when compiling with OpenSSL\"")
 #endif
