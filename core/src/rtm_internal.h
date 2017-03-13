@@ -94,7 +94,7 @@ struct _rtm_client {
 };
 
 // json methods
-ssize_t _rtm_json_escape(char *dest, ssize_t n, const char *str);
+RTM_API ssize_t _rtm_json_escape(char *dest, ssize_t n, const char *str);
 char *_rtm_json_find_begin_obj(char *p);
 char *_rtm_json_find_field_name(char* p, char **cursor, ssize_t *length);
 char *_rtm_json_find_element(char* p, char **cursor, ssize_t *length);
@@ -117,7 +117,7 @@ ssize_t    _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte);
 // Logging
 rtm_status _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...);
 rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list vl);
-rtm_status _rtm_log_message(rtm_status status, const char *message);
+RTM_API rtm_status _rtm_log_message(rtm_status status, const char *message);
 
 #define TRUE 1
 #define YES 1
@@ -127,9 +127,9 @@ rtm_status _rtm_log_message(rtm_status status, const char *message);
 #define RTM_CLIENT_SIZE (sizeof(struct _rtm_client))
 
 #if defined(TEST)
-rtm_status _rtm_test_parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *hostname_out,
+RTM_API rtm_status _rtm_test_parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *hostname_out,
     char *port_out, char *path_out, unsigned *use_tls_out);
-rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const char *appkey);
+RTM_API rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const char *appkey);
 #endif
 
 // FIXME: add a ifdef and include only in debug builds

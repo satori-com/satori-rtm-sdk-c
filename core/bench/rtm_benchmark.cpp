@@ -1,11 +1,12 @@
 #include <ctime>
-#include <unistd.h>
 #include <cstdarg>
 #include <benchmark/benchmark_api.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <src/rtm_internal.h>
+
+#pragma comment(lib, "shlwapi.lib")
 
 void BM_json_escape(benchmark::State &state) {
   const char *input = "\nhello\t\t";

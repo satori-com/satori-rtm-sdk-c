@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.4)
 
+link_directories(${GBENCH_BIN_DIR}/src/Release)
+link_directories(${GBENCH_BIN_DIR}/src/Debug)
 link_directories(${GBENCH_BIN_DIR}/src)
+
 find_package(Threads REQUIRED)
 
 add_executable(rtm_benchmark "rtm_benchmark.cpp")
