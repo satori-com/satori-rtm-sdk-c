@@ -924,7 +924,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else { // 127 -> 64 bit size
       if (input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
         return RTM_WOULD_BLOCK;
-      payload_length = (size_t)htobe64(*(uint64_t *) (&ws_frame[6]));
+      payload_length = (size_t)be64toh(*(uint64_t *) (&ws_frame[2]));
       header_length = _RTM_INBOUND_HEADER_SIZE_LARGE;
     }
 
