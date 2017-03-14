@@ -276,10 +276,20 @@ RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
 RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm,
                             const char *hash, unsigned *ack_id);
 
+
 #if defined(USE_OPENSSL)
-RTM_API void rtm_calculate_md5_hmac(char const *role_secret, char const *nonce, unsigned char *output_16bytes);
+/**
+ * @brief calculate an auth hash for rtm/authenticate call using
+ *        the role_secret and the nonce obtained from rtm/handshake
+ *
+ * @param[in] role_secret
+ * @param[in] nonce
+ * @param[out] output must be 25 bytes
+ *
+ */
+RTM_API void rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output);
 #else
-#define rtm_calculate_md5_hmac(...) _Pragma ("GCC error \"This function is only available when compiling with OpenSSL\"")
+#define rtm_calculate_auth_hash(...) _Pragma ("GCC error \"This function is only available when compiling with OpenSSL\"")
 #endif
 
 /**
@@ -462,8 +472,6 @@ RTM_API int rtm_get_fd(rtm_client_t *rtm);
  * @returns the user context pointer specified when calling ::rtm_connect
  */
 RTM_API void *rtm_get_user_context(rtm_client_t *rtm);
-
-RTM_API void rtm_b64encode_16bytes(char const *input, char *output);
 
 #ifdef __cplusplus
 }

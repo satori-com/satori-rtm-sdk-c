@@ -846,7 +846,7 @@ void rtm_disable_verbose_logging(rtm_client_t *rtm) {
   rtm->is_verbose = NO;
 }
 
-void rtm_b64encode_16bytes(char const *input, char *output) {
+void _rtm_b64encode_16bytes(char const *input, char *output) {
     static char const lut[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     int i;
 

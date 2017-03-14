@@ -244,14 +244,10 @@ TEST(rtm_test, handshake_and_authenticate) {
 
   std::string nonce = json::parse(pdu.body)["data"]["nonce"];
 
-  char hmac_md5[16];
-  char hmac_md5_base64[25] = {0};
+  char auth_hash[25] = {0};
+  rtm_calculate_auth_hash(role_secret, nonce.c_str(), auth_hash);
 
-  rtm_calculate_md5_hmac(role_secret, nonce.c_str(), (unsigned char *)hmac_md5);
-
-  rtm_b64encode_16bytes(hmac_md5, hmac_md5_base64);
-
-  rc = rtm_authenticate(rtm, hmac_md5_base64, &request_id);
+  rc = rtm_authenticate(rtm, auth_hash, &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to send auth/authenticate";
 
   rc = next_pdu(rtm, &pdu);
