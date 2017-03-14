@@ -134,9 +134,9 @@ static rtm_status openssl_check_server_cert(rtm_client_t *rtm, SSL *ssl, const c
   ASSERT_NOT_NULL(hostname);
   X509 *server_cert = SSL_get_peer_certificate(ssl);
   if (NULL == server_cert) {
-    return _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL rejected peer certificate");
+    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - peer didn't present a X509 certificate.");
+    return RTM_ERR_TLS;
   }
-  // TODO check that the name of the host matches the cert!
   X509_free(server_cert);
   return RTM_OK;
 }
@@ -198,14 +198,13 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
           "Certificate loading failed\n");
   }
 #else
-  char *cert_file = getenv("SSL_CERT_FILE");
-  int cert_load_result = SSL_CTX_load_verify_locations(rtm->ssl_context, cert_file, NULL);
-  if (1 != cert_load_result) {
+  int cert_load_result = SSL_CTX_set_default_verify_paths(rtm->ssl_context);
+  if (0 == cert_load_result) {
       unsigned long ssl_err = ERR_get_error();
       _rtm_log_error(
           rtm, RTM_ERR_TLS,
-          "SSL_CTX_load_verify_locations loading failed: %d, %s\n",
-          cert_load_result, ERR_reason_error_string(ssl_err));
+          "OpenSSL failed - SSL_CTX_default_verify_paths loading failed:  %s\n",
+          ERR_reason_error_string(ssl_err));
   }
 #endif
 
@@ -218,11 +217,8 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
   }
 
   rc = openssl_handshake(rtm, hostname);
-  if (rc) {
-    unsigned long ssl_err = ERR_get_error();
-    _rtm_log_error(
-      rtm, rc,
-      "openssl_handshake: %s\n", ERR_reason_error_string(ssl_err));
+
+  if (RTM_OK != rc) {
     _rtm_io_close_tls_session(rtm);
     return rc;
   }
