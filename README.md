@@ -55,30 +55,48 @@ To enable that, pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPL
 
 ## RTM Framework for iOS
 
-The SatoriSDK framework for iOS helps you easily integrate your iOS apps with Satori. Using the framework, you can publish and subscribe messages to RTM.
+The SatoriSDK framework for iOS enables you to easily integrate your iOS apps with Satori. Using the framework, you can publish and subscribe messages to RTM. There are multiple ways for installing the SatoriSDK framework in your own project.
 
-### Step 1: Build framework
+### Installation with CocoaPods
+
+The SatoriSDK is available as a [CocoaPod](http://cocoapods.org). Cocoapod is a dependency manager for iOS, which automates and simplifies the process of using 3rd-party frameworks like SatoriSDK in your projects. Make sure cocoapods is installed. Then create a podfile for your project if it doesn't already exist. To install the SDK:
+
+1. Open your Podfile and add the following dependency in the `target "<your_app_target>" do` section:
+```sh
+use_frameworks!
+pod 'SatoriSDK', :git => "https://github.com/satori-com/satori-sdk-c.git"
+```
+2. Save your Podfile.
+3. Run `pod install` from command line.
+
+You've now installed the SatoriSDK framework. Refer to *Framework API usage* section to get started.
+
+### Manual installation using Source code
+
+Create a local repository by cloning the satori-sdk-c to your chosen location. Then,
+
+#### Step 1: Build framework
 
 There are two options to build the RTM framework for iOS:
 
-##### Option 1 - Build directly from command-line
+**Option 1** - *Build directly from command-line*
 
 ```sh
 $ cd ios-framework/SatoriSDK
 $ xcodebuild -project SatoriSDK.xcodeproj -scheme SatoriSDK-Universal -config <config-name> # where <config-name> can be Debug or Release. Default is Debug if -config option is not specified.
 ```
-##### Option 2 - Build in Xcode IDE
+**Option 2** - *Build in Xcode IDE*
 ```sh
 $ open SatoriSDK.xcodeproj
 $ # Select SatoriSDK-Universal target and build.
 ```
 The SatoriSDK.framework will be built under ios-framework/build directory.
 
-### Step 2: Add framework to your project
+#### Step 2: Add framework to your project
 
 Once you build the framework, open your app's Xcode project and drag-and-drop the framework under "Embedded Binaries" section under the app's target. Choose "Copy items if needed" and "Create groups" in the dialog box.
 
-### Step 3: Use the framework APIs
+### Framework API usage
 
 The SatoriSDK.framework provides you with both Objective-C and C APIs to integrate within your app. Use ```#import <SatoriSDK/SatoriSDK.h>``` in your application class to make use of these APIs. The Objective-C specific APIs are located in ```SatoriRtmConnection.h``` and C APIs can be found in ```rtm.h```
 
