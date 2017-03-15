@@ -146,9 +146,6 @@ static void print_ssl_error(rtm_client_t *rtm, int ret){
 
   int err = SSL_get_error(rtm->ssl_connection, ret);
 
-  assert(err != SSL_ERROR_WANT_READ);
-  assert(err != SSL_ERROR_WANT_WRITE);
-
   switch (err) {
     case SSL_ERROR_WANT_CONNECT:
     case SSL_ERROR_WANT_ACCEPT:
