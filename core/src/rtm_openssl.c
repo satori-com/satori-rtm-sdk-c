@@ -134,19 +134,47 @@ static rtm_status openssl_check_server_cert(rtm_client_t *rtm, SSL *ssl, const c
   ASSERT_NOT_NULL(hostname);
   X509 *server_cert = SSL_get_peer_certificate(ssl);
   if (NULL == server_cert) {
-    return _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL rejected peer certificate");
+    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - peer didn't present a X509 certificate.");
+    return RTM_ERR_TLS;
   }
-  // TODO check that the name of the host matches the cert!
   X509_free(server_cert);
   return RTM_OK;
 }
 
-static void print_ssl_error(rtm_client_t *rtm, unsigned long reason) {
-    char message[1024];
-    ERR_error_string(reason, message);
-    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed – error=%d message=%s", reason, message);
-}
+static void print_ssl_error(rtm_client_t *rtm, int ret){
+  unsigned long e;
 
+  int err = SSL_get_error(rtm->ssl_connection, ret);
+
+  switch (err) {
+    case SSL_ERROR_WANT_CONNECT:
+    case SSL_ERROR_WANT_ACCEPT:
+      _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - connection failure");
+      break;
+    case SSL_ERROR_WANT_X509_LOOKUP:
+      _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - x509 error");
+      break;
+    case SSL_ERROR_SYSCALL:
+      e = ERR_get_error();
+      if (e > 0) {
+        _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - %s", ERR_error_string(e, NULL));
+      } else if (e == 0 && ret == 0) {
+        _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - received early EOF");
+      } else {
+        _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - underlying BIO reported an I/O error");
+      }
+      break;
+    case SSL_ERROR_SSL:
+      e = ERR_get_error();
+      _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - %s", ERR_error_string(e, NULL));
+      break;
+    case SSL_ERROR_NONE:
+    case SSL_ERROR_ZERO_RETURN:
+    default:
+      _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - unknown error");
+      break;
+  }
+}
 static rtm_status openssl_handshake(rtm_client_t *rtm, const char *hostname) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(hostname);
@@ -162,7 +190,7 @@ static rtm_status openssl_handshake(rtm_client_t *rtm, const char *hostname) {
     if (reason == SSL_ERROR_WANT_READ || reason == SSL_ERROR_WANT_WRITE) {
       rc = _rtm_io_wait(rtm, SSL_ERROR_WANT_READ == reason, SSL_ERROR_WANT_WRITE == reason, -1);
     } else {
-      print_ssl_error(rtm, (unsigned long) reason);
+      print_ssl_error(rtm, connect_result);
       rc = RTM_ERR_TLS;
     }
 
@@ -198,14 +226,13 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
           "Certificate loading failed\n");
   }
 #else
-  char *cert_file = getenv("SSL_CERT_FILE");
-  int cert_load_result = SSL_CTX_load_verify_locations(rtm->ssl_context, cert_file, NULL);
-  if (1 != cert_load_result) {
+  int cert_load_result = SSL_CTX_set_default_verify_paths(rtm->ssl_context);
+  if (0 == cert_load_result) {
       unsigned long ssl_err = ERR_get_error();
       _rtm_log_error(
           rtm, RTM_ERR_TLS,
-          "SSL_CTX_load_verify_locations loading failed: %d, %s\n",
-          cert_load_result, ERR_reason_error_string(ssl_err));
+          "OpenSSL failed - SSL_CTX_default_verify_paths loading failed:  %s\n",
+          ERR_reason_error_string(ssl_err));
   }
 #endif
 
@@ -218,11 +245,8 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
   }
 
   rc = openssl_handshake(rtm, hostname);
-  if (rc) {
-    unsigned long ssl_err = ERR_get_error();
-    _rtm_log_error(
-      rtm, rc,
-      "openssl_handshake: %s\n", ERR_reason_error_string(ssl_err));
+
+  if (RTM_OK != rc) {
     _rtm_io_close_tls_session(rtm);
     return rc;
   }
@@ -265,7 +289,7 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
       }
       rc = _rtm_io_wait(rtm, SSL_ERROR_WANT_READ == reason, SSL_ERROR_WANT_WRITE == reason, -1);
     } else {
-      print_ssl_error(rtm, (unsigned long) reason);
+      print_ssl_error(rtm, read_result);
       rc = RTM_ERR_TLS;
     }
     if (rc != RTM_OK) {
@@ -291,7 +315,7 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
     } else if (reason == SSL_ERROR_WANT_READ || reason == SSL_ERROR_WANT_WRITE) {
       rc = _rtm_io_wait(rtm, SSL_ERROR_WANT_READ == reason, SSL_ERROR_WANT_WRITE == reason, -1);
     } else {
-      print_ssl_error(rtm, (unsigned long) reason);
+      print_ssl_error(rtm, write_result);
       rc = RTM_ERR_TLS;
     }
     if (rc != RTM_OK) {
