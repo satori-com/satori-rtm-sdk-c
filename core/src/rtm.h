@@ -155,8 +155,7 @@ typedef enum {
     RTM_OK = 0,             /*!< No error.                                    */
     RTM_WOULD_BLOCK,        /*!< The operation would be a blocking IO
                                  operation                                    */
-    RTM_ERR_BEGIN = -100,
-    RTM_ERR_PARAM,          /*!< One of the parameters passed to the function
+    RTM_ERR_PARAM = -100,   /*!< One of the parameters passed to the function
                                  is incorrect                                 */
     RTM_ERR_PARAM_INVALID,  /*!< A parameter of the function is invalid       */
     RTM_ERR_CONNECT,        /*!< The client could not connect to RTM          */
