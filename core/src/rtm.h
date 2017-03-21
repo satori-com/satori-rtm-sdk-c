@@ -276,7 +276,7 @@ RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
 RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id);
 
 
-#if defined(USE_OPENSSL)
+#if defined(USE_OPENSSL) || defined(USE_APPLE_SSL)
 /**
  * @brief calculate an auth hash for rtm/authenticate call using
  *        the role_secret and the nonce obtained from rtm/handshake

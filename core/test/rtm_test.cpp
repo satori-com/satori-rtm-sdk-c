@@ -227,7 +227,7 @@ TEST(rtm_test, read_write_delete) {
   rtm_close(rtm);
 }
 
-#if defined(USE_OPENSSL)
+#if defined(USE_OPENSSL) || defined(USE_APPLE_SSL)
 TEST(rtm_test, handshake_and_authenticate) {
   unsigned int request_id;
   pdu_t pdu;
