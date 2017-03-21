@@ -276,7 +276,7 @@ RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
 RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id);
 
 
-#if defined(USE_OPENSSL) || defined(USE_APPLE_SSL)
+#if defined(USE_OPENSSL) || defined(USE_APPLE_SSL) || defined(USE_GNUTLS)
 /**
  * @brief calculate an auth hash for rtm/authenticate call using
  *        the role_secret and the nonce obtained from rtm/handshake
@@ -288,7 +288,7 @@ RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, 
  */
 RTM_API void rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output);
 #else
-#define rtm_calculate_auth_hash(...) _Pragma ("GCC error \"This function is only available when compiling with OpenSSL\"")
+#define rtm_calculate_auth_hash(...) _Pragma ("GCC error \"This function is only available when compiling with a TLS library\"")
 #endif
 
 /**
