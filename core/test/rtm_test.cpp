@@ -244,10 +244,7 @@ TEST(rtm_test, handshake_and_authenticate) {
 
   std::string nonce = json::parse(pdu.body)["data"]["nonce"];
 
-  char auth_hash[25] = {0};
-  rtm_calculate_auth_hash(role_secret, nonce.c_str(), auth_hash);
-
-  rc = rtm_authenticate(rtm, auth_hash, &request_id);
+  rc = rtm_authenticate(rtm, role_secret, nonce.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to send auth/authenticate";
 
   rc = next_pdu(rtm, &pdu);

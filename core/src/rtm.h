@@ -273,8 +273,7 @@ RTM_API void rtm_close(rtm_client_t *rtm);
 RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
                          const char *role, unsigned *ack_id);
 
-RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm,
-                            const char *hash, unsigned *ack_id);
+RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id);
 
 
 #if defined(USE_OPENSSL)

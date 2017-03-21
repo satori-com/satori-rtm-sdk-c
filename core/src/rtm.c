@@ -142,9 +142,11 @@ rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
-rtm_status rtm_authenticate(rtm_client_t *rtm, const char *hash, unsigned *ack_id) {
+rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id) {
   CHECK_PARAM(rtm);
-  CHECK_EXACT_SIZE(hash, RTM_AUTHENTICATION_HASH_SIZE);
+
+  char hash[RTM_AUTHENTICATION_HASH_SIZE + 1] = {0};
+  rtm_calculate_auth_hash(role_secret, nonce, hash);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
   const ssize_t size = _RTM_MAX_BUFFER;
