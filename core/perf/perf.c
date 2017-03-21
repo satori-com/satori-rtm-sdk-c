@@ -228,13 +228,16 @@ static int bench_publish(struct bench_params* opts) {
     }
 
     rc = rtm_publish_string(rtm, opts->channel, message, ack_id);
+    if (RTM_OK != rc) {
+      return rc;
+    }
 
     double now = bump(&publish_stat);
     maybe_print(&publish_stat, now, "publish %.1f↑ rps\n");
 
-    while (rc == RTM_OK) {
+    do {
       rc = rtm_poll(rtm);
-    }
+    } while (rc == RTM_OK);
   }
 
   return rc;
