@@ -159,7 +159,7 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
   return written;
 }
 
-void rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output_25bytes) {
+void _rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output_25bytes) {
   unsigned char hash[16];
   gnutls_hmac_fast(
       GNUTLS_MAC_MD5,

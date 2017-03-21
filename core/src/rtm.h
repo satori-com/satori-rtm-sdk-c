@@ -273,23 +273,25 @@ RTM_API void rtm_close(rtm_client_t *rtm);
 RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
                          const char *role, unsigned *ack_id);
 
-RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id);
-
-
-#if defined(USE_OPENSSL) || defined(USE_APPLE_SSL) || defined(USE_GNUTLS)
+#if defined(USE_TLS)
 /**
- * @brief calculate an auth hash for rtm/authenticate call using
+ * @brief Perform rtm/authenticate call using
  *        the role_secret and the nonce obtained from rtm/handshake
  *
+ * @param[in] rtm
  * @param[in] role_secret
  * @param[in] nonce
- * @param[out] output must be 25 bytes
+ * @param[out] ack_id
+ *
+ * @return the status of the operation
  *
  */
-RTM_API void rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output);
+RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id);
 #else
-#define rtm_calculate_auth_hash(...) _Pragma ("GCC error \"This function is only available when compiling with a TLS library\"")
+#define rtm_authenticate(...) _Pragma ("GCC error \"This function is only available when compiling with a TLS library\"")
 #endif
+
+
 
 /**
  * @brief publish a well formed json string
