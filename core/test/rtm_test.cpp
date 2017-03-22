@@ -110,7 +110,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   rtm_close(rtm);
 }
 
-#if defined(USE_APPLE_SSL) || defined(USE_OPENSSL) || defined(USE_GNUTLS)
+#if defined(USE_TLS)
 TEST(rtm_test, connect_ssl) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, wss_endpoint, appkey, &pdu_recorder, nullptr);
@@ -227,7 +227,7 @@ TEST(rtm_test, read_write_delete) {
   rtm_close(rtm);
 }
 
-#if defined(USE_OPENSSL) || defined(USE_APPLE_SSL) || defined(USE_GNUTLS)
+#if defined(USE_TLS)
 TEST(rtm_test, handshake_and_authenticate) {
   unsigned int request_id;
   pdu_t pdu;
@@ -253,7 +253,7 @@ TEST(rtm_test, handshake_and_authenticate) {
 
   rtm_close(rtm);
 }
-#endif // USE_OPENSSL || USE_APPLE_SSL || USE_GNUTLS
+#endif // USE_TLS
 
 TEST(rtm_test, publish_and_receive) {
   unsigned int request_id;
@@ -294,7 +294,7 @@ TEST(rtm_test, disconnect) {
   ASSERT_GT(RTM_OK, rc)<< "Susbcription succeeded, but RTM should have been closed";
 }
 
-#if defined(USE_APPLE_SSL) || defined(USE_OPENSSL) || defined(USE_GNUTLS)
+#if defined(USE_TLS)
 TEST(rtm_test, rtm_poll_does_not_hang_ssl) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, wss_endpoint, appkey, &pdu_recorder, nullptr);
