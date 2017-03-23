@@ -5,6 +5,7 @@
 
 #include "rtm_internal.h"
 #include <Security/SecureTransport.h>
+#include <CommonCrypto/CommonHMAC.h>
 
 static OSStatus read_from_socket(SSLConnectionRef connection, void *data, size_t *len) {
   int fd = (int) (long) connection;
@@ -174,4 +175,14 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
   if (ret == 0 && errSSLClosedAbort != status)
     ret = -1;
   return ret;
+}
+
+void _rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output_25bytes) {
+  unsigned char hash[16];
+  CCHmac(
+      kCCHmacAlgMD5,
+      role_secret, strlen(role_secret),
+      nonce, strlen(nonce),
+      &hash);
+  _rtm_b64encode_16bytes((char const *)hash, output_25bytes);
 }

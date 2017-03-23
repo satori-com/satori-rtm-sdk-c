@@ -6,6 +6,8 @@
 
 #include "rtm_internal.h"
 
+#include <gnutls/crypto.h>
+
 static int is_gnutls_initialized = NO;
 static gnutls_anon_client_credentials_t anoncred;
 static gnutls_certificate_credentials_t xcred;
@@ -155,4 +157,14 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
     }
   }
   return written;
+}
+
+void _rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output_25bytes) {
+  unsigned char hash[16];
+  gnutls_hmac_fast(
+      GNUTLS_MAC_MD5,
+      role_secret, strlen(role_secret),
+      nonce, strlen(nonce),
+      hash);
+  _rtm_b64encode_16bytes((char const *)hash, output_25bytes);
 }

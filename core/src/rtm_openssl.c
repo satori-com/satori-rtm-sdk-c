@@ -325,10 +325,12 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
   return sent;
 }
 
-void rtm_calculate_md5_hmac(char const *role_secret, char const *nonce, unsigned char *output_16bytes) {
+void _rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output_25bytes) {
+  unsigned char hash[16];
   HMAC(
     EVP_md5(),
     role_secret, strlen(role_secret),
     (unsigned char *)nonce, strlen(nonce),
-    output_16bytes, NULL);
+    (unsigned char *)hash, NULL);
+  _rtm_b64encode_16bytes((char const *)hash, output_25bytes);
 }

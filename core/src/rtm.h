@@ -273,14 +273,25 @@ RTM_API void rtm_close(rtm_client_t *rtm);
 RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
                          const char *role, unsigned *ack_id);
 
-RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm,
-                            const char *hash, unsigned *ack_id);
-
-#if defined(USE_OPENSSL)
-RTM_API void rtm_calculate_md5_hmac(char const *role_secret, char const *nonce, unsigned char *output_16bytes);
+#if defined(USE_TLS)
+/**
+ * @brief Perform rtm/authenticate call using
+ *        the role_secret and the nonce obtained from rtm/handshake
+ *
+ * @param[in] rtm
+ * @param[in] role_secret
+ * @param[in] nonce
+ * @param[out] ack_id
+ *
+ * @return the status of the operation
+ *
+ */
+RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id);
 #else
-#define rtm_calculate_md5_hmac(...) _Pragma ("GCC error \"This function is only available when compiling with OpenSSL\"")
+#define rtm_authenticate(...) _Pragma ("GCC error \"This function is only available when compiling with a TLS library\"")
 #endif
+
+
 
 /**
  * @brief publish a well formed json string
@@ -462,8 +473,6 @@ RTM_API int rtm_get_fd(rtm_client_t *rtm);
  * @returns the user context pointer specified when calling ::rtm_connect
  */
 RTM_API void *rtm_get_user_context(rtm_client_t *rtm);
-
-RTM_API void rtm_b64encode_16bytes(char const *input, char *output);
 
 #ifdef __cplusplus
 }

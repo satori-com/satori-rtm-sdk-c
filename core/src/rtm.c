@@ -142,9 +142,12 @@ rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
-rtm_status rtm_authenticate(rtm_client_t *rtm, const char *hash, unsigned *ack_id) {
+#if defined(USE_TLS)
+rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id) {
   CHECK_PARAM(rtm);
-  CHECK_EXACT_SIZE(hash, RTM_AUTHENTICATION_HASH_SIZE);
+
+  char hash[RTM_AUTHENTICATION_HASH_SIZE + 1] = {0};
+  _rtm_calculate_auth_hash(role_secret, nonce, hash);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
   const ssize_t size = _RTM_MAX_BUFFER;
@@ -158,6 +161,7 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *hash, unsigned *ack_i
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
+#endif
 
 rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
   CHECK_PARAM(rtm);
@@ -846,7 +850,7 @@ void rtm_disable_verbose_logging(rtm_client_t *rtm) {
   rtm->is_verbose = NO;
 }
 
-void rtm_b64encode_16bytes(char const *input, char *output) {
+void _rtm_b64encode_16bytes(char const *input, char *output) {
     static char const lut[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     int i;
 
