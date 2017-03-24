@@ -19,7 +19,7 @@ typedef void (^MessageHandler)(NSString* _Nullable subscriptionId, id _Nullable 
 - (rtm_status)connectWithPduHandler:(nonnull PduHandler)pduHandler;
 - (void)disconnect;
 - (rtm_status)handshakeWithRole:(nonnull NSString*)role andRequestId:(nullable unsigned *)requestId;
-- (rtm_status)authenticateWithHash:(nonnull NSString*)hash andRequestId:(nullable unsigned *)requestId;
+- (rtm_status)authenticate:(nonnull NSString *)roleSecret nonce:(nonnull NSString*)nonce andRequestId:(nullable unsigned *)requestId;
 - (rtm_status)wait;
 - (rtm_status)waitWithTimeout:(int)timeoutInSeconds;
 - (rtm_status)poll;
