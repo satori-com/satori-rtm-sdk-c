@@ -659,7 +659,7 @@ static ssize_t prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
 static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out) {
   ASSERT_NOT_NULL(rtm);
-  ASSERT_NOT_NULL(str);
+  ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(action);
 
   char *p = buf;
@@ -732,7 +732,7 @@ void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t *pdu,
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(buf);
-  ASSERT_NOT_NULL(handler);
+  ASSERT_NOT_NULL(data_handler);
 
   if (strcmp(pdu->action, "rtm/subscription/data") != 0) {
     return;

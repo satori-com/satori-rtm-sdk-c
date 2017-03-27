@@ -138,12 +138,12 @@ RTM_API rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const c
 // FIXME: add a ifdef and include only in debug builds
 
 #if defined(NDEBUG)
+#define ASSERT_NOT_NULL(expression)
+#define ASSERT(expression)
+#else
 #include <assert.h>
 #define ASSERT_NOT_NULL(expression) (assert(NULL != (expression)))
 #define ASSERT(expression) (assert(expression))
-#else
-#define ASSERT_NOT_NULL(expression)
-#define ASSERT(expression)
 #endif
 
 #define CHECK_PARAM(param) \
