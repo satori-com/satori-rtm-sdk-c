@@ -26,12 +26,18 @@ rtm_client_t *rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
 TEST(rtm_json, pdu_rtm_standard_response) {
   rtm_pdu_t pdu{};
-  char json[] = R"({"action":"rtm/publish/ok","id":42,"body":{"next":"1479315802:0","messages":[ "a", null, 42 ]}})";
+  char json[] = R"({"action":"rtm/publish/ok","id":42,"body":{"position":"1479315802:0","messages":[ "a", null, 42 ]}})";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_TRUE(0 == strcmp("rtm/publish/ok", pdu.action));
-  ASSERT_TRUE(0 == strcmp(R"({"next":"1479315802:0","messages":[ "a", null, 42 ]})", pdu.body));
+  printf("5\n");
+  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.outcome);
+  printf("6\n");
+  ASSERT_NOT_NULL(pdu.position);
+  printf("%x %x\n", json, pdu.position);
+  ASSERT_TRUE(0 == strcmp("1479315802:0", pdu.position));
+  printf("7\n");
   ASSERT_EQ(42, pdu.request_id);
+  printf("8\n");
 }
 
 TEST(rtm_json, pdu_field_in_random_order) {
@@ -39,8 +45,8 @@ TEST(rtm_json, pdu_field_in_random_order) {
   char json[] = R"({ "body" :  { "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"}, "action"    : "rtm/publish/ok" , "id" : 42 })";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_TRUE(0 == strcmp("rtm/publish/ok", pdu.action));
-  ASSERT_TRUE(0 == strcmp(R"({ "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"})", pdu.body));
+  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.outcome);
+  // ASSERT_TRUE(0 == strcmp(R"({ "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"})", pdu.body));
   ASSERT_EQ(42, pdu.request_id);
 }
 
@@ -49,7 +55,7 @@ TEST(rtm_json, pdu_body_is_absent) {
   char json[] = R"(  { "action" : "rtm/publish/ok" , "id" : 42  } )";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_TRUE(0 == strcmp("rtm/publish/ok", pdu.action));
+  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.outcome);
   ASSERT_TRUE(nullptr == pdu.body);
   ASSERT_EQ(42, pdu.request_id);
 }
@@ -59,7 +65,7 @@ TEST(rtm_json, pdu_action_is_absent) {
   char json[] = R"(  {    "id" : 42  } )";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_TRUE(nullptr == pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_UNKNOWN, pdu.outcome);
   ASSERT_TRUE(nullptr == pdu.body);
   ASSERT_EQ(42, pdu.request_id);
 }
@@ -69,7 +75,7 @@ TEST(rtm_json, pdu_empty_json) {
   char json[] = " {}";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_TRUE(nullptr == pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_UNKNOWN, pdu.outcome);
   ASSERT_TRUE(nullptr == pdu.body);
   ASSERT_EQ(0, pdu.request_id);
 }
@@ -80,7 +86,7 @@ TEST(rtm_json, subscription_data) {
   rtm->user = &message_queue;
 
   rtm_pdu_t pdu{};
-  pdu.action = "rtm/subscription/data";
+  pdu.outcome = RTM_OUTCOME_SUBSCRIPTION_DATA;
   pdu.body = R"({"next":"1479315802:0","messages":[ "a", null, 42, {} ],"subscription_id":"channel"})";
   record_subscription_data(rtm, pdu);
 

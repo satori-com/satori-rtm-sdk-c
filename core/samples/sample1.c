@@ -25,21 +25,25 @@ static char *last_nonce = NULL;
 static int authenticated = 0;
 
 void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  if (0 == strcmp(pdu->action, "auth/handshake/ok")) {
-    int const prologue_length = strlen("{\"data\":{\"nonce\":\"");
-    int const epilogue_length = strlen("\"}}");
-    int const nonce_length = strlen(pdu->body) - prologue_length - epilogue_length;
-
-    free(last_nonce);
-    last_nonce = malloc(nonce_length);
-
-    memcpy(last_nonce, pdu->body + prologue_length, nonce_length);
-  } else if (0 == strcmp(pdu->action, "auth/authenticate/ok")) {
-    authenticated = 1;
-  } else if (0 == strcmp(pdu->action, "auth/authenticate/error")) {
-    fprintf(stderr, "Authentication error: %s\n", pdu->body);
-  } else if (0 == strcmp(pdu->action, "rtm/subscription/data")){
-    printf("New subscription data: %s\n", pdu->body);
+  printf("pdu->outcome = %d\n", pdu->outcome);
+  switch (pdu->outcome) {
+    case RTM_OUTCOME_HANDSHAKE_OK:
+      printf("Copying nonce %s\n", pdu->nonce);
+      last_nonce = (char *)malloc(strlen(pdu->nonce) + 1);
+      strcpy(last_nonce, pdu->nonce);
+      break;
+    case RTM_OUTCOME_AUTHENTICATE_OK:
+      authenticated = 1;
+      break;
+    case RTM_OUTCOME_AUTHENTICATE_ERROR:
+      fprintf(stderr, "Authentication error: %s\n", pdu->error);
+      fprintf(stderr, "Authentication error reason: %s\n", pdu->reason);
+      break;
+    case RTM_OUTCOME_SUBSCRIPTION_DATA:
+      printf("New subscription data: %s\n", pdu->body);
+      break;
+    default:
+      break;
   }
 }
 
