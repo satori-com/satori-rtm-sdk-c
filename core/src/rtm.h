@@ -77,13 +77,61 @@ extern "C" {
  */
 #define RTM_AUTHENTICATION_HASH_SIZE (24)
 
+enum rtm_outcome_t {
+    RTM_OUTCOME_UNKNOWN = 0,
+    RTM_OUTCOME_AUTHENTICATE_ERROR,
+    RTM_OUTCOME_AUTHENTICATE_OK,
+    RTM_OUTCOME_DELETE_ERROR,
+    RTM_OUTCOME_DELETE_OK,
+    RTM_OUTCOME_HANDSHAKE_ERROR,
+    RTM_OUTCOME_HANDSHAKE_OK,
+    RTM_OUTCOME_PUBLISH_ERROR,
+    RTM_OUTCOME_PUBLISH_OK,
+    RTM_OUTCOME_READ_ERROR,
+    RTM_OUTCOME_READ_OK,
+    RTM_OUTCOME_SEARCH_DATA,
+    RTM_OUTCOME_SEARCH_ERROR,
+    RTM_OUTCOME_SEARCH_OK,
+    RTM_OUTCOME_SUBSCRIBE_ERROR,
+    RTM_OUTCOME_SUBSCRIBE_OK,
+    RTM_OUTCOME_SUBSCRIPTION_DATA,
+    RTM_OUTCOME_UNSUBSCRIBE_ERROR,
+    RTM_OUTCOME_UNSUBSCRIBE_OK,
+    RTM_OUTCOME_WRITE_ERROR,
+    RTM_OUTCOME_WRITE_OK,
+    RTM_OUTCOME_SENTINEL
+};
+
 /**
- * @brief Structure representing received PDU JSON object.
+ * @brief Structure containing information about the received PDU.
+ *
+ *  Field availability:
+ *
+ *        Outcome             | Fields
+ *        ------------------- | -------------
+ *        UNKNOWN             | body
+ *        AUTHENTICATE_ERROR  | error, reason
+ *        AUTHENTICATE_OK     | ---
+ *
+ * TODO: the rest
+ *
  */
 typedef struct _rtm_pdu {
-    const char *action; /*!<  RTM action string. */
-    const char *body; /*!< Data associated with a given action. */
-    unsigned request_id; /*!< Identifier to match server replies to the client requests. */
+    unsigned request_id;
+    enum rtm_outcome_t outcome;
+    union {
+        struct {
+            char const *error;
+            char const *reason;
+        };
+        struct {
+            char const *position;
+            char const *subscription_id;
+            char const *message;
+        };
+        char const *body;
+        char const *nonce;
+    };
 } rtm_pdu_t;
 
 /**
@@ -307,8 +355,13 @@ RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
                          const char *role, unsigned *ack_id);
 
 /**
+<<<<<<< 73bfef407bd284b59e87affe9a2510b8e7b24e7e
  * @brief Send the authenticate request to establish the identity of
  * the client.
+=======
+ * @brief Perform rtm/authenticate call using
+ *        the role_secret and the nonce obtained from auth/handshake
+>>>>>>> WIP on parsing PDUs inside C Core
  *
  * RTM reply will have same identifier as value of @p ack_id.
  *

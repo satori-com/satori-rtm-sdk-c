@@ -464,8 +464,8 @@ void rtm_default_error_logger(const char *message) {
 }
 
 void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  printf("received pdu: client=%p, action=%s, id=%u, body=%s\n",
-      (void*) rtm, pdu->action, pdu->request_id, pdu->body);
+  printf("received pdu: client=%p, action=%d, id=%u, body=%s\n",
+      (void*) rtm, pdu->outcome, pdu->request_id, pdu->body);
 }
 
 const char *rtm_error_string(rtm_status status) {
@@ -760,12 +760,37 @@ static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t si
   return p - buf;
 }
 
+static const char *const outcome_table[] = {
+    [RTM_OUTCOME_AUTHENTICATE_ERROR] = "auth/authenticate/error",
+    [RTM_OUTCOME_AUTHENTICATE_OK] = "auth/authenticate/ok",
+    [RTM_OUTCOME_DELETE_ERROR] = "rtm/delete/error",
+    [RTM_OUTCOME_DELETE_OK] = "rtm/delete/ok",
+    [RTM_OUTCOME_HANDSHAKE_ERROR] = "auth/handshake/error",
+    [RTM_OUTCOME_HANDSHAKE_OK] = "auth/handshake/ok",
+    [RTM_OUTCOME_PUBLISH_ERROR] = "rtm/publish/error",
+    [RTM_OUTCOME_PUBLISH_OK] = "rtm/publish/ok",
+    [RTM_OUTCOME_READ_ERROR] = "rtm/read/error",
+    [RTM_OUTCOME_READ_OK] = "rtm/read/ok",
+    [RTM_OUTCOME_SEARCH_DATA] = "rtm/search/data",
+    [RTM_OUTCOME_SEARCH_ERROR] = "rtm/search/error",
+    [RTM_OUTCOME_SEARCH_OK] = "rtm/search/ok",
+    [RTM_OUTCOME_SUBSCRIBE_ERROR] = "rtm/subscribe/error",
+    [RTM_OUTCOME_SUBSCRIBE_OK] = "rtm/subscribe/ok",
+    [RTM_OUTCOME_SUBSCRIPTION_DATA] = "rtm/subscription/data",
+    [RTM_OUTCOME_UNSUBSCRIBE_ERROR] = "rtm/unsubscribe/error",
+    [RTM_OUTCOME_UNSUBSCRIBE_OK] = "rtm/unsubscribe/ok",
+    [RTM_OUTCOME_WRITE_ERROR] = "rtm/write/error",
+    [RTM_OUTCOME_WRITE_OK] = "rtm/write/ok"
+};
+
 void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(message);
 
   char *el;
   ssize_t el_len;
+  char *body = NULL;
+  enum rtm_outcome_t outcome = RTM_OUTCOME_UNKNOWN;
   char *p = _rtm_json_find_begin_obj(message);
 
   while (TRUE) {
@@ -777,10 +802,18 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
 
     if (!strncmp("\"action\"", el, el_len)) {
       p = _rtm_json_find_element(p, &el, &el_len);
+      ASSERT(el_len);
       if (0 != el_len) {
         // skip quotes
         el[el_len - 1] = '\0';
-        pdu->action = el + 1;
+        ++el;
+
+        for (enum rtm_outcome_t o = 1; o < RTM_OUTCOME_SENTINEL; ++o) {
+            if (!strncmp(outcome_table[o] , el, el_len)) {
+                outcome = o;
+                break;
+            }
+        }
       }
     } else if (!strncmp("\"id\"", el, el_len)) {
       p = _rtm_json_find_element(p, &el, &el_len);
@@ -793,11 +826,103 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       p = _rtm_json_find_element(p, &el, &el_len);
       if (0 != el_len) {
         el[el_len] = '\0';
-        pdu->body = el;
+        body = el;
       }
     } else {
       // skip json element
       p = _rtm_json_find_element(p, &el, &el_len);
+    }
+  }
+
+  static int const MAX_INTERESTING_FIELDS_IN_PDU = 2;
+  const char **interesting_field_dsts[MAX_INTERESTING_FIELDS_IN_PDU] = {0};
+  char *interesting_field_names[MAX_INTERESTING_FIELDS_IN_PDU] = {0};
+
+  pdu->outcome = outcome;
+
+  switch (outcome) {
+    case RTM_OUTCOME_AUTHENTICATE_ERROR:
+    case RTM_OUTCOME_DELETE_ERROR:
+    case RTM_OUTCOME_HANDSHAKE_ERROR:
+    case RTM_OUTCOME_PUBLISH_ERROR:
+    case RTM_OUTCOME_READ_ERROR:
+    case RTM_OUTCOME_SEARCH_ERROR:
+    case RTM_OUTCOME_SUBSCRIBE_ERROR:
+    case RTM_OUTCOME_UNSUBSCRIBE_ERROR:
+    case RTM_OUTCOME_WRITE_ERROR:
+      interesting_field_dsts[0] = &pdu->error;
+      interesting_field_names[0] = "error";
+      interesting_field_dsts[1] = &pdu->reason;
+      interesting_field_names[1] = "reason";
+      break;
+    case RTM_OUTCOME_HANDSHAKE_OK:
+      interesting_field_dsts[0] = &pdu->nonce;
+      interesting_field_names[0] = "nonce";
+      break;
+    case RTM_OUTCOME_PUBLISH_OK:
+    case RTM_OUTCOME_DELETE_OK:
+    case RTM_OUTCOME_WRITE_OK:
+      interesting_field_dsts[0] = &pdu->position;
+      interesting_field_names[0] = "position";
+      break;
+    case RTM_OUTCOME_SUBSCRIBE_OK:
+    case RTM_OUTCOME_UNSUBSCRIBE_OK:
+      interesting_field_dsts[0] = &pdu->position;
+      interesting_field_names[0] = "position";
+      interesting_field_dsts[1] = &pdu->subscription_id;
+      interesting_field_names[1] = "subscription_id";
+      break;
+    case RTM_OUTCOME_READ_OK:
+      interesting_field_dsts[0] = &pdu->position;
+      interesting_field_names[0] = "position";
+      interesting_field_dsts[1] = &pdu->message;
+      interesting_field_names[1] = "message";
+      break;
+    case RTM_OUTCOME_AUTHENTICATE_OK:
+      return;
+    case RTM_OUTCOME_SUBSCRIPTION_DATA: // messages are parsed elsewhere
+    case RTM_OUTCOME_SEARCH_DATA: // search results are parsed elsewhere
+    case RTM_OUTCOME_SEARCH_OK:
+    case RTM_OUTCOME_UNKNOWN:
+      pdu->body = body;
+      return;
+    case RTM_OUTCOME_SENTINEL:
+      ASSERT_NOT_NULL(0); // never happens
+  }
+
+  if (!body) {
+      return;
+  }
+
+  p = _rtm_json_find_begin_obj(body);
+
+  while (TRUE) {
+    p = _rtm_json_find_field_name(p, &el, &el_len);
+
+    if (el_len <= 0) {
+      break;
+    }
+
+    // special case for auth/handshake/ok
+    if (0 == strncmp("data", el + 1, el_len - 2)) {
+        p = _rtm_json_find_begin_obj(p);
+        continue;
+    }
+
+    for (int i = 0; i < MAX_INTERESTING_FIELDS_IN_PDU; ++i) {
+      char const *field_name = interesting_field_names[i];
+      if (!field_name) {
+        break;
+      }
+      if (0 == strncmp(field_name, el + 1, el_len - 2)) {
+          printf("MATCH %s == %s\n", field_name, el + 1);
+          p = _rtm_json_find_element(p, &el, &el_len);
+          if (el_len <= 0) {
+              continue;
+          }
+          el[el_len - 1] = 0;
+          *interesting_field_dsts[i] = el + 1;
+      }
     }
   }
 }
@@ -822,7 +947,7 @@ void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t *pdu,
   ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(data_handler);
 
-  if (strcmp(pdu->action, "rtm/subscription/data") != 0) {
+  if (pdu->outcome != RTM_OUTCOME_SUBSCRIPTION_DATA) {
     return;
   }
 
