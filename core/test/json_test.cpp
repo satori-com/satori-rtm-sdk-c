@@ -29,15 +29,10 @@ TEST(rtm_json, pdu_rtm_standard_response) {
   char json[] = R"({"action":"rtm/publish/ok","id":42,"body":{"position":"1479315802:0","messages":[ "a", null, 42 ]}})";
   rtm_parse_pdu(json, &pdu);
 
-  printf("5\n");
   ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.outcome);
-  printf("6\n");
   ASSERT_NOT_NULL(pdu.position);
-  printf("%x %x\n", json, pdu.position);
   ASSERT_TRUE(0 == strcmp("1479315802:0", pdu.position));
-  printf("7\n");
   ASSERT_EQ(42, pdu.request_id);
-  printf("8\n");
 }
 
 TEST(rtm_json, pdu_field_in_random_order) {
@@ -137,6 +132,28 @@ TEST(rtm_json, subscription_data) {
   ASSERT_EQ(R"({"subscription_id":"another_channel"})", message_queue.front().message);
   message_queue.pop();
   ASSERT_TRUE(message_queue.empty());
+}
+
+TEST(rtm_json, find_element) {
+  char buf[128] = { 0 };
+  strcpy(buf, R"({"messages": ["foo","bar","baz"]})");
+  char *message = buf + 14;
+
+  rtm_list_iterator_t iter = {.position = message};
+
+  ASSERT_EQ(*message, '"');
+
+  message = rtm_iterate(&iter);
+  ASSERT_EQ("\"foo\"", std::string(message));
+
+  message = rtm_iterate(&iter);
+  ASSERT_EQ("\"bar\"", std::string(message));
+
+  message = rtm_iterate(&iter);
+  ASSERT_EQ("\"baz\"", std::string(message));
+
+  message = rtm_iterate(&iter);
+  ASSERT_EQ(nullptr, message);
 }
 
 TEST(rtm_json, escape) {
