@@ -20,24 +20,56 @@
 
 using json = nlohmann::json;
 
-struct pdu_t {
-  rtm_outcome_t action;
-  std::string body;
+struct event_t {
   unsigned request_id = 0;
+  rtm_outcome_t action;
+  std::string info;
 };
 
-std::queue<pdu_t> pdu_queue;
+std::queue<event_t> event_queue;
 std::queue<std::string> message_queue;
 
 void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  // add pdu
-  pdu_t pdu_copy;
-  pdu_copy.request_id = pdu->request_id;
-  pdu_copy.action = pdu->outcome;
-  pdu_copy.body = std::string(pdu->body ? pdu->body : "");
-  pdu_queue.push(pdu_copy);
+  event_t event;
+  event.action = pdu->outcome;
+  event.request_id = pdu->request_id;
+  switch (event.action) {
+    case RTM_OUTCOME_AUTHENTICATE_ERROR:
+    case RTM_OUTCOME_DELETE_ERROR:
+    case RTM_OUTCOME_HANDSHAKE_ERROR:
+    case RTM_OUTCOME_PUBLISH_ERROR:
+    case RTM_OUTCOME_READ_ERROR:
+    case RTM_OUTCOME_SEARCH_ERROR:
+    case RTM_OUTCOME_SUBSCRIBE_ERROR:
+    case RTM_OUTCOME_UNSUBSCRIBE_ERROR:
+    case RTM_OUTCOME_WRITE_ERROR:
+      event.info = std::string(pdu->error);
+      break;
+    case RTM_OUTCOME_HANDSHAKE_OK:
+      event.info = std::string(pdu->nonce);
+      break;
+    case RTM_OUTCOME_SUBSCRIBE_OK:
+    case RTM_OUTCOME_UNSUBSCRIBE_OK:
+      event.info = std::string(pdu->subscription_id);
+      break;
+    case RTM_OUTCOME_READ_OK:
+      event.info = std::string(pdu->message);
+      break;
+    case RTM_OUTCOME_UNKNOWN:
+    // FIXME
+    case RTM_OUTCOME_SUBSCRIPTION_DATA:
+    case RTM_OUTCOME_SEARCH_DATA:
+    case RTM_OUTCOME_SEARCH_OK:
+      event.info = std::string(pdu->body);
+      break;
+    default:
+      event.info = "";
+      break;
+  }
+  event_queue.push(event);
 
   // add channel data
+  // FIXME
   size_t const size = 1024;
   auto buf = std::vector<char>(size);
   rtm_parse_subscription_data(rtm, pdu, &buf[0], size,
@@ -46,14 +78,14 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       });
 }
 
-int next_pdu(rtm_client_t *rtm, pdu_t* pdu) {
-  int rc = RTM_OK;
-  while (pdu_queue.size() == 0 && rc == RTM_OK) {
+rtm_status next_event(rtm_client_t *rtm, event_t* event) {
+  rtm_status rc = RTM_OK;
+  while (event_queue.size() == 0 && rc == RTM_OK) {
     rc = rtm_wait_timeout(rtm, 15);
   }
-  if (pdu_queue.size() != 0) {
-    *pdu = pdu_queue.front();
-    pdu_queue.pop();
+  if (event_queue.size() != 0) {
+    *event = event_queue.front();
+    event_queue.pop();
   }
   return rc;
 }
@@ -79,7 +111,6 @@ TEST(rtm_test, subscribe) {
 
 TEST(rtm_test, publish_and_subscribe_with_history) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
@@ -88,22 +119,24 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   rc = rtm_publish_string(rtm, channel.c_str(), "my message", &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while publishing";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
 
   std::string const body = R"({"channel":")" + channel + R"(","history":{"count":1}})";
   rc = rtm_subscribe_with_body(rtm, body.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while subscribing";
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(channel, event.info);
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, pdu.action);
-
+  ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
+  //FIXME
   ASSERT_EQ(R"("my message")", message_queue.front());
   message_queue.pop();
 
@@ -145,7 +178,6 @@ TEST(rtm_test, overflow) {
 
 TEST(rtm_test, publish_json_and_read) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
   int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
@@ -156,26 +188,24 @@ TEST(rtm_test, publish_json_and_read) {
   rc = rtm_publish_json(rtm, channel.c_str(), msg.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
 
   rc = rtm_read(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
 
-  rc = next_pdu(rtm, &pdu);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, pdu.action);
-
-  // FIXME
-  // ASSERT_EQ(json({{"foo", "bar"}}), json::parse(pdu.body)["message"]);
+  rc = next_event(rtm, &event);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed while wait event";
+  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(msg, event.info);
 
   rtm_close(rtm);
 }
 
 TEST(rtm_test, read_write_delete) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
   int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
@@ -186,56 +216,51 @@ TEST(rtm_test, read_write_delete) {
   rc = rtm_read(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, pdu.action);
-  ASSERT_EQ(request_id, pdu.request_id);
+  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(request_id, event.request_id);
+  ASSERT_EQ("null", event.info);
 
-  // FIXME
-  // ASSERT_TRUE(json::parse(pdu.body)["message"].is_null());
 
   rc = rtm_write_string(rtm, channel.c_str(), "msg", &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while write";
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_WRITE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_WRITE_OK, event.action);
 
   rc = rtm_read(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while read";
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, pdu.action);
-  ASSERT_EQ(request_id, pdu.request_id);
-
-  // FIXME
-  // ASSERT_EQ("msg", json::parse(pdu.body)["message"].get<std::string>());
+  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(request_id, event.request_id);
+  ASSERT_EQ("msg", event.info);
 
   rc = rtm_delete(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while delete";
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_DELETE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_DELETE_OK, event.action);
 
   rc = rtm_read(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while read";
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, pdu.action);
-  ASSERT_EQ(request_id, pdu.request_id);
-
-  // FIXME
-  // ASSERT_TRUE(json::parse(pdu.body)["message"].is_null());
+  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(request_id, event.request_id);
+  ASSERT_EQ("null", event.info);
 
   rtm_close(rtm);
 }
 
 TEST(rtm_test, handshake_and_authenticate) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
@@ -243,26 +268,23 @@ TEST(rtm_test, handshake_and_authenticate) {
   rc = rtm_handshake(rtm, role_name, &request_id);
   ASSERT_EQ(rc, RTM_OK) << "Failed to send rtm/handshake";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_HANDSHAKE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_HANDSHAKE_OK, event.action);
+  std::string nonce = event.info;
+  rc = rtm_authenticate(rtm, role_secret, nonce.c_str(), &request_id);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed to send auth/authenticate";
 
-  // FIXME
-  // std::string nonce = json::parse(pdu.body)["data"]["nonce"];
-
-  // rc = rtm_authenticate(rtm, role_secret, nonce.c_str(), &request_id);
-  // ASSERT_EQ(RTM_OK, rc)<< "Failed to send auth/authenticate";
-
-  // rc = next_pdu(rtm, &pdu);
-  // ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  // ASSERT_EQ(RTM_OUTCOME_AUTHENTICATE_OK, pdu.action);
+   rc = next_event(rtm, &event);
+   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
+   ASSERT_EQ(RTM_OUTCOME_AUTHENTICATE_OK, event.action);
 
   rtm_close(rtm);
 }
 
 TEST(rtm_test, publish_and_receive) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
@@ -271,17 +293,19 @@ TEST(rtm_test, publish_and_receive) {
   rc = rtm_subscribe(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(rc, RTM_OK) << "Failed to subscribe";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(channel, event.info);
 
   rc = rtm_publish_string(rtm, channel.c_str(), "my message", nullptr);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while publishing";
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, pdu.action);
-
+  ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
+  // FIXME
   ASSERT_EQ(R"("my message")", message_queue.front());
   message_queue.pop();
 
@@ -373,7 +397,6 @@ TEST(rtm_test, log_message) {
 
 TEST(rtm_test, unsubscribe) {
   unsigned int request_id;
-  pdu_t pdu;
 
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
@@ -382,16 +405,19 @@ TEST(rtm_test, unsubscribe) {
   rc = rtm_subscribe(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while subscribing to channel";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait subscribe response";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(channel, event.info);
 
   rc = rtm_unsubscribe(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while unsubscribing from channel";
 
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait unsibscribe response";
-  ASSERT_EQ(RTM_OUTCOME_UNSUBSCRIBE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_UNSUBSCRIBE_OK, event.action);
+  ASSERT_EQ(channel, event.info);
 
   rtm_close(rtm);
 }
@@ -447,7 +473,6 @@ TEST(rtm_test, rtm_default_pdu_handler) {
 
 TEST(rtm_test, read_with_body) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
   std::string const channel = make_channel();
@@ -461,33 +486,29 @@ TEST(rtm_test, read_with_body) {
   rc = rtm_read_with_body(rtm, body.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to read with body";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, pdu.action);
-
-  // FIXME
-  // ASSERT_TRUE(json::parse(pdu.body)["message"].is_null());
+  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ("null", event.info);
 
   // Publish 3 messages
   for (int i = 0; i < 3; i++) {
-    char str[2];
-    sprintf(str, "%d", i);
-    rc = rtm_publish_string(rtm, channel.c_str(), str, &request_id);
+    std::string message = "message-" + std::to_string(i);
+    rc = rtm_publish_string(rtm, channel.c_str(), message.c_str(), &request_id);
     ASSERT_EQ(RTM_OK, rc)<< "Failed while write";
-    rc = next_pdu(rtm, &pdu);
+    rc = next_event(rtm, &event);
     ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-    ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.action);
+    ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
   }
 
   rc = rtm_read_with_body(rtm, body.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to read with body";
 
-  rc = next_pdu(rtm, &pdu);
-  ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, pdu.action);
-
-  // FIXME
-  // ASSERT_EQ("2", json::parse(pdu.body)["message"].get<std::string>());
+  rc = next_event(rtm, &event);
+  ASSERT_EQ(RTM_OK, rc) << "Failed to get next event";
+  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ("message-2", event.info);
 
   rtm_close(rtm);
 }
@@ -495,7 +516,6 @@ TEST(rtm_test, read_with_body) {
 TEST(rtm_test, rtm_write_json) {
   json test_json;
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   std::string const channel = make_channel();
 
@@ -508,24 +528,22 @@ TEST(rtm_test, rtm_write_json) {
   test_json["object"] = {{"currency", "USD"}, {"value", 42.99}};
 
   rtm_write_json(rtm, channel.c_str(), test_json.dump().c_str(), &request_id);
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-  ASSERT_EQ(RTM_OUTCOME_WRITE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_WRITE_OK, event.action);
 
   rtm_read(rtm, channel.c_str(), &request_id);
-  rc = next_pdu(rtm, &pdu);
+  rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, pdu.action);
-
-  // FIXME
-  // ASSERT_EQ(test_json, json::parse(pdu.body)["message"]);
+  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(test_json, event.info);
 
   rtm_close(rtm);
 }
 
 TEST(rtm_test, publish_and_receive_all_json_types) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
@@ -535,9 +553,11 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(channel, event.info);
 
   char const *messages[] =
       {"null", "42",
@@ -555,10 +575,11 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
   for (char const *message : messages) {
       ASSERT_EQ(RTM_OK, rtm_publish_json(rtm, channel.c_str(), message, nullptr));
 
-      rc = next_pdu(rtm, &pdu);
+      rc = next_event(rtm, &event);
       ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-      ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, pdu.action);
+      ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
 
+      //FIXME
       ASSERT_EQ(message, message_queue.front());
       message_queue.pop();
   }
@@ -568,7 +589,6 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 
 TEST(rtm_test, DISABLED_rtm_search_test) {
   unsigned int request_id;
-  pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
@@ -577,9 +597,10 @@ TEST(rtm_test, DISABLED_rtm_search_test) {
   rc = rtm_publish_string(rtm, channel.c_str(), "test", &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to send a publish request";
 
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to receive an ack";
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.action);
+  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
 
   rc = rtm_search(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(rc, RTM_OK) << "Failed to send a search request";
@@ -587,15 +608,15 @@ TEST(rtm_test, DISABLED_rtm_search_test) {
   std::vector<std::string> channels;
 
   while (true) {
-    rc = next_pdu(rtm, &pdu);
-    ASSERT_EQ(RTM_OK, rc) << "Failed to receive pdu";
+    rc = next_event(rtm, &event);
+    ASSERT_EQ(RTM_OK, rc) << "Failed to receive PDU";
 
-    auto body = json::parse(pdu.body);
+    auto body = json::parse(event.info);
 
     std::vector<std::string> new_channels = body["channels"];
     channels.insert(channels.end(), new_channels.begin(), new_channels.end());
 
-    bool is_final = pdu.action == RTM_OUTCOME_SEARCH_OK;
+    bool is_final = event.action == RTM_OUTCOME_SEARCH_OK;
 
     if (is_final) {
       break;
@@ -715,8 +736,8 @@ TEST(rtm_test, prepare_path_test) {
 class RTMEnvironment: public ::testing::Environment {
   public:
     void TearDown() override {
-      std::queue<pdu_t> pdu_queue_empty;
-      std::swap(pdu_queue, pdu_queue_empty);
+      std::queue<event_t> event_queue_empty;
+      std::swap(event_queue, event_queue_empty);
 
       std::queue<std::string> message_queue_empty;
       std::swap(message_queue, message_queue_empty);
