@@ -25,7 +25,6 @@ static char *last_nonce = NULL;
 static int authenticated = 0;
 
 void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  printf("pdu->outcome = %d\n", pdu->outcome);
   switch (pdu->outcome) {
     case RTM_OUTCOME_HANDSHAKE_OK:
       printf("Copying nonce %s\n", pdu->nonce);
@@ -39,9 +38,14 @@ void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       fprintf(stderr, "Authentication error: %s\n", pdu->error);
       fprintf(stderr, "Authentication error reason: %s\n", pdu->reason);
       break;
-    case RTM_OUTCOME_SUBSCRIPTION_DATA:
-      printf("New subscription data: %s\n", pdu->body);
+    case RTM_OUTCOME_SUBSCRIPTION_DATA: {
+      printf("Subscription data\n");
+      char *message;
+      while ((message = rtm_iterate(&pdu->message_iterator))) {
+          printf("New message: %s\n", message);
+      }
       break;
+    }
     default:
       break;
   }

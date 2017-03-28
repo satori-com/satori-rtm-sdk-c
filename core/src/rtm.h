@@ -102,6 +102,15 @@ enum rtm_outcome_t {
     RTM_OUTCOME_SENTINEL
 };
 
+typedef struct {
+    char *position;
+} rtm_list_iterator_t;
+
+/**
+ * @brief get next element in iterator or NULL if there are none
+ */
+char *rtm_iterate(rtm_list_iterator_t const *iterator);
+
 /**
  * @brief Structure containing information about the received PDU.
  *
@@ -112,6 +121,7 @@ enum rtm_outcome_t {
  *        UNKNOWN             | body
  *        AUTHENTICATE_ERROR  | error, reason
  *        AUTHENTICATE_OK     | ---
+ *        SUBSCRIPTION_DATA   | message_iterator
  *
  * TODO: the rest
  *
@@ -127,10 +137,14 @@ typedef struct _rtm_pdu {
         struct {
             char const *position;
             char const *subscription_id;
-            char const *message;
+            union {
+                char const *message;
+                rtm_list_iterator_t message_iterator;
+            };
         };
         char const *body;
         char const *nonce;
+        rtm_list_iterator_t channel_iterator;
     };
 } rtm_pdu_t;
 

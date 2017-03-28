@@ -783,6 +783,37 @@ static const char *const outcome_table[] = {
     [RTM_OUTCOME_WRITE_OK] = "rtm/write/ok"
 };
 
+static void parse_iterator(char *body, char const *field_name, rtm_list_iterator_t *iterator) {
+  ASSERT(field_name);
+
+  if (!body) {
+    return;
+  }
+
+  char *p = _rtm_json_find_begin_obj(body);
+
+  while (TRUE) {
+    char *el;
+    ssize_t el_len;
+    p = _rtm_json_find_field_name(p, &el, &el_len);
+
+    if (el_len <= 0) {
+      break;
+    }
+
+    if (0 == strncmp(field_name, el + 1, el_len - 2)) {
+      p = _rtm_json_find_element(p, &el, &el_len);
+      if (el_len <= 0) {
+        continue;
+      }
+      el[el_len - 1] = 0;
+      ASSERT(*el == '[');
+      iterator->position = el + 1;
+      return;
+    }
+  }
+}
+
 void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(message);
@@ -881,8 +912,10 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     case RTM_OUTCOME_AUTHENTICATE_OK:
       return;
     case RTM_OUTCOME_SUBSCRIPTION_DATA: // messages are parsed elsewhere
+      return parse_iterator(body, "messages", &pdu->message_iterator);
     case RTM_OUTCOME_SEARCH_DATA: // search results are parsed elsewhere
     case RTM_OUTCOME_SEARCH_OK:
+      return parse_iterator(body, "results", &pdu->channel_iterator);
     case RTM_OUTCOME_UNKNOWN:
       pdu->body = body;
       return;
@@ -891,7 +924,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   }
 
   if (!body) {
-      return;
+    return;
   }
 
   p = _rtm_json_find_begin_obj(body);
@@ -905,8 +938,8 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
 
     // special case for auth/handshake/ok
     if (0 == strncmp("data", el + 1, el_len - 2)) {
-        p = _rtm_json_find_begin_obj(p);
-        continue;
+      p = _rtm_json_find_begin_obj(p);
+      continue;
     }
 
     for (int i = 0; i < MAX_INTERESTING_FIELDS_IN_PDU; ++i) {
@@ -915,16 +948,44 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
         break;
       }
       if (0 == strncmp(field_name, el + 1, el_len - 2)) {
-          printf("MATCH %s == %s\n", field_name, el + 1);
-          p = _rtm_json_find_element(p, &el, &el_len);
-          if (el_len <= 0) {
-              continue;
-          }
-          el[el_len - 1] = 0;
-          *interesting_field_dsts[i] = el + 1;
+        p = _rtm_json_find_element(p, &el, &el_len);
+        if (el_len <= 0) {
+          continue;
+        }
+        el[el_len - 1] = 0;
+        *interesting_field_dsts[i] = el + 1;
       }
     }
   }
+}
+
+// FIXME: extra element of array comes out as '}'
+char *rtm_iterate(rtm_list_iterator_t const *iterator) {
+  rtm_list_iterator_t *iter = (rtm_list_iterator_t *)iterator;
+  if (!iter || !iter->position) {
+    return NULL;
+  }
+
+  char *result = iter->position;
+
+  char *el;
+  ssize_t el_len;
+
+  _rtm_json_find_element(iter->position, &el, &el_len);
+
+  if (el_len <= 0) {
+    iter->position = NULL;
+    return NULL;
+  } else {
+    el[el_len] = 0;
+    if (el[el_len] == ']') {
+      iter->position = NULL;
+    } else {
+      iter->position = el + el_len + 1;
+    }
+  }
+
+  return result;
 }
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len) {
