@@ -783,37 +783,6 @@ static const char *const outcome_table[] = {
     [RTM_OUTCOME_WRITE_OK] = "rtm/write/ok"
 };
 
-static void parse_iterator(char *body, char const *field_name, rtm_list_iterator_t *iterator) {
-  ASSERT(field_name);
-
-  if (!body) {
-    return;
-  }
-
-  char *p = _rtm_json_find_begin_obj(body);
-
-  while (TRUE) {
-    char *el;
-    ssize_t el_len;
-    p = _rtm_json_find_field_name(p, &el, &el_len);
-
-    if (el_len <= 0) {
-      break;
-    }
-
-    if (0 == strncmp(field_name, el + 1, el_len - 2)) {
-      p = _rtm_json_find_element(p, &el, &el_len);
-      if (el_len <= 0) {
-        continue;
-      }
-      el[el_len - 1] = 0;
-      ASSERT(*el == '[');
-      iterator->position = el + 1;
-      return;
-    }
-  }
-}
-
 void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(message);
@@ -866,11 +835,9 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   }
 
   static int const MAX_INTERESTING_FIELDS_IN_PDU = 2;
-  const char **interesting_field_dsts[MAX_INTERESTING_FIELDS_IN_PDU] = {0};
-  char *interesting_field_names[MAX_INTERESTING_FIELDS_IN_PDU] = {0};
+  field_t fields[MAX_INTERESTING_FIELDS_IN_PDU];
 
   pdu->outcome = outcome;
-
   switch (outcome) {
     case RTM_OUTCOME_AUTHENTICATE_ERROR:
     case RTM_OUTCOME_DELETE_ERROR:
@@ -881,41 +848,62 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     case RTM_OUTCOME_SUBSCRIBE_ERROR:
     case RTM_OUTCOME_UNSUBSCRIBE_ERROR:
     case RTM_OUTCOME_WRITE_ERROR:
-      interesting_field_dsts[0] = &pdu->error;
-      interesting_field_names[0] = "error";
-      interesting_field_dsts[1] = &pdu->reason;
-      interesting_field_names[1] = "reason";
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->error;
+      fields[0].name = "error";
+
+      fields[1].type = FIELD_STRING;
+      fields[1].dst = &pdu->reason;
+      fields[1].name = "reason";
       break;
     case RTM_OUTCOME_HANDSHAKE_OK:
-      interesting_field_dsts[0] = &pdu->nonce;
-      interesting_field_names[0] = "nonce";
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->nonce;
+      fields[0].name = "nonce";
       break;
     case RTM_OUTCOME_PUBLISH_OK:
     case RTM_OUTCOME_DELETE_OK:
     case RTM_OUTCOME_WRITE_OK:
-      interesting_field_dsts[0] = &pdu->position;
-      interesting_field_names[0] = "position";
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->position;
+      fields[0].name = "position";
       break;
     case RTM_OUTCOME_SUBSCRIBE_OK:
     case RTM_OUTCOME_UNSUBSCRIBE_OK:
-      interesting_field_dsts[0] = &pdu->position;
-      interesting_field_names[0] = "position";
-      interesting_field_dsts[1] = &pdu->subscription_id;
-      interesting_field_names[1] = "subscription_id";
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->position;
+      fields[0].name = "position";
+
+      fields[1].type = FIELD_STRING;
+      fields[1].dst = &pdu->subscription_id;
+      fields[1].name = "subscription_id";
       break;
     case RTM_OUTCOME_READ_OK:
-      interesting_field_dsts[0] = &pdu->position;
-      interesting_field_names[0] = "position";
-      interesting_field_dsts[1] = &pdu->message;
-      interesting_field_names[1] = "message";
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->position;
+      fields[0].name = "position";
+
+      fields[1].type = FIELD_JSON;
+      fields[1].dst = &pdu->message;
+      fields[1].name = "message";
       break;
     case RTM_OUTCOME_AUTHENTICATE_OK:
       return;
     case RTM_OUTCOME_SUBSCRIPTION_DATA: // messages are parsed elsewhere
-      return parse_iterator(body, "messages", &pdu->message_iterator);
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->position;
+      fields[0].name = "position";
+
+      fields[1].type = FIELD_ITERATOR;
+      fields[1].dst = &pdu->message_iterator;
+      fields[1].name = "messages";
+      break;
     case RTM_OUTCOME_SEARCH_DATA: // search results are parsed elsewhere
     case RTM_OUTCOME_SEARCH_OK:
-      return parse_iterator(body, "results", &pdu->channel_iterator);
+      fields[0].type = FIELD_ITERATOR;
+      fields[0].dst = &pdu->channel_iterator;
+      fields[0].name = "channels";
+      break;
     case RTM_OUTCOME_UNKNOWN:
       pdu->body = body;
       return;
@@ -943,17 +931,32 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     }
 
     for (int i = 0; i < MAX_INTERESTING_FIELDS_IN_PDU; ++i) {
-      char const *field_name = interesting_field_names[i];
-      if (!field_name) {
+      field_t field = fields[i];
+
+      if (!field.name) {
         break;
       }
-      if (0 == strncmp(field_name, el + 1, el_len - 2)) {
+      // skip quotes when compare field name
+      if (0 == strncmp(field.name, el + 1, el_len - 2)) {
         p = _rtm_json_find_element(p, &el, &el_len);
         if (el_len <= 0) {
           continue;
         }
-        el[el_len - 1] = 0;
-        *interesting_field_dsts[i] = el + 1;
+        switch (field.type) {
+          case FIELD_JSON:
+            el[el_len] = 0;
+            *((char **)field.dst) = el;
+            break;
+          case FIELD_STRING:
+            el[el_len - 1] = 0;
+            *((char **)field.dst) = el + 1;
+            break;
+          case FIELD_ITERATOR:
+            el[el_len - 1] = 0;
+            ASSERT(*el == '[');
+            ((rtm_list_iterator_t *)field.dst)->position = el + 1;
+            break;
+        }
       }
     }
   }

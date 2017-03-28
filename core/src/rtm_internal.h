@@ -171,6 +171,18 @@ enum WebSocketOpCode {
     WS_OPCODE_LAST = 0x0A,
 };
 
+enum rtm_field_type_t {
+  FIELD_JSON,
+  FIELD_ITERATOR,
+  FIELD_STRING
+};
+
+typedef struct {
+  enum rtm_field_type_t type;
+  char *name;
+  void *dst;
+} field_t;
+
 #ifdef __cplusplus
 }
 #endif

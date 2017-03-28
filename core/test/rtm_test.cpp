@@ -56,20 +56,28 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       event.info = std::string(pdu->message);
       break;
     case RTM_OUTCOME_UNKNOWN:
-    // FIXME
+      event.info = std::string(pdu->body);
+      break;
     case RTM_OUTCOME_SUBSCRIPTION_DATA: {
       char *message;
       while ((message = rtm_iterate(&pdu->message_iterator))) {
-        std::cout << message << std::endl;
-        event.info += std::string(message);
+        event_t data = event;
+        data.info = std::string(message);
+        event_queue.push(data);
       }
-      break;
+      return;
     }
-    case RTM_OUTCOME_SEARCH_DATA:
-    case RTM_OUTCOME_SEARCH_OK: {
+    case RTM_OUTCOME_SEARCH_OK:
+    case RTM_OUTCOME_SEARCH_DATA: {
       char *channel;
       while ((channel = rtm_iterate(&pdu->channel_iterator))) {
-        event.info += std::string(channel);
+        event_t data = event;
+        data.action = RTM_OUTCOME_SEARCH_DATA;
+        data.info = std::string(channel);
+        event_queue.push(data);
+      }
+      if (RTM_OUTCOME_SEARCH_DATA == event.action) {
+        return;
       }
       break;
     }
@@ -138,9 +146,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
   ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
-  //FIXME
-  // ASSERT_EQ(R"("my message")", message_queue.front());
-  // message_queue.pop();
+  ASSERT_EQ(R"("my message")", event.info);
 
   rtm_close(rtm);
 }
@@ -240,7 +246,7 @@ TEST(rtm_test, read_write_delete) {
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
   ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
   ASSERT_EQ(request_id, event.request_id);
-  ASSERT_EQ("msg", event.info);
+  ASSERT_EQ("\"msg\"", event.info);
 
   rc = rtm_delete(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while delete";
@@ -307,9 +313,7 @@ TEST(rtm_test, publish_and_receive) {
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
   ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
-  // FIXME
-  // ASSERT_EQ(R"("my message")", message_queue.front());
-  // message_queue.pop();
+  ASSERT_EQ(R"("my message")", event.info);
 
   rtm_close(rtm);
 }
@@ -510,7 +514,7 @@ TEST(rtm_test, read_with_body) {
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next event";
   ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
-  ASSERT_EQ("message-2", event.info);
+  ASSERT_EQ("\"message-2\"", event.info);
 
   rtm_close(rtm);
 }
@@ -539,7 +543,7 @@ TEST(rtm_test, rtm_write_json) {
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
   ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
-  ASSERT_EQ(test_json.dump(), event.info);
+  ASSERT_EQ(test_json, json::parse(event.info));
 
   rtm_close(rtm);
 }
@@ -580,10 +584,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
       rc = next_event(rtm, &event);
       ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
       ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
-
-      //FIXME
-      // ASSERT_EQ(message, message_queue.front());
-      // message_queue.pop();
+      ASSERT_EQ(std::string(message), event.info);
   }
 
   rtm_close(rtm);
@@ -609,21 +610,16 @@ TEST(rtm_test, DISABLED_rtm_search_test) {
 
   std::vector<std::string> channels;
 
-  while (true) {
+  do {
     rc = next_event(rtm, &event);
     ASSERT_EQ(RTM_OK, rc) << "Failed to receive PDU";
-
-    auto body = json::parse(event.info);
-
-    std::vector<std::string> new_channels = body["channels"];
-    channels.insert(channels.end(), new_channels.begin(), new_channels.end());
-
-    bool is_final = event.action == RTM_OUTCOME_SEARCH_OK;
-
-    if (is_final) {
-      break;
+    ASSERT_TRUE((RTM_OUTCOME_SEARCH_DATA == event.action) || (RTM_OUTCOME_SEARCH_OK == event.action));
+    if (RTM_OUTCOME_SEARCH_DATA == event.action) {
+      std::string name = json::parse(event.info).get<std::string>();
+      channels.push_back(name);
     }
-  }
+  } while (RTM_OUTCOME_SEARCH_OK != event.action);
+
 
   bool found = channels.end() != std::find(channels.begin(), channels.end(), channel);
   ASSERT_EQ(true, found) << "rtm/search failed to find our channel";
