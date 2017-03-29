@@ -465,7 +465,7 @@ void rtm_default_error_logger(const char *message) {
 
 void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   printf("received pdu: client=%p, action=%d, id=%u, body=%s\n",
-      (void*) rtm, pdu->outcome, pdu->request_id, pdu->body);
+      (void*) rtm, pdu->action, pdu->request_id, pdu->body);
 }
 
 const char *rtm_error_string(rtm_status status) {
@@ -760,7 +760,7 @@ static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t si
   return p - buf;
 }
 
-static const char *const outcome_table[] = {
+static const char *const action_table[] = {
     [RTM_ACTION_AUTHENTICATE_ERROR] = "auth/authenticate/error",
     [RTM_ACTION_AUTHENTICATE_OK] = "auth/authenticate/ok",
     [RTM_ACTION_DELETE_ERROR] = "rtm/delete/error",
@@ -790,7 +790,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   char *el;
   ssize_t el_len;
   char *body = NULL;
-  enum rtm_outcome_t outcome = RTM_ACTION_UNKNOWN;
+  enum rtm_action_t action = RTM_ACTION_UNKNOWN;
   char *p = _rtm_json_find_begin_obj(message);
 
   while (TRUE) {
@@ -808,9 +808,9 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
         el[el_len - 1] = '\0';
         ++el;
 
-        for (enum rtm_outcome_t o = 1; o < RTM_ACTION_SENTINEL; ++o) {
-            if (!strncmp(outcome_table[o] , el, el_len)) {
-                outcome = o;
+        for (enum rtm_action_t o = 1; o < RTM_ACTION_SENTINEL; ++o) {
+            if (!strncmp(action_table[o] , el, el_len)) {
+                action = o;
                 break;
             }
         }
@@ -837,8 +837,8 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   static int const MAX_INTERESTING_FIELDS_IN_PDU = 2;
   field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {{0}};
 
-  pdu->outcome = outcome;
-  switch (outcome) {
+  pdu->action = action;
+  switch (action) {
     case RTM_ACTION_AUTHENTICATE_ERROR:
     case RTM_ACTION_DELETE_ERROR:
     case RTM_ACTION_HANDSHAKE_ERROR:
@@ -1011,7 +1011,7 @@ void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t *pdu,
   ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(data_handler);
 
-  if (pdu->outcome != RTM_ACTION_SUBSCRIPTION_DATA) {
+  if (pdu->action != RTM_ACTION_SUBSCRIPTION_DATA) {
     return;
   }
 

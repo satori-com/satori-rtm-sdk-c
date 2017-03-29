@@ -22,7 +22,7 @@ using json = nlohmann::json;
 
 struct event_t {
   unsigned request_id = 0;
-  rtm_outcome_t action;
+  rtm_action_t action;
   std::string info;
 };
 
@@ -31,7 +31,7 @@ std::queue<std::string> message_queue;
 
 void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   event_t event;
-  event.action = pdu->outcome;
+  event.action = pdu->action;
   event.request_id = pdu->request_id;
   switch (event.action) {
     case RTM_ACTION_AUTHENTICATE_ERROR:

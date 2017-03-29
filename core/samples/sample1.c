@@ -25,7 +25,7 @@ static char *last_nonce = NULL;
 static int authenticated = 0;
 
 void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  switch (pdu->outcome) {
+  switch (pdu->action) {
     case RTM_ACTION_HANDSHAKE_OK:
       printf("Copying nonce %s\n", pdu->nonce);
       last_nonce = (char *)malloc(strlen(pdu->nonce) + 1);
