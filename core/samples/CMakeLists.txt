@@ -11,5 +11,7 @@ macro(compile_sample name)
   target_link_libraries(${name} rtm-core-sdk)
 endmacro(compile_sample)
 
-compile_sample(sample1)
 compile_sample(subscribe_to_open_data_channel)
+compile_sample(auth_publish_subscribe)
+compile_sample(auth_publish)
+compile_sample(subscribe)
