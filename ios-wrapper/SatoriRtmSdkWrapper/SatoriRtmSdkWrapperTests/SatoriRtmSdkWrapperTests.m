@@ -7,16 +7,16 @@ static NSString* const url = @"";
 static NSString* const appkey = @"";
 static NSString* const role_name = @"";
 
-@interface SatoriRtmSdkWrapperTests : XCTestCase {
+@interface ConnectionTests : XCTestCase {
     SatoriRtmConnection* rtmClient;
 }
 @end
 
-@implementation SatoriRtmSdkWrapperTests
+@implementation ConnectionTests
 
 - (void)setUp {
     [super setUp];
-    
+
     XCTAssertTrue(url.length > 0);
     XCTAssertTrue(appkey.length > 0);
     
@@ -35,9 +35,9 @@ static NSString* const role_name = @"";
     XCTAssertEqual(status, RTM_OK, @"Failed to connect RTM");
 }
 
-- (void)testOpenConnectionWithCustomPdu {
+- (void)testOpenConnectionWithCustomPduHandler {
     PduHandler handler = ^(SatoriPdu *pdu) {
-        NSLog(@"%@", pdu.action);
+        NSLog(@"%u", pdu.action);
     };
     
     rtmClient = [[SatoriRtmConnection alloc] initWithUrl:url andAppkey:appkey];
@@ -76,50 +76,6 @@ static NSString* const role_name = @"";
 }
 
 
-- (void)testParsePduWithoutBody {
-    NSString* jsonStr = @"{\"action\":\"rtm/publish/ok\", \"id\":42}";
-    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
-    XCTAssertNil(pdu);
-}
-
-- (void)testParsePduWithoutAction {
-    NSString* jsonStr = @"{\"id\":42, \"body\":{\"position\":\"1479315802:0\",\"messages\":[\"a\",null,42]}}";
-    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
-    XCTAssertNil(pdu);
-}
-
-- (void)testParsePduWithEmptyJson {
-    NSString* jsonStr = @"{}";
-    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
-    XCTAssertNil(pdu);
-}
-
-- (void)testParsePdu {
-    NSString* jsonStr = @"{\"action\":\"rtm/publish/ok\", \"id\":42, \"body\":{\"position\":\"1479315802:0\",\"messages\":[\"a\",null,42]}}";
-    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
-    NSDictionary *expectedBody = @{@"position": @"1479315802:0", @"messages": @[@"a", [NSNull null], @(42)]};
-    XCTAssertNotNil(pdu);
-    XCTAssertEqualObjects(pdu.action, @"rtm/publish/ok", @"Failed to parse pdu action");
-    XCTAssertEqualObjects(pdu.body[@"position"], expectedBody[@"position"], @"Failed to parse pdu body");
-    XCTAssertEqualObjects(pdu.body[@"messages"], expectedBody[@"messages"], @"Failed to parse pdu body");
-    XCTAssertEqual(pdu.requestId, 42, @"Failed to parse pdu requestId");
-    XCTAssertEqualObjects(pdu.body[@"position"], @"1479315802:0", @"Failed to parse pdu body");
-    XCTAssertEqual(((NSArray*)pdu.body[@"messages"]).count, 3, @"Failed to parse pdu body");
-}
-
-- (void)testParseSubscriptionData {
-    rtm_status status = [rtmClient connect];
-    XCTAssertEqual(status, RTM_OK, @"Failed to connect RTM");
-
-    SatoriPdu* pdu = [[SatoriPdu alloc] initWithAction:@"rtm/subscription/data" body:@"{ \"messages\"   :   [\"a\",null,42],  \"subscription_id\"  :\"channel\"  }" andRequestId:42];
-
-    NSArray *expectedMessages = @[@"a", [NSNull null], @(42)];
-    XCTAssertEqualObjects(
-        pdu.body[@"messages"],
-        expectedMessages,
-        @"Failed to parse messages correctly");
-}
-
 - (void)testPublishAndReceive {
     rtm_status status = [rtmClient connect];
     XCTAssertEqual(status, RTM_OK, @"Failed to connect RTM");
@@ -139,10 +95,10 @@ static NSString* const role_name = @"";
     __block int counter = 0;
     PduHandler handler = ^(SatoriPdu *pdu) {
         if (counter == 0) {
-            XCTAssertEqualObjects(pdu.action, @"rtm/subscribe/ok");
+            XCTAssertEqual(pdu.action, RTM_ACTION_SUBSCRIBE_OK);
         }
         if (counter == 1 || counter == 2) {
-            XCTAssertEqualObjects(pdu.action, @"rtm/subscription/data");
+            XCTAssertEqual(pdu.action, RTM_ACTION_SUBSCRIPTION_DATA);
         }
         counter++;
     };
@@ -170,10 +126,10 @@ static NSString* const role_name = @"";
     __block int counter = 0;
     PduHandler handler = ^(SatoriPdu *pdu) {
         if (counter == 0) {
-            XCTAssertEqualObjects(pdu.action, @"rtm/subscribe/ok");
+            XCTAssertEqual(pdu.action, RTM_ACTION_SUBSCRIBE_OK);
         }
         if (counter == 1) {
-            XCTAssertEqualObjects(pdu.action, @"rtm/subscription/data");
+            XCTAssertEqual(pdu.action, RTM_ACTION_SUBSCRIPTION_DATA);
         }
         counter++;
     };
@@ -207,3 +163,43 @@ static NSString* const role_name = @"";
 }
 
 @end
+
+@interface PureTests : XCTestCase
+@end
+
+@implementation PureTests
+- (void)testParsePduWithoutBody {
+    NSString* jsonStr = @"{\"action\":\"rtm/publish/ok\", \"id\":42}";
+    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
+    XCTAssertEqual(pdu.action, RTM_ACTION_PUBLISH_OK);
+    XCTAssertEqual(pdu.requestId, 42);
+}
+
+- (void)testParsePduWithoutAction {
+    NSString* jsonStr = @"{\"id\":42, \"body\":{\"position\":\"1479315802:0\",\"messages\":[\"a\",null,42]}}";
+    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
+    XCTAssertEqual(pdu.action, RTM_ACTION_UNKNOWN);
+    XCTAssertEqual(pdu.requestId, 42);
+    NSDictionary *expectedBody = @{@"position":@"1479315802:0",@"messages":@[@"a", [NSNull null], @42]};
+    XCTAssertEqualObjects(pdu.fields[@"body"], expectedBody);
+}
+
+- (void)testParsePduWithEmptyJson {
+    NSString* jsonStr = @"{}";
+    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
+    XCTAssertEqual(pdu.action, RTM_ACTION_UNKNOWN);
+    XCTAssertEqualObjects(pdu.fields, @{});
+}
+
+- (void)testParsePdu {
+    NSString* jsonStr = @"{\"action\":\"rtm/subscription/data\", \"id\":42, \"body\":{\"position\":\"1479315802:0\",\"messages\":[\"a\",null,42]}}";
+    SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
+    NSDictionary *expectedBody = @{@"position": @"1479315802:0", @"messages": @[@"a", [NSNull null], @(42)]};
+    XCTAssertNotNil(pdu);
+    XCTAssertEqual(pdu.action, RTM_ACTION_SUBSCRIPTION_DATA, @"Failed to parse pdu action");
+    XCTAssertEqualObjects(pdu.fields[@"position"], expectedBody[@"position"], @"Failed to parse position");
+    XCTAssertEqualObjects(pdu.fields[@"messages"], expectedBody[@"messages"], @"Failed to parse messages");
+    XCTAssertEqual(pdu.requestId, 42, @"Failed to parse pdu requestId");
+}
+@end
+

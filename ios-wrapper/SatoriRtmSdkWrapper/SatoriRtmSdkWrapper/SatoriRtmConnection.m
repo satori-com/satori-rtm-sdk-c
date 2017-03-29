@@ -20,7 +20,7 @@ static PduHandler _defaultPduHandler = nil;
 + (nonnull PduHandler)defaultPduHandler {
     if (_defaultPduHandler == nil) {
         _defaultPduHandler = ^(SatoriPdu * pdu) {
-            NSLog(@"Received pdu: action=%@, id=%u, body=%@\n", pdu.action, pdu.requestId, pdu.body);
+            NSLog(@"Received pdu: action=%d, id=%u, fields=%@\n", pdu.action, pdu.requestId, pdu.fields);
         };
     }
     return _defaultPduHandler;
@@ -44,9 +44,10 @@ static PduHandler _defaultPduHandler = nil;
 #pragma mark - C functions
 void on_pdu(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     SatoriRtmConnection* self = (__bridge SatoriRtmConnection *)(rtm_get_user_context(rtm));
+    NSMutableDictionary *fields = [NSMutableDictionary new];
     if (self.pduHandler) {
-        SatoriPdu* convertedPdu = [[SatoriPdu alloc] initWithAction:[NSString stringWithUTF8String:(pdu->action)] body:[NSString stringWithUTF8String:(pdu->body)] andRequestId:pdu->request_id];
-        self.pduHandler(convertedPdu);
+
+        self.pduHandler([[SatoriPdu alloc] initWithLowLevelPdu:pdu]);
     }
 }
 
@@ -104,17 +105,8 @@ void on_message(rtm_client_t *rtm, const char* subscriptionId, const char* messa
     rtm_pdu_t pdu = {};
     char *dup = strdup(json.UTF8String);
     rtm_parse_pdu(dup, &pdu);
-    NSString* action = nil;
-    NSString* body = nil;
     
-    if (pdu.action != NULL) {
-        action = [NSString stringWithUTF8String:pdu.action];
-    }
-    if (pdu.body != NULL) {
-        body = [NSString stringWithUTF8String:pdu.body];
-    }
-    
-    SatoriPdu* newPdu = [[SatoriPdu alloc] initWithAction:action body:body andRequestId:pdu.request_id];
+    SatoriPdu* newPdu = [[SatoriPdu alloc] initWithLowLevelPdu:&pdu];
     free(dup);
     return newPdu;
 }

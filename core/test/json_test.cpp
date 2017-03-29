@@ -57,11 +57,11 @@ TEST(rtm_json, pdu_body_is_absent) {
 
 TEST(rtm_json, pdu_action_is_absent) {
   rtm_pdu_t pdu{};
-  char json[] = R"(  {    "id" : 42  } )";
+  char json[] = R"(  {    "id" : 42  ,"body":{"stuff":[1,2,null]}} )";
   rtm_parse_pdu(json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
-  ASSERT_TRUE(nullptr == pdu.body);
+  ASSERT_EQ(0, strcmp(R"({"stuff":[1,2,null]})", pdu.body));
   ASSERT_EQ(42, pdu.request_id);
 }
 
