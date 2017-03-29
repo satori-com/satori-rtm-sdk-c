@@ -49,9 +49,11 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       event.info = std::string(pdu->nonce);
       break;
     case RTM_ACTION_SUBSCRIBE_OK:
-    case RTM_ACTION_UNSUBSCRIBE_OK:
-      event.info = std::string(pdu->subscription_id);
+    case RTM_ACTION_UNSUBSCRIBE_OK: {
+      std::string parsed_sub_id = json::parse(pdu->subscription_id).get<std::string>();
+      event.info = std::string(parsed_sub_id);
       break;
+    }
     case RTM_ACTION_READ_OK:
       event.info = std::string(pdu->message);
       break;
@@ -62,7 +64,8 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       char *message;
       while ((message = rtm_iterate(&pdu->message_iterator))) {
         event_t data = event;
-        data.info = std::string(message);
+        std::string parsed_sub_id = json::parse(pdu->subscription_id);
+        data.info = std::string(parsed_sub_id) + ":" + std::string(message);
         event_queue.push(data);
       }
       return;
@@ -146,7 +149,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
   ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, event.action);
-  ASSERT_EQ(R"("my message")", event.info);
+  ASSERT_EQ(channel + ":" + R"("my message")", event.info);
 
   rtm_close(rtm);
 }
@@ -313,7 +316,7 @@ TEST(rtm_test, publish_and_receive) {
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
   ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, event.action);
-  ASSERT_EQ(R"("my message")", event.info);
+  ASSERT_EQ(channel + ":" + R"("my message")", event.info);
 
   rtm_close(rtm);
 }
@@ -584,7 +587,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
       rc = next_event(rtm, &event);
       ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
       ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, event.action);
-      ASSERT_EQ(std::string(message), event.info);
+      ASSERT_EQ(channel + ":" + std::string(message), event.info);
   }
 
   rtm_close(rtm);
