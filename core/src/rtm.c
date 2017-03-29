@@ -783,6 +783,18 @@ static const char *const action_table[] = {
     [RTM_ACTION_WRITE_OK] = "rtm/write/ok"
 };
 
+enum rtm_field_type_t {
+  FIELD_JSON,
+  FIELD_ITERATOR,
+  FIELD_STRING
+};
+
+typedef struct {
+  enum rtm_field_type_t type;
+  char *name;
+  void *dst;
+} field_t;
+
 void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(message);
@@ -834,7 +846,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     }
   }
 
-  static int const MAX_INTERESTING_FIELDS_IN_PDU = 2;
+  static int const MAX_INTERESTING_FIELDS_IN_PDU = 3;
   field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {{0}};
 
   pdu->action = action;
@@ -874,7 +886,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
 
-      fields[1].type = FIELD_STRING;
+      fields[1].type = FIELD_JSON;
       fields[1].dst = &pdu->subscription_id;
       fields[1].name = "subscription_id";
       break;
@@ -897,6 +909,10 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].type = FIELD_ITERATOR;
       fields[1].dst = &pdu->message_iterator;
       fields[1].name = "messages";
+
+      fields[2].type = FIELD_JSON;
+      fields[2].dst = &pdu->subscription_id;
+      fields[2].name = "subscription_id";
       break;
     case RTM_ACTION_SEARCH_DATA: // search results are parsed elsewhere
     case RTM_ACTION_SEARCH_OK:
