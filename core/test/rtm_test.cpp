@@ -50,8 +50,7 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       break;
     case RTM_ACTION_SUBSCRIBE_OK:
     case RTM_ACTION_UNSUBSCRIBE_OK: {
-      std::string parsed_sub_id = json::parse(pdu->subscription_id).get<std::string>();
-      event.info = std::string(parsed_sub_id);
+      event.info = std::string(pdu->subscription_id);
       break;
     }
     case RTM_ACTION_READ_OK:
@@ -64,8 +63,7 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       char *message;
       while ((message = rtm_iterate(&pdu->message_iterator))) {
         event_t data = event;
-        std::string parsed_sub_id = json::parse(pdu->subscription_id);
-        data.info = std::string(parsed_sub_id) + ":" + std::string(message);
+        data.info = std::string(pdu->subscription_id) + ":" + std::string(message);
         event_queue.push(data);
       }
       return;

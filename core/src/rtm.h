@@ -83,6 +83,7 @@ enum rtm_action_t {
     RTM_ACTION_AUTHENTICATE_OK,
     RTM_ACTION_DELETE_ERROR,
     RTM_ACTION_DELETE_OK,
+    RTM_ACTION_GENERAL_ERROR,
     RTM_ACTION_HANDSHAKE_ERROR,
     RTM_ACTION_HANDSHAKE_OK,
     RTM_ACTION_PUBLISH_ERROR,
@@ -95,6 +96,8 @@ enum rtm_action_t {
     RTM_ACTION_SUBSCRIBE_ERROR,
     RTM_ACTION_SUBSCRIBE_OK,
     RTM_ACTION_SUBSCRIPTION_DATA,
+    RTM_ACTION_SUBSCRIPTION_ERROR,
+    RTM_ACTION_SUBSCRIPTION_INFO,
     RTM_ACTION_UNSUBSCRIBE_ERROR,
     RTM_ACTION_UNSUBSCRIBE_OK,
     RTM_ACTION_WRITE_ERROR,
@@ -131,7 +134,10 @@ typedef struct _rtm_pdu {
     enum rtm_action_t action;
     union {
         struct {
-            char const *error;
+            union {
+              char const *error;
+              char const *info;
+            };
             char const *reason;
         };
         struct {

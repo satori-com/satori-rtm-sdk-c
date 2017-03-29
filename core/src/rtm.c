@@ -761,6 +761,7 @@ static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t si
 }
 
 static const char *const action_table[] = {
+    [RTM_ACTION_GENERAL_ERROR] = "/error",
     [RTM_ACTION_AUTHENTICATE_ERROR] = "auth/authenticate/error",
     [RTM_ACTION_AUTHENTICATE_OK] = "auth/authenticate/ok",
     [RTM_ACTION_DELETE_ERROR] = "rtm/delete/error",
@@ -777,6 +778,8 @@ static const char *const action_table[] = {
     [RTM_ACTION_SUBSCRIBE_ERROR] = "rtm/subscribe/error",
     [RTM_ACTION_SUBSCRIBE_OK] = "rtm/subscribe/ok",
     [RTM_ACTION_SUBSCRIPTION_DATA] = "rtm/subscription/data",
+    [RTM_ACTION_SUBSCRIPTION_INFO] = "rtm/subscription/info",
+    [RTM_ACTION_SUBSCRIPTION_ERROR] = "rtm/subscription/error",
     [RTM_ACTION_UNSUBSCRIBE_ERROR] = "rtm/unsubscribe/error",
     [RTM_ACTION_UNSUBSCRIBE_OK] = "rtm/unsubscribe/ok",
     [RTM_ACTION_WRITE_ERROR] = "rtm/write/error",
@@ -851,6 +854,11 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
 
   pdu->action = action;
   switch (action) {
+    case RTM_ACTION_SUBSCRIPTION_ERROR:
+      fields[2].type = FIELD_STRING;
+      fields[2].dst = &pdu->subscription_id;
+      fields[2].name = "subscription_id";
+    case RTM_ACTION_GENERAL_ERROR:
     case RTM_ACTION_AUTHENTICATE_ERROR:
     case RTM_ACTION_DELETE_ERROR:
     case RTM_ACTION_HANDSHAKE_ERROR:
@@ -867,6 +875,19 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].type = FIELD_STRING;
       fields[1].dst = &pdu->reason;
       fields[1].name = "reason";
+      break;
+    case RTM_ACTION_SUBSCRIPTION_INFO:
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->info;
+      fields[0].name = "info";
+
+      fields[1].type = FIELD_STRING;
+      fields[1].dst = &pdu->reason;
+      fields[1].name = "reason";
+
+      fields[2].type = FIELD_STRING;
+      fields[2].dst = &pdu->subscription_id;
+      fields[2].name = "subscription_id";
       break;
     case RTM_ACTION_HANDSHAKE_OK:
       fields[0].type = FIELD_STRING;
@@ -886,7 +907,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
 
-      fields[1].type = FIELD_JSON;
+      fields[1].type = FIELD_STRING;
       fields[1].dst = &pdu->subscription_id;
       fields[1].name = "subscription_id";
       break;
@@ -910,7 +931,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->message_iterator;
       fields[1].name = "messages";
 
-      fields[2].type = FIELD_JSON;
+      fields[2].type = FIELD_STRING;
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
       break;
