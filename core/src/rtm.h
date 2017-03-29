@@ -216,22 +216,26 @@ typedef void(*rtm_error_logger_t)(const char *message);
  * c core.
  */
 typedef enum {
-    RTM_OK = 0,             /*!< No error.                                    */
-    RTM_WOULD_BLOCK,        /*!< The operation would be a blocking IO
-                                 operation                                    */
-    RTM_ERR_PARAM = -100,   /*!< One of the parameters passed to the function
-                                 is incorrect                                 */
-    RTM_ERR_PARAM_INVALID,  /*!< A parameter of the function is invalid       */
-    RTM_ERR_CONNECT,        /*!< The client could not connect to RTM          */
-    RTM_ERR_NETWORK,        /*!< An unexpected network error occurred         */
-    RTM_ERR_CLOSED,         /*!< The connection is closed                     */
-    RTM_ERR_READ,           /*!< An error occurred while receiving data from
-                                 RTM                                          */
-    RTM_ERR_WRITE,          /*!< An error occurred while sending data to RTM  */
-    RTM_ERR_PROTOCOL,       /*!< An error occurred in the protocol layer      */
-    RTM_ERR_TLS,            /*!< An unexpected error happened in the TLS
-                                 layer                                        */
-    RTM_ERR_TIMEOUT         /*!< The operation timed out                      */
+    RTM_OK = 0,                   /*!< No error.                                     */
+    RTM_WOULD_BLOCK,              /*!< The operation would be a blocking IO
+                                       operation                                     */
+    RTM_ERR_BEGIN = -100,
+    RTM_ERR_PARAM = -99,          /*!< One of the parameters passed to the function
+                                       is incorrect                                  */
+    RTM_ERR_PARAM_INVALID = -98,  /*!< A parameter of the function is invalid        */
+    RTM_ERR_CONNECT = -97,        /*!< The client could not connect to RTM           */
+    RTM_ERR_NETWORK = -96,        /*!< An unexpected network error occurred          */
+    RTM_ERR_CLOSED = -95,         /*!< The connection is closed                      */
+    RTM_ERR_READ = -94,           /*!< An error occurred while receiving data from
+                                       RTM                                           */
+    RTM_ERR_WRITE = -93,          /*!< An error occurred while sending data to RTM   */
+    RTM_ERR_PROTOCOL = -92,       /*!< An error occurred in the protocol layer       */
+    RTM_ERR_NO_TLS = -91,         /*!< The call to ::rtm_connect mentioned a TLS
+                                       endpoint, but the SDK was not built with TLS
+                                       support                                       */
+    RTM_ERR_TLS = -90,            /*!< An unexpected error happened in the TLS layer */
+    RTM_ERR_TIMEOUT = -89,        /*!< The operation timed out                       */
+    RTM_ERR_END
 } rtm_status;
 
 /**
@@ -375,13 +379,8 @@ RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
                          const char *role, unsigned *ack_id);
 
 /**
-<<<<<<< 73bfef407bd284b59e87affe9a2510b8e7b24e7e
  * @brief Send the authenticate request to establish the identity of
  * the client.
-=======
- * @brief Perform rtm/authenticate call using
- *        the role_secret and the nonce obtained from auth/handshake
->>>>>>> WIP on parsing PDUs inside C Core
  *
  * RTM reply will have same identifier as value of @p ack_id.
  *
