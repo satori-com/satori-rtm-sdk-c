@@ -77,7 +77,7 @@ extern "C" {
  */
 #define RTM_AUTHENTICATION_HASH_SIZE (24)
 
-enum rtm_outcome_t {
+enum rtm_action_t {
     RTM_ACTION_UNKNOWN = 0,
     RTM_ACTION_AUTHENTICATE_ERROR,
     RTM_ACTION_AUTHENTICATE_OK,
@@ -116,7 +116,7 @@ char *rtm_iterate(rtm_list_iterator_t const *iterator);
  *
  *  Field availability:
  *
- *        Outcome             | Fields
+ *        Action              | Fields
  *        ------------------- | -------------
  *        UNKNOWN             | body
  *        AUTHENTICATE_ERROR  | error, reason
@@ -128,7 +128,7 @@ char *rtm_iterate(rtm_list_iterator_t const *iterator);
  */
 typedef struct _rtm_pdu {
     unsigned request_id;
-    enum rtm_outcome_t outcome;
+    enum rtm_action_t action;
     union {
         struct {
             char const *error;

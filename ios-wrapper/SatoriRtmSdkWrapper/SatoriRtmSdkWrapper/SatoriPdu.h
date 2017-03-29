@@ -2,7 +2,7 @@
 
 @interface SatoriPdu : NSObject
 
-@property (nonatomic, readonly) NSString* _Nonnull action;
+@property (nonatomic, readonly) rtm_action_t action;
 @property (nonatomic, readonly) id _Nonnull body;
 @property (nonatomic, readonly) unsigned requestId;
 
