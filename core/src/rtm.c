@@ -761,26 +761,26 @@ static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t si
 }
 
 static const char *const outcome_table[] = {
-    [RTM_OUTCOME_AUTHENTICATE_ERROR] = "auth/authenticate/error",
-    [RTM_OUTCOME_AUTHENTICATE_OK] = "auth/authenticate/ok",
-    [RTM_OUTCOME_DELETE_ERROR] = "rtm/delete/error",
-    [RTM_OUTCOME_DELETE_OK] = "rtm/delete/ok",
-    [RTM_OUTCOME_HANDSHAKE_ERROR] = "auth/handshake/error",
-    [RTM_OUTCOME_HANDSHAKE_OK] = "auth/handshake/ok",
-    [RTM_OUTCOME_PUBLISH_ERROR] = "rtm/publish/error",
-    [RTM_OUTCOME_PUBLISH_OK] = "rtm/publish/ok",
-    [RTM_OUTCOME_READ_ERROR] = "rtm/read/error",
-    [RTM_OUTCOME_READ_OK] = "rtm/read/ok",
-    [RTM_OUTCOME_SEARCH_DATA] = "rtm/search/data",
-    [RTM_OUTCOME_SEARCH_ERROR] = "rtm/search/error",
-    [RTM_OUTCOME_SEARCH_OK] = "rtm/search/ok",
-    [RTM_OUTCOME_SUBSCRIBE_ERROR] = "rtm/subscribe/error",
-    [RTM_OUTCOME_SUBSCRIBE_OK] = "rtm/subscribe/ok",
-    [RTM_OUTCOME_SUBSCRIPTION_DATA] = "rtm/subscription/data",
-    [RTM_OUTCOME_UNSUBSCRIBE_ERROR] = "rtm/unsubscribe/error",
-    [RTM_OUTCOME_UNSUBSCRIBE_OK] = "rtm/unsubscribe/ok",
-    [RTM_OUTCOME_WRITE_ERROR] = "rtm/write/error",
-    [RTM_OUTCOME_WRITE_OK] = "rtm/write/ok"
+    [RTM_ACTION_AUTHENTICATE_ERROR] = "auth/authenticate/error",
+    [RTM_ACTION_AUTHENTICATE_OK] = "auth/authenticate/ok",
+    [RTM_ACTION_DELETE_ERROR] = "rtm/delete/error",
+    [RTM_ACTION_DELETE_OK] = "rtm/delete/ok",
+    [RTM_ACTION_HANDSHAKE_ERROR] = "auth/handshake/error",
+    [RTM_ACTION_HANDSHAKE_OK] = "auth/handshake/ok",
+    [RTM_ACTION_PUBLISH_ERROR] = "rtm/publish/error",
+    [RTM_ACTION_PUBLISH_OK] = "rtm/publish/ok",
+    [RTM_ACTION_READ_ERROR] = "rtm/read/error",
+    [RTM_ACTION_READ_OK] = "rtm/read/ok",
+    [RTM_ACTION_SEARCH_DATA] = "rtm/search/data",
+    [RTM_ACTION_SEARCH_ERROR] = "rtm/search/error",
+    [RTM_ACTION_SEARCH_OK] = "rtm/search/ok",
+    [RTM_ACTION_SUBSCRIBE_ERROR] = "rtm/subscribe/error",
+    [RTM_ACTION_SUBSCRIBE_OK] = "rtm/subscribe/ok",
+    [RTM_ACTION_SUBSCRIPTION_DATA] = "rtm/subscription/data",
+    [RTM_ACTION_UNSUBSCRIBE_ERROR] = "rtm/unsubscribe/error",
+    [RTM_ACTION_UNSUBSCRIBE_OK] = "rtm/unsubscribe/ok",
+    [RTM_ACTION_WRITE_ERROR] = "rtm/write/error",
+    [RTM_ACTION_WRITE_OK] = "rtm/write/ok"
 };
 
 void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
@@ -790,7 +790,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   char *el;
   ssize_t el_len;
   char *body = NULL;
-  enum rtm_outcome_t outcome = RTM_OUTCOME_UNKNOWN;
+  enum rtm_outcome_t outcome = RTM_ACTION_UNKNOWN;
   char *p = _rtm_json_find_begin_obj(message);
 
   while (TRUE) {
@@ -808,7 +808,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
         el[el_len - 1] = '\0';
         ++el;
 
-        for (enum rtm_outcome_t o = 1; o < RTM_OUTCOME_SENTINEL; ++o) {
+        for (enum rtm_outcome_t o = 1; o < RTM_ACTION_SENTINEL; ++o) {
             if (!strncmp(outcome_table[o] , el, el_len)) {
                 outcome = o;
                 break;
@@ -835,19 +835,19 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   }
 
   static int const MAX_INTERESTING_FIELDS_IN_PDU = 2;
-  field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {0};
+  field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {{0}};
 
   pdu->outcome = outcome;
   switch (outcome) {
-    case RTM_OUTCOME_AUTHENTICATE_ERROR:
-    case RTM_OUTCOME_DELETE_ERROR:
-    case RTM_OUTCOME_HANDSHAKE_ERROR:
-    case RTM_OUTCOME_PUBLISH_ERROR:
-    case RTM_OUTCOME_READ_ERROR:
-    case RTM_OUTCOME_SEARCH_ERROR:
-    case RTM_OUTCOME_SUBSCRIBE_ERROR:
-    case RTM_OUTCOME_UNSUBSCRIBE_ERROR:
-    case RTM_OUTCOME_WRITE_ERROR:
+    case RTM_ACTION_AUTHENTICATE_ERROR:
+    case RTM_ACTION_DELETE_ERROR:
+    case RTM_ACTION_HANDSHAKE_ERROR:
+    case RTM_ACTION_PUBLISH_ERROR:
+    case RTM_ACTION_READ_ERROR:
+    case RTM_ACTION_SEARCH_ERROR:
+    case RTM_ACTION_SUBSCRIBE_ERROR:
+    case RTM_ACTION_UNSUBSCRIBE_ERROR:
+    case RTM_ACTION_WRITE_ERROR:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->error;
       fields[0].name = "error";
@@ -856,20 +856,20 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->reason;
       fields[1].name = "reason";
       break;
-    case RTM_OUTCOME_HANDSHAKE_OK:
+    case RTM_ACTION_HANDSHAKE_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->nonce;
       fields[0].name = "nonce";
       break;
-    case RTM_OUTCOME_PUBLISH_OK:
-    case RTM_OUTCOME_DELETE_OK:
-    case RTM_OUTCOME_WRITE_OK:
+    case RTM_ACTION_PUBLISH_OK:
+    case RTM_ACTION_DELETE_OK:
+    case RTM_ACTION_WRITE_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
       break;
-    case RTM_OUTCOME_SUBSCRIBE_OK:
-    case RTM_OUTCOME_UNSUBSCRIBE_OK:
+    case RTM_ACTION_SUBSCRIBE_OK:
+    case RTM_ACTION_UNSUBSCRIBE_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
@@ -878,7 +878,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->subscription_id;
       fields[1].name = "subscription_id";
       break;
-    case RTM_OUTCOME_READ_OK:
+    case RTM_ACTION_READ_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
@@ -887,9 +887,9 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->message;
       fields[1].name = "message";
       break;
-    case RTM_OUTCOME_AUTHENTICATE_OK:
+    case RTM_ACTION_AUTHENTICATE_OK:
       return;
-    case RTM_OUTCOME_SUBSCRIPTION_DATA: // messages are parsed elsewhere
+    case RTM_ACTION_SUBSCRIPTION_DATA: // messages are parsed elsewhere
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
@@ -898,16 +898,16 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->message_iterator;
       fields[1].name = "messages";
       break;
-    case RTM_OUTCOME_SEARCH_DATA: // search results are parsed elsewhere
-    case RTM_OUTCOME_SEARCH_OK:
+    case RTM_ACTION_SEARCH_DATA: // search results are parsed elsewhere
+    case RTM_ACTION_SEARCH_OK:
       fields[0].type = FIELD_ITERATOR;
       fields[0].dst = &pdu->channel_iterator;
       fields[0].name = "channels";
       break;
-    case RTM_OUTCOME_UNKNOWN:
+    case RTM_ACTION_UNKNOWN:
       pdu->body = body;
       return;
-    case RTM_OUTCOME_SENTINEL:
+    case RTM_ACTION_SENTINEL:
       ASSERT_NOT_NULL(0); // never happens
   }
 
@@ -1011,7 +1011,7 @@ void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t *pdu,
   ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(data_handler);
 
-  if (pdu->outcome != RTM_OUTCOME_SUBSCRIPTION_DATA) {
+  if (pdu->outcome != RTM_ACTION_SUBSCRIPTION_DATA) {
     return;
   }
 
