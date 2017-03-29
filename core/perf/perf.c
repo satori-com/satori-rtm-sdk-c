@@ -147,7 +147,7 @@ static bool should_run(rtm_stat *stat, double start_at, double duration) {
 }
 
 static void calc_publish_ok_stats(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  if (pdu->outcome == RTM_OUTCOME_PUBLISH_OK) {
+  if (pdu->outcome == RTM_ACTION_PUBLISH_OK) {
     rtm_stat* stat = (rtm_stat *) rtm_get_user_context(rtm);
     double now = bump(stat);
     maybe_print(stat, now, "publish-ok %.1f↓ rps\n");
@@ -162,7 +162,7 @@ static void on_subscription_data(rtm_client_t *rtm, const char *subscription_id,
 }
 
 void calc_subscription_data_stats(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  if (RTM_OUTCOME_SUBSCRIPTION_DATA != pdu->outcome) {
+  if (RTM_ACTION_SUBSCRIPTION_DATA != pdu->outcome) {
     return;
   }
   rtm_parse_subscription_data(rtm, pdu, channel_data_buf, RTM_MAX_MESSAGE_SIZE,

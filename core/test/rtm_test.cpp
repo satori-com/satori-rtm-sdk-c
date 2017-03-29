@@ -34,31 +34,31 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   event.action = pdu->outcome;
   event.request_id = pdu->request_id;
   switch (event.action) {
-    case RTM_OUTCOME_AUTHENTICATE_ERROR:
-    case RTM_OUTCOME_DELETE_ERROR:
-    case RTM_OUTCOME_HANDSHAKE_ERROR:
-    case RTM_OUTCOME_PUBLISH_ERROR:
-    case RTM_OUTCOME_READ_ERROR:
-    case RTM_OUTCOME_SEARCH_ERROR:
-    case RTM_OUTCOME_SUBSCRIBE_ERROR:
-    case RTM_OUTCOME_UNSUBSCRIBE_ERROR:
-    case RTM_OUTCOME_WRITE_ERROR:
+    case RTM_ACTION_AUTHENTICATE_ERROR:
+    case RTM_ACTION_DELETE_ERROR:
+    case RTM_ACTION_HANDSHAKE_ERROR:
+    case RTM_ACTION_PUBLISH_ERROR:
+    case RTM_ACTION_READ_ERROR:
+    case RTM_ACTION_SEARCH_ERROR:
+    case RTM_ACTION_SUBSCRIBE_ERROR:
+    case RTM_ACTION_UNSUBSCRIBE_ERROR:
+    case RTM_ACTION_WRITE_ERROR:
       event.info = std::string(pdu->error);
       break;
-    case RTM_OUTCOME_HANDSHAKE_OK:
+    case RTM_ACTION_HANDSHAKE_OK:
       event.info = std::string(pdu->nonce);
       break;
-    case RTM_OUTCOME_SUBSCRIBE_OK:
-    case RTM_OUTCOME_UNSUBSCRIBE_OK:
+    case RTM_ACTION_SUBSCRIBE_OK:
+    case RTM_ACTION_UNSUBSCRIBE_OK:
       event.info = std::string(pdu->subscription_id);
       break;
-    case RTM_OUTCOME_READ_OK:
+    case RTM_ACTION_READ_OK:
       event.info = std::string(pdu->message);
       break;
-    case RTM_OUTCOME_UNKNOWN:
+    case RTM_ACTION_UNKNOWN:
       event.info = std::string(pdu->body);
       break;
-    case RTM_OUTCOME_SUBSCRIPTION_DATA: {
+    case RTM_ACTION_SUBSCRIPTION_DATA: {
       char *message;
       while ((message = rtm_iterate(&pdu->message_iterator))) {
         event_t data = event;
@@ -67,16 +67,16 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       }
       return;
     }
-    case RTM_OUTCOME_SEARCH_OK:
-    case RTM_OUTCOME_SEARCH_DATA: {
+    case RTM_ACTION_SEARCH_OK:
+    case RTM_ACTION_SEARCH_DATA: {
       char *channel;
       while ((channel = rtm_iterate(&pdu->channel_iterator))) {
         event_t data = event;
-        data.action = RTM_OUTCOME_SEARCH_DATA;
+        data.action = RTM_ACTION_SEARCH_DATA;
         data.info = std::string(channel);
         event_queue.push(data);
       }
-      if (RTM_OUTCOME_SEARCH_DATA == event.action) {
+      if (RTM_ACTION_SEARCH_DATA == event.action) {
         return;
       }
       break;
@@ -132,7 +132,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
 
   std::string const body = R"({"channel":")" + channel + R"(","history":{"count":1}})";
   rc = rtm_subscribe_with_body(rtm, body.c_str(), &request_id);
@@ -140,12 +140,12 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_SUBSCRIBE_OK, event.action);
   ASSERT_EQ(channel, event.info);
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
+  ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, event.action);
   ASSERT_EQ(R"("my message")", event.info);
 
   rtm_close(rtm);
@@ -199,14 +199,14 @@ TEST(rtm_test, publish_json_and_read) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
 
   rc = rtm_read(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait event";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_READ_OK, event.action);
   ASSERT_EQ(msg, event.info);
 
   rtm_close(rtm);
@@ -227,7 +227,7 @@ TEST(rtm_test, read_write_delete) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_READ_OK, event.action);
   ASSERT_EQ(request_id, event.request_id);
   ASSERT_EQ("null", event.info);
 
@@ -237,14 +237,14 @@ TEST(rtm_test, read_write_delete) {
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_WRITE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_WRITE_OK, event.action);
 
   rc = rtm_read(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while read";
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_READ_OK, event.action);
   ASSERT_EQ(request_id, event.request_id);
   ASSERT_EQ("\"msg\"", event.info);
 
@@ -253,14 +253,14 @@ TEST(rtm_test, read_write_delete) {
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_DELETE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_DELETE_OK, event.action);
 
   rc = rtm_read(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while read";
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc)<< "Failed while wait PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_READ_OK, event.action);
   ASSERT_EQ(request_id, event.request_id);
   ASSERT_EQ("null", event.info);
 
@@ -279,14 +279,14 @@ TEST(rtm_test, handshake_and_authenticate) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_HANDSHAKE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_HANDSHAKE_OK, event.action);
   std::string nonce = event.info;
   rc = rtm_authenticate(rtm, role_secret, nonce.c_str(), &request_id);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to send auth/authenticate";
 
    rc = next_event(rtm, &event);
    ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-   ASSERT_EQ(RTM_OUTCOME_AUTHENTICATE_OK, event.action);
+   ASSERT_EQ(RTM_ACTION_AUTHENTICATE_OK, event.action);
 
   rtm_close(rtm);
 }
@@ -304,7 +304,7 @@ TEST(rtm_test, publish_and_receive) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_SUBSCRIBE_OK, event.action);
   ASSERT_EQ(channel, event.info);
 
   rc = rtm_publish_string(rtm, channel.c_str(), "my message", nullptr);
@@ -312,7 +312,7 @@ TEST(rtm_test, publish_and_receive) {
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
+  ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, event.action);
   ASSERT_EQ(R"("my message")", event.info);
 
   rtm_close(rtm);
@@ -414,7 +414,7 @@ TEST(rtm_test, unsubscribe) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait subscribe response";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_SUBSCRIBE_OK, event.action);
   ASSERT_EQ(channel, event.info);
 
   rc = rtm_unsubscribe(rtm, channel.c_str(), &request_id);
@@ -422,7 +422,7 @@ TEST(rtm_test, unsubscribe) {
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait unsibscribe response";
-  ASSERT_EQ(RTM_OUTCOME_UNSUBSCRIBE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_UNSUBSCRIBE_OK, event.action);
   ASSERT_EQ(channel, event.info);
 
   rtm_close(rtm);
@@ -495,7 +495,7 @@ TEST(rtm_test, read_with_body) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_READ_OK, event.action);
   ASSERT_EQ("null", event.info);
 
   // Publish 3 messages
@@ -505,7 +505,7 @@ TEST(rtm_test, read_with_body) {
     ASSERT_EQ(RTM_OK, rc)<< "Failed while write";
     rc = next_event(rtm, &event);
     ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-    ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
+    ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
   }
 
   rc = rtm_read_with_body(rtm, body.c_str(), &request_id);
@@ -513,7 +513,7 @@ TEST(rtm_test, read_with_body) {
 
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next event";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_READ_OK, event.action);
   ASSERT_EQ("\"message-2\"", event.info);
 
   rtm_close(rtm);
@@ -537,12 +537,12 @@ TEST(rtm_test, rtm_write_json) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-  ASSERT_EQ(RTM_OUTCOME_WRITE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_WRITE_OK, event.action);
 
   rtm_read(rtm, channel.c_str(), &request_id);
   rc = next_event(rtm, &event);
   ASSERT_EQ(RTM_OK, rc) << "Failed to get next PDU";
-  ASSERT_EQ(RTM_OUTCOME_READ_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_READ_OK, event.action);
   ASSERT_EQ(test_json, json::parse(event.info));
 
   rtm_close(rtm);
@@ -562,7 +562,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-  ASSERT_EQ(RTM_OUTCOME_SUBSCRIBE_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_SUBSCRIBE_OK, event.action);
   ASSERT_EQ(channel, event.info);
 
   char const *messages[] =
@@ -583,7 +583,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 
       rc = next_event(rtm, &event);
       ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
-      ASSERT_EQ(RTM_OUTCOME_SUBSCRIPTION_DATA, event.action);
+      ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, event.action);
       ASSERT_EQ(std::string(message), event.info);
   }
 
@@ -603,7 +603,7 @@ TEST(rtm_test, DISABLED_rtm_search_test) {
   event_t event;
   rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to receive an ack";
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, event.action);
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
 
   rc = rtm_search(rtm, channel.c_str(), &request_id);
   ASSERT_EQ(rc, RTM_OK) << "Failed to send a search request";
@@ -613,12 +613,12 @@ TEST(rtm_test, DISABLED_rtm_search_test) {
   do {
     rc = next_event(rtm, &event);
     ASSERT_EQ(RTM_OK, rc) << "Failed to receive PDU";
-    ASSERT_TRUE((RTM_OUTCOME_SEARCH_DATA == event.action) || (RTM_OUTCOME_SEARCH_OK == event.action));
-    if (RTM_OUTCOME_SEARCH_DATA == event.action) {
+    ASSERT_TRUE((RTM_ACTION_SEARCH_DATA == event.action) || (RTM_ACTION_SEARCH_OK == event.action));
+    if (RTM_ACTION_SEARCH_DATA == event.action) {
       std::string name = json::parse(event.info).get<std::string>();
       channels.push_back(name);
     }
-  } while (RTM_OUTCOME_SEARCH_OK != event.action);
+  } while (RTM_ACTION_SEARCH_OK != event.action);
 
 
   bool found = channels.end() != std::find(channels.begin(), channels.end(), channel);

@@ -29,7 +29,7 @@ TEST(rtm_json, pdu_rtm_standard_response) {
   char json[] = R"({"action":"rtm/publish/ok","id":42,"body":{"position":"1479315802:0","messages":[ "a", null, 42 ]}})";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.outcome);
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.outcome);
   ASSERT_NOT_NULL(pdu.position);
   ASSERT_TRUE(0 == strcmp("1479315802:0", pdu.position));
   ASSERT_EQ(42, pdu.request_id);
@@ -40,7 +40,7 @@ TEST(rtm_json, pdu_field_in_random_order) {
   char json[] = R"({ "body" :  { "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"}, "action"    : "rtm/publish/ok" , "id" : 42 })";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.outcome);
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.outcome);
   // ASSERT_TRUE(0 == strcmp(R"({ "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"})", pdu.body));
   ASSERT_EQ(42, pdu.request_id);
 }
@@ -50,7 +50,7 @@ TEST(rtm_json, pdu_body_is_absent) {
   char json[] = R"(  { "action" : "rtm/publish/ok" , "id" : 42  } )";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_EQ(RTM_OUTCOME_PUBLISH_OK, pdu.outcome);
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.outcome);
   ASSERT_TRUE(nullptr == pdu.body);
   ASSERT_EQ(42, pdu.request_id);
 }
@@ -60,7 +60,7 @@ TEST(rtm_json, pdu_action_is_absent) {
   char json[] = R"(  {    "id" : 42  } )";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_EQ(RTM_OUTCOME_UNKNOWN, pdu.outcome);
+  ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.outcome);
   ASSERT_TRUE(nullptr == pdu.body);
   ASSERT_EQ(42, pdu.request_id);
 }
@@ -70,7 +70,7 @@ TEST(rtm_json, pdu_empty_json) {
   char json[] = " {}";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_EQ(RTM_OUTCOME_UNKNOWN, pdu.outcome);
+  ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.outcome);
   ASSERT_TRUE(nullptr == pdu.body);
   ASSERT_EQ(0, pdu.request_id);
 }
@@ -81,7 +81,7 @@ TEST(rtm_json, subscription_data) {
   rtm->user = &message_queue;
 
   rtm_pdu_t pdu{};
-  pdu.outcome = RTM_OUTCOME_SUBSCRIPTION_DATA;
+  pdu.outcome = RTM_ACTION_SUBSCRIPTION_DATA;
   pdu.body = R"({"next":"1479315802:0","messages":[ "a", null, 42, {} ],"subscription_id":"channel"})";
   record_subscription_data(rtm, pdu);
 
