@@ -16,7 +16,7 @@
  *     exit(1);
  * }
  * // publish message
- * rtm_publish_string(rtm, "channel", "Hello, World!", NULL);
+ * rc = rtm_publish_string(rtm, "channel", "Hello, World!", NULL);
  * if (rc != RTM_OK) {
  *     printf("rtm_publish_string failed with status %d\n", rc);
  *     exit(1);
@@ -46,57 +46,57 @@ extern "C" {
 #endif
 
 /**
- * @brief maximum size of a channel name
+ * @brief Maximum size of a channel name.
  */
 #define RTM_MAX_CHANNEL_SIZE (256)
 
 /**
- * @brief maximum size of a message
+ * @brief Maximum size of a message.
  */
 #define RTM_MAX_MESSAGE_SIZE (65536)
 
 /**
- * @brief RTM path
+ * @brief RTM path.
  */
 #define RTM_PATH ("/v2")
 
 
 /**
- * @brief maximum size of the endpoint parameter
+ * @brief Maximum size of the endpoint parameter.
  */
 #define RTM_MAX_ENDPOINT_SIZE (256)
 
 /**
- * @brief maximum size of the appkey parameter
+ * @brief Maximum size of the appkey parameter.
  */
 #define RTM_MAX_APPKEY_SIZE (32)
 
 /**
- * @brief maximum size of the role name parameter
+ * @brief Maximum size of the role name parameter.
  */
 #define RTM_MAX_ROLE_NAME_SIZE (512)
 
 /**
- * @brief expected size of the authentication hash parameter in bytes
+ * @brief Expected size of the authentication hash parameter in bytes.
  */
 #define RTM_AUTHENTICATION_HASH_SIZE (24)
 
 /**
- * @brief structure representing received PDU JSON object.
+ * @brief Structure representing received PDU JSON object.
  */
 typedef struct _rtm_pdu {
-    const char *action; /**<  RTM action string. */
-    const char *body; /**< Data associated with a given action. */
-    unsigned request_id; /**< Identifier to match server replies to the client requests. */
+    const char *action; /*!<  RTM action string. */
+    const char *body; /*!< Data associated with a given action. */
+    unsigned request_id; /*!< Identifier to match server replies to the client requests. */
 } rtm_pdu_t;
 
 /**
- * @brief opaque rtm client structure
+ * @brief Opaque rtm client structure.
  */
 typedef struct _rtm_client rtm_client_t;
 
 /**
- * @brief type of callback function invoked when client receives messages from RTM.
+ * @brief Type of callback function invoked when client receives messages from RTM.
  *
  * @note when ::rtm_connect is called, a pointer to a user defined structure
  * can be set. You can get this value from @p rtm in the context of this
@@ -119,7 +119,7 @@ typedef void(rtm_message_handler_t)(rtm_client_t *rtm, const char *subscription_
              const char *message);
 
 /**
- * @brief type of callback function invoked when client receives PDU from RTM.
+ * @brief Type of callback function invoked when client receives PDU from RTM.
  *
  * @note when ::rtm_connect is called, a pointer to a user defined structure can be
  * set. You can get this value from @p rtm in the context of this callback by 
@@ -141,12 +141,12 @@ typedef void(rtm_message_handler_t)(rtm_client_t *rtm, const char *subscription_
 typedef void(rtm_pdu_handler_t)(rtm_client_t *rtm, const rtm_pdu_t *pdu);
 
 /**
- * @brief global error logging function
+ * @brief Global error logging function.
  */
 typedef void(*rtm_error_logger_t)(const char *message);
 
 /**
- * @brief type used internally to report errors.
+ * @brief Type used internally to report errors.
  *
  * The values can be used to diagnose errors that happen while interacting with 
  * c core.
@@ -174,23 +174,23 @@ typedef enum {
 } rtm_status;
 
 /**
- * @brief global connection timeout in seconds. The default value is @c 10
+ * @brief Global connection timeout in seconds. The default value is @c 10.
  */
 RTM_API extern time_t rtm_connect_timeout;
 
 /**
- * @brief size of ::rtm_client_t in bytes
+ * @brief Size of ::rtm_client_t in bytes.
  */
 RTM_API extern const size_t rtm_client_size;
 
 /**
- * @brief global pointer to the rtm_error_logger() function. The default value
- * is @c ::rtm_default_error_logger
+ * @brief Global pointer to the rtm_error_logger() function. The default value
+ * is @c ::rtm_default_error_logger.
  */
 extern void(*rtm_error_logger)(const char *message);
 
 /**
- * @brief default error handler.
+ * @brief Default error handler.
  *
  * This handler sends all messages to stderr.
  *
@@ -199,7 +199,7 @@ extern void(*rtm_error_logger)(const char *message);
 void rtm_default_error_logger(const char *message);
 
 /**
- * @brief default message handler prints all messages to stdout
+ * @brief Default message handler prints all messages to stdout.
  *
  * @param[in] rtm instance of the client
  * @param[in] channel name of the channel
@@ -209,7 +209,7 @@ void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
                                  const char *message);
 
 /**
- * @brief default PDU handler prints all PDUs to stdout
+ * @brief Default PDU handler prints all PDUs to stdout.
  *
  * @param[in] rtm instance of the client
  * @param[in] pdu the ::rtm_pdu_t to process
@@ -217,7 +217,7 @@ void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
 RTM_API void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu);
 
 /**
- * @brief initialize an instance of rtm_client_t and connects to RTM.
+ * @brief Initialize an instance of rtm_client_t and connects to RTM.
  *
  * @param[in] rtm instance of the client
  * @param[in] endpoint endpoint for the RTM Service.
@@ -244,21 +244,21 @@ RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
                        void *user_context);
 
 /**
- * @brief enable logging of incoming and outcoming PDUs.
+ * @brief Enable logging of incoming and outcoming PDUs.
  *
  * @param[in] rtm instance of the client
  */
 RTM_API void rtm_enable_verbose_logging(rtm_client_t *rtm);
 
 /**
- * @brief Disable logging of incoming and outcoming PDUs
+ * @brief Disable logging of incoming and outcoming PDUs.
  *
  * @param[in] rtm instance of the client
  */
 RTM_API void rtm_disable_verbose_logging(rtm_client_t *rtm);
 
 /**
- * @brief close an RTM connection.
+ * @brief Close an RTM connection.
  *
  * This method gracefully terminating connection to RTM. This method
  * doesn't @p free memory allocated for client.
@@ -273,7 +273,7 @@ RTM_API void rtm_disable_verbose_logging(rtm_client_t *rtm);
 RTM_API void rtm_close(rtm_client_t *rtm);
 
 /**
- * @brief send the handshake request to obtain nonce from the server.
+ * @brief Send the handshake request to obtain nonce from the server.
  *
  * Performs initial negotiation to obtain a nonce from the server
  * before the client can send the final authentication request.
@@ -295,7 +295,7 @@ RTM_API rtm_status rtm_handshake(rtm_client_t *rtm,
 
 #if defined(USE_TLS)
 /**
- * @brief send the authenticate request to establish the identity of
+ * @brief Send the authenticate request to establish the identity of
  * the client.
  *
  * RTM reply will have same identifier as value of @p ack_id.
@@ -320,7 +320,7 @@ RTM_API rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, 
 
 
 /**
- * @brief publish the well-formed JSON string to RTM.
+ * @brief Publish the well-formed JSON string to RTM.
  *
  * RTM reply will have same identifier as value of @p ack_id.
  * If @p ack_id is @p null then no reply from RTM is sent.
@@ -340,7 +340,7 @@ RTM_API rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel,
                             const char *json, unsigned *ack_id);
 
 /**
- * @brief publish the string to RTM.
+ * @brief Publish the string to RTM.
  *
  * Published string will be escaped before transmission.
  *
@@ -362,7 +362,7 @@ RTM_API rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel,
                               const char *string, unsigned *ack_id);
 
 /**
- * @brief subscribe to a specific channel.
+ * @brief Subscribe to a specific channel.
  *
  * RTM reply will have same identifier as value of @p ack_id.
  * If @p ack_id is @p null then no reply from RTM is sent.
@@ -380,7 +380,7 @@ RTM_API rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel,
 RTM_API rtm_status rtm_subscribe(rtm_client_t *rtm, const char *channel,
                          unsigned *ack_id);
 /**
- * @brief subscribe with specifying a full body of of subscribe PDU request.
+ * @brief Subscribe with specifying a full body of subscribe PDU request.
  *
  * RTM reply will have same identifier as value of @p ack_id.
  * If @p ack_id is @p null then no reply from RTM is sent.
@@ -399,7 +399,7 @@ RTM_API rtm_status rtm_subscribe_with_body(rtm_client_t *rtm, const char *body,
                                    unsigned *ack_id);
 
 /**
- * @brief unsubscribe from a channel.
+ * @brief Unsubscribe from a channel.
  *
  * RTM reply will have same identifier as value of @p ack_id.
  * If @p ack_id is @p null then no reply from RTM is sent.
@@ -418,7 +418,7 @@ RTM_API rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *channel,
                            unsigned *ack_id);
 
 /**
- * @brief parse string as top-level PDU object.
+ * @brief Parse string as top-level PDU object.
  *
  * @warning method modifies original JSON string.
  *
@@ -430,7 +430,7 @@ RTM_API void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t* pdu
     char* const buf, size_t size, rtm_message_handler_t *handler);
 
 /**
- * @brief read the latest published message.
+ * @brief Read the latest published message.
  *
  * RTM reply will have same identifier as value of @p ack_id.
  *
@@ -447,7 +447,7 @@ RTM_API void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t* pdu
 RTM_API rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ack_id);
 
 /**
- * @brief read the latest published message with specifying a full body of read PDU
+ * @brief Read the latest published message with specifying a full body of read PDU
  * request.
  *
  * RTM reply will have same identifier as value of @p ack_id.
@@ -465,7 +465,7 @@ RTM_API rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ac
 RTM_API rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id);
 
 /**
- * @brief write the string value to a specific channel.
+ * @brief Write the string value to a specific channel.
  *
  * RTM reply will have same identifier as value of @p ack_id.
  * If @p ack_id is @p null then no reply from RTM is sent.
@@ -486,7 +486,7 @@ RTM_API rtm_status rtm_write_string(rtm_client_t *rtm, const char *key, const ch
     unsigned *ack_id);
 
 /**
- * @brief write the well-formed JSON value to a specific channel.
+ * @brief Write the well-formed JSON value to a specific channel.
  *
  * RTM reply will have same identifier as value of @p ack_id.
  * If @p ack_id is @p null then no reply from RTM is sent.
@@ -507,7 +507,7 @@ RTM_API rtm_status rtm_write_json(rtm_client_t *rtm, const char *key, const char
     unsigned *ack_id);
 
 /**
- * @brief delete the value of a specific channel.
+ * @brief Delete the value of a specific channel.
  *
  * @note same as @p rtm_publish with message @p null
  *
@@ -527,7 +527,7 @@ RTM_API rtm_status rtm_write_json(rtm_client_t *rtm, const char *key, const char
 RTM_API rtm_status rtm_delete(rtm_client_t *rtm, const char *key, unsigned *ack_id);
 
 /**
- * @brief search all channels with a given prefix.
+ * @brief Search all channels with a given prefix.
  *
  * RTM replies will have same identifier as value of @p ack_id. RTM could send
  * several search responses with same identifier.
@@ -545,7 +545,7 @@ RTM_API rtm_status rtm_delete(rtm_client_t *rtm, const char *key, unsigned *ack_
 RTM_API rtm_status rtm_search(rtm_client_t *rtm, const char *prefix, unsigned *ack_id);
 
 /**
- * @brief send a raw PDU as well-formed JSON string.
+ * @brief Send a raw PDU as well-formed JSON string.
  *
  * @param[in] rtm instance of the client
  * @param[in] json PDU as JSON string.
@@ -559,7 +559,7 @@ RTM_API rtm_status rtm_search(rtm_client_t *rtm, const char *prefix, unsigned *a
 RTM_API rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json);
 
 /**
- * @brief wait for any PDUs and execute the user's callbacks.
+ * @brief Wait for any PDUs and execute the user's callbacks.
  *
  * This method will return after at least one message is processed or an error
  * occurs. It can be used in a tight loop without consuming CPU resources when
@@ -576,7 +576,7 @@ RTM_API rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json);
 RTM_API rtm_status rtm_wait(rtm_client_t *rtm);
 
 /**
- * @brief wait with timeout for any PDUs and execute the user's callbacks.
+ * @brief Wait with timeout for any PDUs and execute the user's callbacks.
  *
  * @param[in] rtm instance of the client
  * @param[in] timeout_in_seconds in seconds
@@ -590,7 +590,7 @@ RTM_API rtm_status rtm_wait(rtm_client_t *rtm);
 RTM_API rtm_status rtm_wait_timeout(rtm_client_t *rtm, int timeout_in_seconds);
 
 /**
- * @brief poll the underlying socket for any PDUs and execute the user's
+ * @brief Poll the underlying socket for any PDUs and execute the user's
  * callbacks.
  *
  * rtm_poll is the internal IO loop.
@@ -609,7 +609,7 @@ RTM_API rtm_status rtm_wait_timeout(rtm_client_t *rtm, int timeout_in_seconds);
 RTM_API rtm_status rtm_poll(rtm_client_t *rtm);
 
 /**
- * @brief retrieve the underlying file descriptor so that it can be incorporated
+ * @brief Retrieve the underlying file descriptor so that it can be incorporated
  * into a message loop, like libev or libevent.
  *
  * @param[in] rtm instance of the client
@@ -619,7 +619,7 @@ RTM_API rtm_status rtm_poll(rtm_client_t *rtm);
 RTM_API int rtm_get_fd(rtm_client_t *rtm);
 
 /**
- * @brief retrieve the user specific pointer from the client.
+ * @brief Retrieve the user specific pointer from the client.
  *
  * @param[in] rtm instance of the client.
  *
