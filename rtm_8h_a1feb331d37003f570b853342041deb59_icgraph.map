@@ -1,0 +1,4 @@
+<map id="rtm_poll" name="rtm_poll">
+<area shape="rect" id="node2" href="$rtm_8h.html#a53f6f0a28c1b818dba50af0ac68b82c8" title="Wait for any PDUs and execute the user&#39;s callbacks. " alt="" coords="148,5,219,31"/>
+<area shape="rect" id="node3" href="$rtm_8h.html#afbb999f37ed9b5d74e22f93efef34311" title="Wait with timeout for any PDUs and execute the user&#39;s callbacks. " alt="" coords="122,55,245,80"/>
+</map>
