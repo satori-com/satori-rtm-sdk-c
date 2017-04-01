@@ -117,17 +117,34 @@ char *rtm_iterate(rtm_list_iterator_t const *iterator);
 /**
  * @brief Structure containing information about the received PDU.
  *
- *  Field availability:
+ *  Extra fields availability:
  *
  *        Action              | Fields
  *        ------------------- | -------------
  *        UNKNOWN             | body
  *        AUTHENTICATE_ERROR  | error, reason
+ *        GENERAL_ERROR       | error, reason
+ *        DELETE_ERROR        | error, reason
+ *        HANDSHAKE_ERROR     | error, reason
+ *        PUBLISH_ERROR       | error, reason
+ *        READ_ERROR          | error, reason
+ *        WRITE_ERROR         | error, reason
+ *        SEARCH_ERROR        | error, reason
+ *        SUBSCRIBE_ERROR     | error, reason
+ *        UNSUBSCRIBE_ERROR   | error, reason
+ *        SUBSCRIPTION_ERROR  | subscription_id, error, reason
+ *        SUBSCRIPTION_INFO   | subscription_id, info, reason
+ *        SUBSCRIPTION_DATA   | subscription_id, message_iterator, position
+ *        SUBSCRIBE_OK        | subscription_id, position
+ *        UNSUBSCRIBE_OK      | subscription_id, position
  *        AUTHENTICATE_OK     | ---
- *        SUBSCRIPTION_DATA   | message_iterator
- *
- * TODO: the rest
- *
+ *        HANDSHAKE_OK        | nonce
+ *        PUBLISH_OK          | position
+ *        DELETE_OK           | position
+ *        WRITE_OK            | position
+ *        READ_OK             | message, position
+ *        SEARCH_DATA         | channel_iterator
+ *        SEARCH_OK           | channel_iterator
  */
 typedef struct _rtm_pdu {
     unsigned request_id;
