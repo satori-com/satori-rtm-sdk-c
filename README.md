@@ -1,11 +1,13 @@
 C SDK for Satori Platform
-=========
+=========================
 
 
-This C SDK is a lightweight SDK for POSIX systems (tested on MacOS and Linux)
-It has no external dependencies, does not require a JSON library (but can work with any),
-and supports running with any async event loop (e.g., libev or libevent).
-The library does not have any dynamic memory allocation aside from `rtm_connect()` which allocates the single connection object. All message processing is done in-place.
+This C SDK is a lightweight SDK:
+ * It has no external dependencies, in particular it does not require a JSON library
+ * It does not lock you into using any threading or event loop framework, but is ready to be used in any of those
+ * Does not allocate memory dynamically. All message processing is done in-place
+ * Has less features than other Satori SDKs, e.g. it has no auto-reconnection
+ * Is likely to be used as a base for building higher-level SDKs (see ios-framework for example)
 
 Build
 =====
@@ -17,22 +19,22 @@ The build system is using [cmake](https://cmake.org/).
 
 To build, just execute:
 ```sh
-$ cmake .
+$ mkdir build && cd build
+$ cmake ..
 $ cmake --build .
 ```
 
-To build with tests and benchmarks, execute:
+To build with tests, execute:
 ```sh
-$ cmake . -Dtest=1 -Dbench=1
+$ cmake .. -Dtest=1
 $ cmake --build .
 ```
 
-All artifacts will be produced in the `target` directory.
 To run the unit tests, first you need to create a credentials.json file:
 ```sh
 $ cat credentials.json
 {
-  "endpoint": "ws://<SATORI_HOST>/",
+  "endpoint": "wss://<SATORI_HOST>/",
   "appkey": "<APP KEY>"
 }
 ```
@@ -40,17 +42,11 @@ after that, execute:
 ```sh
 $ ./core/test/rtm_unit_tests
 ```
-Similarly, you can run the benchmarks by running:
-```sh
-$ cmake . -Dbench=1 -DCMAKE_BUILD_TYPE=Release
-$ cmake --build .
-$ ./core/bench/rtm_benchmark
-```
 
 TLS support
 -----------
 
-The SDK can take advantage of OpenSSL, GNUTLS or Apple SSL API for supporting secure (wss://) connections.
+The SDK can take advantage of either OpenSSL, GNUTLS or Apple SSL API for supporting secure (wss://) connections.
 To enable that, pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPLE_SSL=ON" respectively to CMake.
 
 ## RTM Framework for iOS
@@ -178,7 +174,7 @@ Usage
 =====
 ```C
 rtm_client_t *rtm = (rtm_client_t*) malloc (rtm_client_size);
-rtm_connect(rtm, "ws://xxx.api.satori.com/", "<APPKEY>", rtm_default_pdu_handler, NULL);
+rtm_connect(rtm, "wss://myorg.api.satori.com/", "<APPKEY>", rtm_default_pdu_handler, NULL);
 rtm_subscribe(rtm, "channel_a", NULL);
 rtm_publish_string(rtm, "channel_a", "Hello, world", NULL);
 rtm_publish_json(rtm, "channel_a", "{\"key\":\"value\", \"k2\":123}", NULL);
