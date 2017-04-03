@@ -162,7 +162,10 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 #else
-rtm_status rtm_authenticate(rtm_client_t *rtm, const char *, const char *, unsigned *) {
+rtm_status rtm_authenticate(rtm_client_t *rtm, const char *unused_role_secret, const char *unused_nonce, unsigned *unused_ack_id) {
+  (void)unused_role_secret;
+  (void)unused_nonce;
+  (void)unused_ack_id;
   return _rtm_log_error(rtm, RTM_ERR_TLS, "`rtm_authenticate` is only available when the SDK is compiled with a TLS library.");
 }
 #endif
