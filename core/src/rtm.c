@@ -161,6 +161,10 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
+#else
+rtm_status rtm_authenticate(rtm_client_t *rtm, const char *, const char *, unsigned *) {
+  return _rtm_log_error(rtm, RTM_ERR_TLS, "`rtm_authenticate` is only available when the SDK is compiled with a TLS library.");
+}
 #endif
 
 rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
