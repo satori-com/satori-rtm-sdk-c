@@ -112,7 +112,7 @@ typedef struct {
 /**
  * @brief get next element in iterator or NULL if there are none
  */
-char *rtm_iterate(rtm_list_iterator_t const *iterator);
+RTM_API char *rtm_iterate(rtm_list_iterator_t const *iterator);
 
 /**
  * @brief Structure containing information about the received PDU.
