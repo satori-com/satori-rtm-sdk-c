@@ -9,6 +9,7 @@
 
 #include "rtm_internal.h"
 
+#define MAX_INTERESTING_FIELDS_IN_PDU 3
 const size_t rtm_client_size = RTM_CLIENT_SIZE;
 
 time_t rtm_connect_timeout = 10;
@@ -849,7 +850,6 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     }
   }
 
-  static int const MAX_INTERESTING_FIELDS_IN_PDU = 3;
   field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {{0}};
 
   pdu->action = action;
