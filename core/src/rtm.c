@@ -824,7 +824,8 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
         el[el_len - 1] = '\0';
         ++el;
 
-        for (enum rtm_action_t o = 1; o < RTM_ACTION_SENTINEL; ++o) {
+        enum rtm_action_t o;
+        for (o = 1; o < RTM_ACTION_SENTINEL; ++o) {
             if (!strncmp(action_table[o] , el, el_len)) {
                 action = o;
                 break;
@@ -967,7 +968,8 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       continue;
     }
 
-    for (int i = 0; i < MAX_INTERESTING_FIELDS_IN_PDU; ++i) {
+    int i;
+    for (i = 0; i < MAX_INTERESTING_FIELDS_IN_PDU; ++i) {
       field_t field = fields[i];
 
       if (!field.name) {
