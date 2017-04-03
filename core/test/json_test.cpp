@@ -139,7 +139,8 @@ TEST(rtm_json, find_element) {
   strcpy(buf, R"({"messages": ["foo","bar","baz"]})");
   char *message = buf + 14;
 
-  rtm_list_iterator_t iter = {.position = message};
+  rtm_list_iterator_t iter;
+  iter.position = message;
 
   ASSERT_EQ(*message, '"');
 
