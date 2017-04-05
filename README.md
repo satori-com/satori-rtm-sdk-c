@@ -17,6 +17,11 @@ For desktop/server
 
 The build system is using [cmake](https://cmake.org/).
 
+Supported compilers:
+ * Microsoft Visual Studio 2015 or newer
+ * gcc-4.9 or newer
+ * clang-3.6 or newer
+
 To build, just execute:
 ```sh
 $ mkdir build && cd build
