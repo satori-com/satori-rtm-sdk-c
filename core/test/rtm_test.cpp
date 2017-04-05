@@ -539,7 +539,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
   rtm_close(rtm);
 }
 
-TEST(rtm_test, rtm_search_test) {
+TEST(rtm_test, DISABLED_rtm_search_test) {
   unsigned int request_id;
   pdu_t pdu;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
