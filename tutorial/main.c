@@ -13,30 +13,35 @@ static char const *role_secret = "MY_ROLE_SECRET";
 static char const *channel = "MY_CHANNEL";
 static char const *message = "{\"hello\": \"World\"}";
 
-// With these global variables we track outcomes of operations
-static int subscribe_ok = 0;
-static int publish_ok = 0;
-static int got_message = 0;
-static char *last_nonce = NULL;
-static int authenticated = 0;
+// We'll be keeping the entirety of application state in this struct
+struct tutorial_state_t {
+    int subscribe_ok;
+    int publish_ok;
+    int got_message;
+    char *last_nonce;
+    int authenticated;
+};
 
 // This is a callback function that is called by the SDK
 // on every incoming pdu
-void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
+void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
+
+  struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *)rtm_get_user_context(rtm);
+
   if (0 == strcmp("rtm/subscribe/ok", pdu->action)) {
-    subscribe_ok = 1;
+    tutorial_state->subscribe_ok = 1;
     return;
   } else if (0 == strcmp("rtm/subscribe/error", pdu->action)) {
-    subscribe_ok = 0;
+    tutorial_state->subscribe_ok = 0;
     return;
   } else if (0 == strcmp("rtm/publish/ok", pdu->action)) {
-    publish_ok = 1;
+    tutorial_state->publish_ok = 1;
     return;
   } else if (0 == strcmp("rtm/publish/error", pdu->action)) {
-    publish_ok = 0;
+    tutorial_state->publish_ok = 0;
     return;
   } else if (0 == strcmp("rtm/subscription/data", pdu->action)) {
-    got_message = 1;
+    tutorial_state->got_message = 1;
   } else if (0 == strcmp(pdu->action, "auth/handshake/ok")) {
     // pdu->body contains a serialized json object that looks like
     // {"data": {"nonce": "<some bytes>"}} and we need to extract the
@@ -49,13 +54,13 @@ void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     int const epilogue_length = strlen("\"}}");
     int const nonce_length = strlen(pdu->body) - prologue_length - epilogue_length;
 
-    free(last_nonce);
-    last_nonce = malloc(nonce_length + 1);
+    free(tutorial_state->last_nonce);
+    tutorial_state->last_nonce = malloc(nonce_length + 1);
 
-    memcpy(last_nonce, pdu->body + prologue_length, nonce_length);
-    last_nonce[nonce_length] = 0;
+    memcpy(tutorial_state->last_nonce, pdu->body + prologue_length, nonce_length);
+    tutorial_state->last_nonce[nonce_length] = 0;
   } else if (0 == strcmp(pdu->action, "auth/authenticate/ok")) {
-    authenticated = 1;
+    tutorial_state->authenticated = 1;
   }
 
   // This implementation of pdu handler is provided by the SDK in rtm.h header.
@@ -66,6 +71,8 @@ void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 
 int authenticate(rtm_client_t *rtm) {
   unsigned request_id;
+  struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *)rtm_get_user_context(rtm);
+
   rtm_status status = rtm_handshake(rtm, role, &request_id);
   if (status) {
     fprintf(stderr, "Failed to send handshake request\n");
@@ -78,14 +85,14 @@ int authenticate(rtm_client_t *rtm) {
     return status;
   }
 
-  if (!last_nonce) {
+  if (!tutorial_state->last_nonce) {
     fprintf(stderr, "Failed to get nonce from the handshake reply\n");
     return RTM_ERR_PARAM;
   }
 
-  status = rtm_authenticate(rtm, role_secret, last_nonce, &request_id);
-  free(last_nonce);
-  last_nonce = NULL;
+  status = rtm_authenticate(rtm, role_secret, tutorial_state->last_nonce, &request_id);
+  free(tutorial_state->last_nonce);
+  tutorial_state->last_nonce = NULL;
 
   if (status) {
     fprintf(stderr, "Failed to send authenticate request\n");
@@ -98,7 +105,7 @@ int authenticate(rtm_client_t *rtm) {
     return status;
   }
 
-  if (!authenticated) {
+  if (!tutorial_state->authenticated) {
     fprintf(stderr, "Authentication failed\n");
     return RTM_ERR_PARAM;
   }
@@ -112,11 +119,12 @@ int main(void) {
   rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
 
   rtm_status status;
+  struct tutorial_state_t tutorial_state = {0};
 
   // Connect to RTM. This function also initializes 'rtm' object.
   // All functions that take 'rtm' as an argument (like rtm_subscribe)
   // must be called only after successful rtm_connect.
-  status = rtm_connect(rtm, endpoint, appkey, &my_pdu_handler, NULL);
+  status = rtm_connect(rtm, endpoint, appkey, &tutorial_pdu_handler, &tutorial_state);
 
   if (status != RTM_OK) {
     fprintf(stderr, "Unable to connect to RTM\n");
@@ -162,9 +170,9 @@ int main(void) {
   // Note that RTM_OK result above refers only to the fact that we
   // have successfully received a reply. RTM_OK does not mean that the outcome
   // inside that reply was itself an 'ok'. The inspection of the reply happens
-  // in my_pdu_handler function and here we the use 'subscribe_ok' variable
+  // in tutorial_pdu_handler function and here we the use 'subscribe_ok' variable
   // which was or was not set to 1 in that process.
-  if (!subscribe_ok) {
+  if (!tutorial_state.subscribe_ok) {
     fprintf(stderr, "Subscribe reply was an error\n");
     rtm_close(rtm);
     free(rtm);
@@ -206,17 +214,17 @@ int main(void) {
       return status;
     }
 
-    if (publish_ok && got_message) {
+    if (tutorial_state.publish_ok && tutorial_state.got_message) {
       break;
     }
   }
-  if (!publish_ok) {
+  if (!tutorial_state.publish_ok) {
     fprintf(stderr, "Publish reply was an error\n");
     rtm_close(rtm);
     free(rtm);
     return status;
   }
-  if (!got_message) {
+  if (!tutorial_state.got_message) {
     fprintf(stderr, "Didn't receive the message\n");
     rtm_close(rtm);
     free(rtm);
