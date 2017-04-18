@@ -11,7 +11,7 @@ endif()
 
 ExternalProject_Add(satori_sdk
   GIT_REPOSITORY https://github.com/satori-com/satori-sdk-c.git
-  GIT_TAG "master"
+  GIT_TAG "v1.0.1"
   PREFIX "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
   DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
