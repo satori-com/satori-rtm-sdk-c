@@ -10,7 +10,9 @@ using json = nlohmann::json;
 const char *ws_endpoint = nullptr;
 const char *wss_endpoint = nullptr;
 const char *appkey = nullptr;
+const char *role_name = nullptr;
 const char *role_secret = nullptr;
+const char *restricted_channel = nullptr;
 
 void load_credentials(void) {
     try {
@@ -21,7 +23,9 @@ void load_credentials(void) {
 
         std::string const endpoint_s = creds["endpoint"];
         std::string const appkey_s = creds["appkey"];
-        std::string const superuser_role_secret_s = creds["superuser_role_secret"];
+        std::string const role_name_s = creds["auth_role_name"];
+        std::string const role_secret_s = creds["auth_role_secret"];
+        std::string const restricted_channel_s = creds["auth_restricted_channel"];
 
         std::string wss_endpoint_s(endpoint_s);
         std::string ws_endpoint_s(endpoint_s);
@@ -35,7 +39,9 @@ void load_credentials(void) {
         ws_endpoint = strdup(ws_endpoint_s.c_str());
         wss_endpoint = strdup(wss_endpoint_s.c_str());
         appkey = strdup(appkey_s.c_str());
-        role_secret = strdup(superuser_role_secret_s.c_str());
+        role_name = strdup(role_name_s.c_str());
+        role_secret = strdup(role_secret_s.c_str());
+        restricted_channel = strdup(restricted_channel_s.c_str());
     } catch (...) {
         puts("Could not get test credentials from credentials.json");
         throw;

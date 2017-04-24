@@ -235,7 +235,7 @@ TEST(rtm_test, handshake_and_authenticate) {
   int rc = rtm_connect(rtm, ws_endpoint, appkey, pdu_recorder, nullptr);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
-  rc = rtm_handshake(rtm, "superuser", &request_id);
+  rc = rtm_handshake(rtm, role_name, &request_id);
   ASSERT_EQ(rc, RTM_OK) << "Failed to send rtm/handshake";
 
   rc = next_pdu(rtm, &pdu);

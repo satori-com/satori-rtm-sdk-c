@@ -5,6 +5,7 @@
 // TODO: make these configurable
 static NSString* const url = @"";
 static NSString* const appkey = @"";
+static NSString* const role_name = @"";
 
 @interface SatoriSDKTests : XCTestCase {
     SatoriRtmConnection* rtmClient;
@@ -62,7 +63,7 @@ static NSString* const appkey = @"";
     XCTAssertEqual(status, RTM_OK, @"Failed to connect RTM");
     
     unsigned requestId;
-    status = [rtmClient handshakeWithRole:@"superuser" andRequestId:&requestId];
+    status = [rtmClient handshakeWithRole:role_name andRequestId:&requestId];
     XCTAssertEqual(status, RTM_OK, @"Failed to send handshake");
 }
 
