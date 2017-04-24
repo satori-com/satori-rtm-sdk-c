@@ -24,7 +24,7 @@ void load_credentials(void) {
         std::string const endpoint_s = creds["endpoint"];
         std::string const appkey_s = creds["appkey"];
         std::string const role_name_s = creds["auth_role_name"];
-        std::string const role_secret_s = creds["auth_role_secret"];
+        std::string const role_secret_s = creds["auth_role_secret_key"];
         std::string const restricted_channel_s = creds["auth_restricted_channel"];
 
         std::string wss_endpoint_s(endpoint_s);
