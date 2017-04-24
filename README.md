@@ -36,14 +36,28 @@ $ cmake --build .
 ```
 
 To run the unit tests, first you need to create a credentials.json file:
+
 ```sh
 $ cat credentials.json
 {
-  "endpoint": "wss://<SATORI_HOST>/",
-  "appkey": "<APP KEY>"
+  "endpoint": "ws://<SATORI_HOST>/",
+  "appkey": "my_appkey",
+  "auth_role_name": "ROLE NAME"
+  "auth_role_secret_key": "ROLE SECRET"
+  "auth_restricted_channel": "RESTRICTED CHANNEL"
 }
 ```
-after that, execute:
+
+* `endpoint` is your customer-specific DNS name for RTM access.
+* `appkey` is your application key.
+* `auth_role_name` is a role name that permits publishing / subscribing to `auth_restricted_channel`. Must be not `default`.
+* `auth_role_secret_key` is a secret key for `auth_role_name`.
+* `auth_restricted_channel` is a channel with subscribe and publish access for `auth_role_name` role only.
+
+You must use [DevPortal](https://developer.satori.com/) to create role and set channel permissions.
+
+
+After that, execute:
 ```sh
 $ ./core/test/rtm_unit_tests
 ```
