@@ -7,7 +7,7 @@ This C SDK is a lightweight SDK:
  * It does not lock you into using any threading or event loop framework, but is ready to be used in any of those
  * Does not allocate memory dynamically. All message processing is done in-place
  * Has less features than other Satori SDKs, e.g. it has no auto-reconnection
- * Is likely to be used as a base for building higher-level SDKs (see ios-framework for example)
+ * Is likely to be used as a base for building higher-level SDKs (see ios-wrapper for example)
 
 Build
 =====
@@ -54,23 +54,23 @@ TLS support
 The SDK can take advantage of either OpenSSL, GNUTLS or Apple SSL API for supporting secure (wss://) connections.
 To enable that, pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPLE_SSL=ON" respectively to CMake.
 
-## RTM Framework for iOS
+## iOS wrapper
 
-The SatoriSDK framework for iOS enables you to easily integrate your iOS apps with Satori. Using the framework, you can publish and subscribe messages to RTM. There are multiple ways for installing the SatoriSDK framework in your own project.
+The SatoriRtmSdkWrapper framework for iOS enables you to easily integrate your iOS apps with Satori. Using the framework, you can publish and subscribe messages to RTM. There are multiple ways for installing the SatoriRtmSdkWrapper framework in your own project.
 
 ### Installation with CocoaPods
 
-The SatoriSDK is available as a [CocoaPod](http://cocoapods.org). Cocoapod is a dependency manager for iOS, which automates and simplifies the process of using 3rd-party frameworks like SatoriSDK in your projects. Make sure cocoapods is installed. Then create a podfile for your project if it doesn't already exist. To install the SDK:
+The SatoriRtmSdkWrapper is available as a [CocoaPod](http://cocoapods.org). Cocoapod is a dependency manager for iOS, which automates and simplifies the process of using 3rd-party frameworks like SatoriRtmSdkWrapper in your projects. Make sure cocoapods is installed. Then create a podfile for your project if it doesn't already exist. To install the SDK:
 
 1. Open your Podfile and add the following dependency in the `target "<your_app_target>" do` section:
 ```sh
 use_frameworks!
-pod 'SatoriSDK', :git => "https://github.com/satori-com/satori-sdk-c.git"
+pod 'SatoriRtmSdkWrapper', :git => "https://github.com/satori-com/satori-sdk-c.git"
 ```
 2. Save your Podfile.
 3. Run `pod install` from command line.
 
-You've now installed the SatoriSDK framework. Refer to *Framework API usage* section to get started.
+You've now installed the SatoriRtmSdkWrapper framework. Refer to *Framework API usage* section to get started.
 
 ### Manual installation using Source code
 
@@ -83,15 +83,15 @@ There are two options to build the RTM framework for iOS:
 **Option 1** - *Build directly from command-line*
 
 ```sh
-$ cd ios-framework/SatoriSDK
-$ xcodebuild -project SatoriSDK.xcodeproj -scheme SatoriSDK-Universal -config <config-name> # where <config-name> can be Debug or Release. Default is Debug if -config option is not specified.
+$ cd ios-wrapper/SatoriRtmSdkWrapper
+$ xcodebuild -project SatoriRtmSdkWrapper.xcodeproj -scheme SatoriRtmSdkWrapper-Universal -config <config-name> # where <config-name> can be Debug or Release. Default is Debug if -config option is not specified.
 ```
 **Option 2** - *Build in Xcode IDE*
 ```sh
-$ open SatoriSDK.xcodeproj
-$ # Select SatoriSDK-Universal target and build.
+$ open SatoriRtmSdkWrapper.xcodeproj
+$ # Select SatoriRtmSdkWrapper-Universal target and build.
 ```
-The SatoriSDK.framework will be built under ios-framework/build directory.
+The SatoriRtmSdkWrapper.framework will be built under ios-framework/build directory.
 
 #### Step 2: Add framework to your project
 
@@ -99,7 +99,7 @@ Once you build the framework, open your app's Xcode project and drag-and-drop th
 
 ### Framework API usage
 
-The SatoriSDK.framework provides you with both Objective-C and C APIs to integrate within your app. Use ```#import <SatoriSDK/SatoriSDK.h>``` in your application class to make use of these APIs. The Objective-C specific APIs are located in ```SatoriRtmConnection.h``` and C APIs can be found in ```rtm.h```
+The SatoriRtmSdkWrapper.framework provides you with both Objective-C and C APIs to integrate within your app. Use ```#import <SatoriRtmSdkWrapper/SatoriRtmSdkWrapper.h>``` in your application class to make use of these APIs. The Objective-C specific APIs are located in ```SatoriRtmConnection.h``` and C APIs can be found in ```rtm.h```
 
 ##### Objective-C Sample Code
 

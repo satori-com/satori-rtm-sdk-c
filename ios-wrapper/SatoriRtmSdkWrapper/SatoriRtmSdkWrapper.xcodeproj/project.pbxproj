@@ -7,16 +7,16 @@
 	objects = {
 
 /* Begin PBXAggregateTarget section */
-		EFB7A0D01E69F9300024FADF /* SatoriSDK-Universal */ = {
+		EFB7A0D01E69F9300024FADF /* SatoriRtmSdkWrapper-Universal */ = {
 			isa = PBXAggregateTarget;
-			buildConfigurationList = EFB7A0D31E69F9300024FADF /* Build configuration list for PBXAggregateTarget "SatoriSDK-Universal" */;
+			buildConfigurationList = EFB7A0D31E69F9300024FADF /* Build configuration list for PBXAggregateTarget "SatoriRtmSdkWrapper-Universal" */;
 			buildPhases = (
 				EFB7A0D61E69F9950024FADF /* ShellScript */,
 			);
 			dependencies = (
 				EFB7A0D51E69F98F0024FADF /* PBXTargetDependency */,
 			);
-			name = "SatoriSDK-Universal";
+			name = "SatoriRtmSdkWrapper-Universal";
 			productName = "SatoriSDK-Universal";
 		};
 /* End PBXAggregateTarget section */
@@ -26,7 +26,7 @@
 		EF0DECEF1E60BE9200A2355E /* SatoriRtmConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = EF0DECED1E60BE9200A2355E /* SatoriRtmConnection.m */; };
 		EF0DECF21E61235800A2355E /* SatoriPdu.h in Headers */ = {isa = PBXBuildFile; fileRef = EF0DECF01E61235800A2355E /* SatoriPdu.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EF0DECF31E61235800A2355E /* SatoriPdu.m in Sources */ = {isa = PBXBuildFile; fileRef = EF0DECF11E61235800A2355E /* SatoriPdu.m */; };
-		EFC8A44A1E2D78B30050D8B1 /* SatoriSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFC8A4401E2D78B30050D8B1 /* SatoriSDK.framework */; };
+		EFC8A44A1E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFC8A4401E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework */; };
 		EFC8A44F1E2D78B30050D8B1 /* SatoriSDKTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EFC8A44E1E2D78B30050D8B1 /* SatoriSDKTests.m */; };
 		EFC8A4511E2D78B30050D8B1 /* SatoriSDK.h in Headers */ = {isa = PBXBuildFile; fileRef = EFC8A4431E2D78B30050D8B1 /* SatoriSDK.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EFC8A46F1E2D7A350050D8B1 /* rtm_apple_ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */; };
@@ -60,10 +60,10 @@
 		EF0DECED1E60BE9200A2355E /* SatoriRtmConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SatoriRtmConnection.m; sourceTree = "<group>"; };
 		EF0DECF01E61235800A2355E /* SatoriPdu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SatoriPdu.h; sourceTree = "<group>"; };
 		EF0DECF11E61235800A2355E /* SatoriPdu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SatoriPdu.m; sourceTree = "<group>"; };
-		EFC8A4401E2D78B30050D8B1 /* SatoriSDK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SatoriSDK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		EFC8A4401E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SatoriRtmSdkWrapper.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFC8A4431E2D78B30050D8B1 /* SatoriSDK.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SatoriSDK.h; sourceTree = "<group>"; };
 		EFC8A4441E2D78B30050D8B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		EFC8A4491E2D78B30050D8B1 /* SatoriSDKTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SatoriSDKTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EFC8A4491E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SatoriRtmSdkWrapperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFC8A44E1E2D78B30050D8B1 /* SatoriSDKTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SatoriSDKTests.m; sourceTree = "<group>"; };
 		EFC8A4501E2D78B30050D8B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_apple_ssl.c; path = ../../../core/src/rtm_apple_ssl.c; sourceTree = "<group>"; };
@@ -88,7 +88,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EFC8A44A1E2D78B30050D8B1 /* SatoriSDK.framework in Frameworks */,
+				EFC8A44A1E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -108,8 +108,8 @@
 		EFC8A4411E2D78B30050D8B1 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EFC8A4401E2D78B30050D8B1 /* SatoriSDK.framework */,
-				EFC8A4491E2D78B30050D8B1 /* SatoriSDKTests.xctest */,
+				EFC8A4401E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework */,
+				EFC8A4491E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -168,9 +168,9 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		EFC8A43F1E2D78B30050D8B1 /* SatoriSDK */ = {
+		EFC8A43F1E2D78B30050D8B1 /* SatoriRtmSdkWrapper */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EFC8A4541E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriSDK" */;
+			buildConfigurationList = EFC8A4541E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriRtmSdkWrapper" */;
 			buildPhases = (
 				EFC8A43B1E2D78B30050D8B1 /* Sources */,
 				EFC8A43C1E2D78B30050D8B1 /* Frameworks */,
@@ -181,14 +181,14 @@
 			);
 			dependencies = (
 			);
-			name = SatoriSDK;
+			name = SatoriRtmSdkWrapper;
 			productName = SatoriSDK;
-			productReference = EFC8A4401E2D78B30050D8B1 /* SatoriSDK.framework */;
+			productReference = EFC8A4401E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		EFC8A4481E2D78B30050D8B1 /* SatoriSDKTests */ = {
+		EFC8A4481E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EFC8A4571E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriSDKTests" */;
+			buildConfigurationList = EFC8A4571E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriRtmSdkWrapperTests" */;
 			buildPhases = (
 				EFC8A4451E2D78B30050D8B1 /* Sources */,
 				EFC8A4461E2D78B30050D8B1 /* Frameworks */,
@@ -199,9 +199,9 @@
 			dependencies = (
 				EFC8A44C1E2D78B30050D8B1 /* PBXTargetDependency */,
 			);
-			name = SatoriSDKTests;
+			name = SatoriRtmSdkWrapperTests;
 			productName = SatoriSDKTests;
-			productReference = EFC8A4491E2D78B30050D8B1 /* SatoriSDKTests.xctest */;
+			productReference = EFC8A4491E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -227,7 +227,7 @@
 					};
 				};
 			};
-			buildConfigurationList = EFC8A43A1E2D78B30050D8B1 /* Build configuration list for PBXProject "SatoriSDK" */;
+			buildConfigurationList = EFC8A43A1E2D78B30050D8B1 /* Build configuration list for PBXProject "SatoriRtmSdkWrapper" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -239,9 +239,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EFC8A43F1E2D78B30050D8B1 /* SatoriSDK */,
-				EFC8A4481E2D78B30050D8B1 /* SatoriSDKTests */,
-				EFB7A0D01E69F9300024FADF /* SatoriSDK-Universal */,
+				EFC8A43F1E2D78B30050D8B1 /* SatoriRtmSdkWrapper */,
+				EFC8A4481E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests */,
+				EFB7A0D01E69F9300024FADF /* SatoriRtmSdkWrapper-Universal */,
 			);
 		};
 /* End PBXProject section */
@@ -306,12 +306,12 @@
 /* Begin PBXTargetDependency section */
 		EFB7A0D51E69F98F0024FADF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EFC8A43F1E2D78B30050D8B1 /* SatoriSDK */;
+			target = EFC8A43F1E2D78B30050D8B1 /* SatoriRtmSdkWrapper */;
 			targetProxy = EFB7A0D41E69F98F0024FADF /* PBXContainerItemProxy */;
 		};
 		EFC8A44C1E2D78B30050D8B1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EFC8A43F1E2D78B30050D8B1 /* SatoriSDK */;
+			target = EFC8A43F1E2D78B30050D8B1 /* SatoriRtmSdkWrapper */;
 			targetProxy = EFC8A44B1E2D78B30050D8B1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -490,15 +490,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		EFB7A0D31E69F9300024FADF /* Build configuration list for PBXAggregateTarget "SatoriSDK-Universal" */ = {
+		EFB7A0D31E69F9300024FADF /* Build configuration list for PBXAggregateTarget "SatoriRtmSdkWrapper-Universal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EFB7A0D11E69F9300024FADF /* Debug */,
 				EFB7A0D21E69F9300024FADF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
-		EFC8A43A1E2D78B30050D8B1 /* Build configuration list for PBXProject "SatoriSDK" */ = {
+		EFC8A43A1E2D78B30050D8B1 /* Build configuration list for PBXProject "SatoriRtmSdkWrapper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EFC8A4521E2D78B30050D8B1 /* Debug */,
@@ -507,7 +508,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EFC8A4541E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriSDK" */ = {
+		EFC8A4541E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriRtmSdkWrapper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EFC8A4551E2D78B30050D8B1 /* Debug */,
@@ -516,7 +517,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EFC8A4571E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriSDKTests" */ = {
+		EFC8A4571E2D78B30050D8B1 /* Build configuration list for PBXNativeTarget "SatoriRtmSdkWrapperTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EFC8A4581E2D78B30050D8B1 /* Debug */,
