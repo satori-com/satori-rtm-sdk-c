@@ -1,17 +1,17 @@
 #import <XCTest/XCTest.h>
-#import "SatoriSDK.h"
+#import "SatoriRtmSdkWrapper.h"
 
 // Add your API endpoint and appkey values here
 // TODO: make these configurable
 static NSString* const url = @"";
 static NSString* const appkey = @"";
 
-@interface SatoriSDKTests : XCTestCase {
+@interface SatoriRtmSdkWrapperTests : XCTestCase {
     SatoriRtmConnection* rtmClient;
 }
 @end
 
-@implementation SatoriSDKTests
+@implementation SatoriRtmSdkWrapperTests
 
 - (void)setUp {
     [super setUp];

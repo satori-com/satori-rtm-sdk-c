@@ -17,7 +17,7 @@
 				EFB7A0D51E69F98F0024FADF /* PBXTargetDependency */,
 			);
 			name = "SatoriRtmSdkWrapper-Universal";
-			productName = "SatoriSDK-Universal";
+			productName = "SatoriRtmSdkWrapper-Universal";
 		};
 /* End PBXAggregateTarget section */
 
@@ -27,8 +27,8 @@
 		EF0DECF21E61235800A2355E /* SatoriPdu.h in Headers */ = {isa = PBXBuildFile; fileRef = EF0DECF01E61235800A2355E /* SatoriPdu.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EF0DECF31E61235800A2355E /* SatoriPdu.m in Sources */ = {isa = PBXBuildFile; fileRef = EF0DECF11E61235800A2355E /* SatoriPdu.m */; };
 		EFC8A44A1E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EFC8A4401E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework */; };
-		EFC8A44F1E2D78B30050D8B1 /* SatoriSDKTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EFC8A44E1E2D78B30050D8B1 /* SatoriSDKTests.m */; };
-		EFC8A4511E2D78B30050D8B1 /* SatoriSDK.h in Headers */ = {isa = PBXBuildFile; fileRef = EFC8A4431E2D78B30050D8B1 /* SatoriSDK.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		EFC8A44F1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.m in Sources */ = {isa = PBXBuildFile; fileRef = EFC8A44E1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.m */; };
+		EFC8A4511E2D78B30050D8B1 /* SatoriRtmSdkWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = EFC8A4431E2D78B30050D8B1 /* SatoriRtmSdkWrapper.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EFC8A46F1E2D7A350050D8B1 /* rtm_apple_ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */; };
 		EFC8A4701E2D7A350050D8B1 /* rtm_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = EFC8A4691E2D7A350050D8B1 /* rtm_internal.h */; };
 		EFC8A4711E2D7A350050D8B1 /* rtm_json.c in Sources */ = {isa = PBXBuildFile; fileRef = EFC8A46A1E2D7A350050D8B1 /* rtm_json.c */; };
@@ -44,14 +44,14 @@
 			containerPortal = EFC8A4371E2D78B30050D8B1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EFC8A43F1E2D78B30050D8B1;
-			remoteInfo = SatoriSDK;
+			remoteInfo = SatoriRtmSdkWrapper;
 		};
 		EFC8A44B1E2D78B30050D8B1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = EFC8A4371E2D78B30050D8B1 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EFC8A43F1E2D78B30050D8B1;
-			remoteInfo = SatoriSDK;
+			remoteInfo = SatoriRtmSdkWrapper;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -61,10 +61,10 @@
 		EF0DECF01E61235800A2355E /* SatoriPdu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SatoriPdu.h; sourceTree = "<group>"; };
 		EF0DECF11E61235800A2355E /* SatoriPdu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SatoriPdu.m; sourceTree = "<group>"; };
 		EFC8A4401E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SatoriRtmSdkWrapper.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		EFC8A4431E2D78B30050D8B1 /* SatoriSDK.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SatoriSDK.h; sourceTree = "<group>"; };
+		EFC8A4431E2D78B30050D8B1 /* SatoriRtmSdkWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SatoriRtmSdkWrapper.h; sourceTree = "<group>"; };
 		EFC8A4441E2D78B30050D8B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EFC8A4491E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SatoriRtmSdkWrapperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		EFC8A44E1E2D78B30050D8B1 /* SatoriSDKTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SatoriSDKTests.m; sourceTree = "<group>"; };
+		EFC8A44E1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SatoriRtmSdkWrapperTests.m; sourceTree = "<group>"; };
 		EFC8A4501E2D78B30050D8B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_apple_ssl.c; path = ../../../core/src/rtm_apple_ssl.c; sourceTree = "<group>"; };
 		EFC8A4691E2D7A350050D8B1 /* rtm_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rtm_internal.h; path = ../../../core/src/rtm_internal.h; sourceTree = "<group>"; };
@@ -98,8 +98,8 @@
 		EFC8A4361E2D78B30050D8B1 = {
 			isa = PBXGroup;
 			children = (
-				EFC8A4421E2D78B30050D8B1 /* SatoriSDK */,
-				EFC8A44D1E2D78B30050D8B1 /* SatoriSDKTests */,
+				EFC8A4421E2D78B30050D8B1 /* SatoriRtmSdkWrapper */,
+				EFC8A44D1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests */,
 				EFC8A4411E2D78B30050D8B1 /* Products */,
 				EFC8A4761E2D7BD90050D8B1 /* Frameworks */,
 			);
@@ -114,10 +114,10 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		EFC8A4421E2D78B30050D8B1 /* SatoriSDK */ = {
+		EFC8A4421E2D78B30050D8B1 /* SatoriRtmSdkWrapper */ = {
 			isa = PBXGroup;
 			children = (
-				EFC8A4431E2D78B30050D8B1 /* SatoriSDK.h */,
+				EFC8A4431E2D78B30050D8B1 /* SatoriRtmSdkWrapper.h */,
 				EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */,
 				EFC8A4691E2D7A350050D8B1 /* rtm_internal.h */,
 				EFC8A46A1E2D7A350050D8B1 /* rtm_json.c */,
@@ -130,16 +130,16 @@
 				EF0DECF01E61235800A2355E /* SatoriPdu.h */,
 				EF0DECF11E61235800A2355E /* SatoriPdu.m */,
 			);
-			path = SatoriSDK;
+			path = SatoriRtmSdkWrapper;
 			sourceTree = "<group>";
 		};
-		EFC8A44D1E2D78B30050D8B1 /* SatoriSDKTests */ = {
+		EFC8A44D1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests */ = {
 			isa = PBXGroup;
 			children = (
-				EFC8A44E1E2D78B30050D8B1 /* SatoriSDKTests.m */,
+				EFC8A44E1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.m */,
 				EFC8A4501E2D78B30050D8B1 /* Info.plist */,
 			);
-			path = SatoriSDKTests;
+			path = SatoriRtmSdkWrapperTests;
 			sourceTree = "<group>";
 		};
 		EFC8A4761E2D7BD90050D8B1 /* Frameworks */ = {
@@ -157,7 +157,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EFC8A4511E2D78B30050D8B1 /* SatoriSDK.h in Headers */,
+				EFC8A4511E2D78B30050D8B1 /* SatoriRtmSdkWrapper.h in Headers */,
 				EF0DECF21E61235800A2355E /* SatoriPdu.h in Headers */,
 				EF0DECEE1E60BE9200A2355E /* SatoriRtmConnection.h in Headers */,
 				EFC8A4751E2D7A350050D8B1 /* rtm.h in Headers */,
@@ -182,7 +182,7 @@
 			dependencies = (
 			);
 			name = SatoriRtmSdkWrapper;
-			productName = SatoriSDK;
+			productName = SatoriRtmSdkWrapper;
 			productReference = EFC8A4401E2D78B30050D8B1 /* SatoriRtmSdkWrapper.framework */;
 			productType = "com.apple.product-type.framework";
 		};
@@ -200,7 +200,7 @@
 				EFC8A44C1E2D78B30050D8B1 /* PBXTargetDependency */,
 			);
 			name = SatoriRtmSdkWrapperTests;
-			productName = SatoriSDKTests;
+			productName = SatoriRtmSdkWrapperTests;
 			productReference = EFC8A4491E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -297,7 +297,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EFC8A44F1E2D78B30050D8B1 /* SatoriSDKTests.m in Sources */,
+				EFC8A44F1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -439,10 +439,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = SatoriSDK/Info.plist;
+				INFOPLIST_FILE = SatoriRtmSdkWrapper/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriSDK;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriRtmSdkWrapper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -456,10 +456,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = SatoriSDK/Info.plist;
+				INFOPLIST_FILE = SatoriRtmSdkWrapper/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriSDK;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriRtmSdkWrapper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -469,9 +469,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = "";
-				INFOPLIST_FILE = SatoriSDKTests/Info.plist;
+				INFOPLIST_FILE = SatoriRtmSdkWrapperTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriSDKTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriRtmSdkWrapperTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -480,9 +480,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = "";
-				INFOPLIST_FILE = SatoriSDKTests/Info.plist;
+				INFOPLIST_FILE = SatoriRtmSdkWrapperTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriSDKTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satori.rtm.SatoriRtmSdkWrapperTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
