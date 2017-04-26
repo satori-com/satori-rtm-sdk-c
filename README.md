@@ -169,6 +169,13 @@ Adjust the generator name from "Visual Studio 14 2015" to another if necessary.
 
 For TLS support only "-DUSE_OPENSSL=ON" is supported at this time.
 
+To compile with OpenSSL you need to:
+1. Download and install the appropriate distribution from https://slproweb.com/products/Win32OpenSSL.html
+2. Update your project properties to add additional include folders (pointing to the above install location)
+3. Update project properties to refer to library path of the above instalation 
+4. Add libssl.lib and libcrypto.lib to your linker input libraries
+
+
 Additionally, WinSock subsystem must be initialized prior to connecting to RTM.
 
 ```C
