@@ -101,8 +101,7 @@ elseif(USE_OPENSSL)
   if (MSVC)
       message(WARNING
           "\nAutomatically finding OpenSSL on Windows is not supported yet. "
-          "Please install OpenSSL and configure the Visual Studio Project to find it. "
-          "One way is to use Conan package manager.")
+          "Please install OpenSSL and configure the Visual Studio Project to find it. ")
   else()
       find_package(OpenSSL REQUIRED)
       message(STATUS "OpenSSL: " ${OPENSSL_VERSION})

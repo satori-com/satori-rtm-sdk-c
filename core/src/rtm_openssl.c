@@ -1,20 +1,17 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <openssl/hmac.h>
-
 #ifdef _WIN32
 #include <Windows.h>
 #endif
 
+#include <openssl/hmac.h>
 #include "rtm_internal.h"
 
 // Disable deprecation warnings on OSX /IOS
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 #pragma comment(lib, "crypt32")
-#pragma comment(lib, "libeay32MD")
-#pragma comment(lib, "ssleay32MD")
 
 static unsigned is_openssl_initialized = NO;
 static const SSL_METHOD *ssl_method = NULL;
