@@ -62,23 +62,36 @@ endif()
 include_directories(.)
 include_directories(system ../vendor)
 
-if(BUILD_STATIC)
-    add_library(rtm-core-sdk STATIC "")
+# Construct sources list
+
+set(SOURCES src/rtm.c src/rtm_json.c)
+
+if(UNIX)
+list(APPEND SOURCES src/rtm_posix.c)
 else()
-    add_library(rtm-core-sdk SHARED "")
+list(APPEND SOURCES src/rtm_windows.c)
+endif()
+
+if(USE_GNUTLS)
+  list(APPEND SOURCES src/rtm_gnutls.c)
+elseif(USE_OPENSSL)
+  list(APPEND SOURCES src/rtm_openssl.c)
+elseif(USE_APPLE_SSL)
+  list(APPEND SOURCES src/rtm_apple_ssl.c)
+endif()
+
+# sources list is now ready
+
+if(BUILD_STATIC)
+    add_library(rtm-core-sdk STATIC ${SOURCES})
+else()
+    add_library(rtm-core-sdk SHARED ${SOURCES})
 endif()
 
 set_target_properties(rtm-core-sdk PROPERTIES LINKER_LANGUAGE C)
 
-set(CORE_SOURCES
-    src/rtm.c
-    src/rtm_json.c
-    )
-
 if(UNIX)
-list(APPEND CORE_SOURCES src/rtm_posix.c)
 else()
-list(APPEND CORE_SOURCES src/rtm_windows.c)
 target_link_libraries(rtm-core-sdk wsock32 ws2_32)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
@@ -89,14 +102,11 @@ if(USE_GNUTLS)
   find_package(GnuTLS REQUIRED)
   message(STATUS "GNU TLS: " ${GNUTLS_VERSION_STRING})
 
-  list(APPEND CORE_SOURCES src/rtm_gnutls.c)
   include_directories(${GNUTLS_INCLUDE_DIR})
   target_link_libraries(rtm-core-sdk ${GNUTLS_LIBRARIES})
   add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
 
 elseif(USE_OPENSSL)
-
-  list(APPEND CORE_SOURCES src/rtm_openssl.c)
 
   add_definitions(-DUSE_OPENSSL)
 
@@ -116,7 +126,6 @@ elseif(USE_OPENSSL)
 elseif(USE_APPLE_SSL)
   message(STATUS "Selected Apple Security framework")
 
-  list(APPEND CORE_SOURCES src/rtm_apple_ssl.c)
   target_link_libraries(rtm-core-sdk PUBLIC "-framework foundation" "-framework security")
   add_definitions(-DUSE_APPLE_SSL)
 
@@ -124,8 +133,6 @@ else()
   message(STATUS "No TLS backend selected.")
 
 endif()
-
-set_property(TARGET rtm-core-sdk APPEND PROPERTY SOURCES ${CORE_SOURCES})
 
 if(DOC)
   find_package(Doxygen REQUIRED)
