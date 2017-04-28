@@ -1,7 +1,12 @@
-cmake_minimum_required(VERSION 3.4)
-project(RTM_CORE_SDK C)
+cmake_minimum_required(VERSION 2.8)
+project(RTM_CORE_SDK)
 
-cmake_policy(SET CMP0054 NEW)
+if (NOT CMAKE_VERSION VERSION_LESS 3.4)
+    cmake_policy(SET CMP0054 NEW)
+    cmake_policy(SET CMP0021 OLD)
+    cmake_policy(SET CMP0042 NEW)
+endif ()
+
 
 option(USE_GNUTLS "Use GNUTLS backend" OFF)
 option(USE_OPENSSL "Use OpenSSL backend" OFF)
@@ -58,45 +63,55 @@ endif()
 include_directories(.)
 include_directories(system ../vendor)
 
-if(BUILD_STATIC)
-    add_library(rtm-core-sdk STATIC "")
-else()
-    add_library(rtm-core-sdk SHARED "")
-endif()
+# Construct sources list
 
-set(CORE_SOURCES
-    src/rtm.c
-    src/rtm_json.c
-    )
+set(SOURCES src/rtm.c src/rtm_json.c)
 
 if(UNIX)
-list(APPEND CORE_SOURCES src/rtm_posix.c)
+list(APPEND SOURCES src/rtm_posix.c)
+elseif(MSVC)
+list(APPEND SOURCES src/rtm_windows.c)
 else()
-list(APPEND CORE_SOURCES src/rtm_windows.c)
-target_link_libraries(rtm-core-sdk wsock32 ws2_32)
-target_compile_definitions(rtm-core-sdk PRIVATE _CRT_SECURE_NO_WARNINGS)
+message(FATAL_ERROR "Environment that is neither UNIX nor Visual Studio is not supported")
 endif()
 
-target_include_directories(rtm-core-sdk
-                           PUBLIC
-                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>"
-                           "$<INSTALL_INTERFACE:include>"
-                           )
+if(USE_GNUTLS)
+  list(APPEND SOURCES src/rtm_gnutls.c)
+elseif(USE_OPENSSL)
+  list(APPEND SOURCES src/rtm_openssl.c)
+elseif(USE_APPLE_SSL)
+  list(APPEND SOURCES src/rtm_apple_ssl.c)
+endif()
+
+# sources list is now ready
+
+if(BUILD_STATIC)
+    add_library(rtm-core-sdk STATIC ${SOURCES})
+else()
+    add_library(rtm-core-sdk SHARED ${SOURCES})
+endif()
+
+set_target_properties(rtm-core-sdk PROPERTIES LINKER_LANGUAGE C)
+
+if(UNIX)
+else()
+target_link_libraries(rtm-core-sdk wsock32 ws2_32)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
+include_directories("$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>")
 
 if(USE_GNUTLS)
   find_package(GnuTLS REQUIRED)
   message(STATUS "GNU TLS: " ${GNUTLS_VERSION_STRING})
 
-  list(APPEND CORE_SOURCES src/rtm_gnutls.c)
-  target_include_directories(rtm-core-sdk PRIVATE ${GNUTLS_INCLUDE_DIR})
+  include_directories(${GNUTLS_INCLUDE_DIR})
   target_link_libraries(rtm-core-sdk ${GNUTLS_LIBRARIES})
-  target_compile_definitions(rtm-core-sdk PRIVATE USE_GNUTLS ${GNUTLS_DEFINITIONS})
+  add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
 
 elseif(USE_OPENSSL)
 
-  list(APPEND CORE_SOURCES src/rtm_openssl.c)
-
-  target_compile_definitions(rtm-core-sdk PRIVATE USE_OPENSSL ${OPENSSL_DEFINITIONS})
+  add_definitions(-DUSE_OPENSSL)
 
   if (MSVC)
       message(WARNING
@@ -104,24 +119,22 @@ elseif(USE_OPENSSL)
           "Please install OpenSSL and configure the Visual Studio Project to find it. ")
   else()
       find_package(OpenSSL REQUIRED)
+      add_definitions(${OPENSSL_DEFINITIONS})
       message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
-      target_include_directories(rtm-core-sdk PRIVATE ${OPENSSL_INCLUDE_DIR})
+      include_directories(${OPENSSL_INCLUDE_DIR})
       target_link_libraries(rtm-core-sdk ${OPENSSL_LIBRARIES})
   endif(MSVC)
 
 elseif(USE_APPLE_SSL)
   message(STATUS "Selected Apple Security framework")
 
-  list(APPEND CORE_SOURCES src/rtm_apple_ssl.c)
   target_link_libraries(rtm-core-sdk PUBLIC "-framework foundation" "-framework security")
-  target_compile_definitions(rtm-core-sdk PRIVATE USE_APPLE_SSL)
+  add_definitions(-DUSE_APPLE_SSL)
 
 else()
   message(STATUS "No TLS backend selected.")
 
 endif()
-
-target_sources(rtm-core-sdk PRIVATE ${CORE_SOURCES})
 
 if(DOC)
   find_package(Doxygen REQUIRED)

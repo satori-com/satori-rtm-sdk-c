@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 2.8)
 
 # enable the module so we can use it
 include(ExternalProject)
@@ -25,7 +25,9 @@ ExternalProject_Add(satori_sdk
 
 # this will allow us finding SDK headers
 ExternalProject_Get_Property(satori_sdk source_dir)
-set(SATORI_INCLUDE_DIR ${source_dir}/core/src)
+
+# add SDK to project's include path
+include_directories(${source_dir}/core/src)
 
 # and this will allow us to find and link to SDK library
 ExternalProject_Get_Property(satori_sdk binary_dir)
@@ -37,9 +39,6 @@ add_executable(tutorial "main.c")
 
 # this tells cmake to actually download and build the SDK when it builds the project
 add_dependencies(tutorial satori_sdk)
-
-# add SDK to project's include path
-target_include_directories(tutorial SYSTEM PRIVATE ${SATORI_INCLUDE_DIR})
 
 # link project to SDK library
 target_link_libraries(tutorial ${SATORI_LIBRARIES})

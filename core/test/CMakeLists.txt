@@ -1,29 +1,32 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 2.8)
 
 enable_testing()
 
 find_package(Threads REQUIRED)
 
 link_directories(${GTEST_BIN_DIR})
-set(CMAKE_CXX_STANDARD 11)
+if(UNIX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+endif()
 file(GLOB TEST_FILES *_test.cpp)
 add_executable(rtm_unit_tests ${TEST_FILES})
 add_definitions(-DTEST)
 
 if(USE_APPLE_SSL)
-target_compile_definitions(rtm_unit_tests PRIVATE USE_APPLE_SSL)
+add_definitions(-DUSE_APPLE_SSL)
 endif()
 if(USE_OPENSSL)
-target_compile_definitions(rtm_unit_tests PRIVATE USE_OPENSSL)
-target_include_directories(rtm_unit_tests PRIVATE ${OPENSSL_INCLUDE_DIR})
+add_definitions(-DUSE_OPENSSL)
+set_property(TARGET rtm_unit_tests APPEND PROPERTY INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
 endif()
 if(USE_GNUTLS)
-target_compile_definitions(rtm_unit_tests PRIVATE USE_GNUTLS)
-target_include_directories(rtm_unit_tests PRIVATE ${GNUTLS_INCLUDE_DIR})
+add_definitions(-DUSE_GNUTLS)
+set_property(TARGET rtm_unit_tests APPEND PROPERTY INCLUDE_DIRECTORIES ${GNUTLS_INCLUDE_DIR})
 endif()
 
-target_include_directories(rtm_unit_tests SYSTEM PRIVATE
-  "../../vendor"
+include_directories(
+  "../src"
+  "../vendor"
   ${GTEST_INCLUDE_DIR}
 )
 

@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+
 include_directories(.)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
