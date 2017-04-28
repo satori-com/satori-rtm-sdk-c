@@ -69,8 +69,10 @@ set(SOURCES src/rtm.c src/rtm_json.c)
 
 if(UNIX)
 list(APPEND SOURCES src/rtm_posix.c)
-else()
+elseif(MSVC)
 list(APPEND SOURCES src/rtm_windows.c)
+else()
+message(FATAL_ERROR "Environment that is neither UNIX nor Visual Studio is not supported")
 endif()
 
 if(USE_GNUTLS)
