@@ -1,12 +1,12 @@
-C SDK for Satori Platform
-=========================
+C SDK for Satori RTM
+====================
 
 
 This C SDK is a lightweight SDK:
  * It has no external dependencies, in particular it does not require a JSON library
  * It does not lock you into using any threading or event loop framework, but is ready to be used in any of those
  * Does not allocate memory dynamically. All message processing is done in-place
- * Has less features than other Satori SDKs, e.g. it has no auto-reconnection
+ * Has less features than other Satori RTM SDKs, e.g. it has no auto-reconnection
  * Is likely to be used as a base for building higher-level SDKs (see ios-wrapper for example)
 
 Build
@@ -70,7 +70,7 @@ To enable that, pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPL
 
 ## iOS wrapper
 
-The SatoriRtmSdkWrapper framework for iOS enables you to easily integrate your iOS apps with Satori. Using the framework, you can publish and subscribe messages to RTM. There are multiple ways for installing the SatoriRtmSdkWrapper framework in your own project.
+The SatoriRtmSdkWrapper framework for iOS enables you to easily integrate your iOS apps with Satori RTM. Using the framework, you can publish and subscribe messages to RTM. There are multiple ways for installing the SatoriRtmSdkWrapper framework in your own project.
 
 ### Installation with CocoaPods
 
