@@ -7,8 +7,7 @@
 
 using json = nlohmann::json;
 
-const char *ws_endpoint = nullptr;
-const char *wss_endpoint = nullptr;
+const char *endpoint = nullptr;
 const char *appkey = nullptr;
 const char *role_name = nullptr;
 const char *role_secret = nullptr;
@@ -27,17 +26,7 @@ void load_credentials(void) {
         std::string const role_secret_s = creds["auth_role_secret_key"];
         std::string const restricted_channel_s = creds["auth_restricted_channel"];
 
-        std::string wss_endpoint_s(endpoint_s);
-        std::string ws_endpoint_s(endpoint_s);
-
-        if (wss_endpoint_s.substr(0, 3) == "wss") {
-            ws_endpoint_s.replace(0, 3, "ws");
-        } else {
-            wss_endpoint_s.replace(0, 2, "wss");
-        }
-
-        ws_endpoint = strdup(ws_endpoint_s.c_str());
-        wss_endpoint = strdup(wss_endpoint_s.c_str());
+        endpoint = strdup(endpoint_s.c_str());
         appkey = strdup(appkey_s.c_str());
         role_name = strdup(role_name_s.c_str());
         role_secret = strdup(role_secret_s.c_str());

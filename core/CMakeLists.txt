@@ -60,6 +60,17 @@ if(USE_OPENSSL AND USE_APPLE_SSL)
   message(FATAL_ERROR "USE_OPENSSL and USE_APPLE_SSL are mutually exclusive")
 endif()
 
+if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
+  if(APPLE)
+    set(USE_APPLE_SSL ON)
+  else()
+    set(USE_OPENSSL ON)
+  endif()
+  set(USE_TLS ON)
+endif()
+
+add_definitions(-DUSE_TLS)
+
 include_directories(.)
 include_directories(system ../vendor)
 
