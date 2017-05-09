@@ -66,7 +66,6 @@ if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
   else()
     set(USE_OPENSSL ON)
   endif()
-  set(USE_TLS ON)
 endif()
 
 add_definitions(-DUSE_TLS)
