@@ -40,7 +40,7 @@ To run the unit tests, first you need to create a credentials.json file:
 ```sh
 $ cat credentials.json
 {
-  "endpoint": "ws://<SATORI_HOST>/",
+  "endpoint": "wss://<SATORI_HOST>/",
   "appkey": "my_appkey",
   "auth_role_name": "ROLE NAME"
   "auth_role_secret_key": "ROLE SECRET"
@@ -66,7 +66,9 @@ TLS support
 -----------
 
 The SDK can take advantage of either OpenSSL, GNUTLS or Apple SSL API for supporting secure (wss://) connections.
-To enable that, pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPLE_SSL=ON" respectively to CMake.
+Pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPLE_SSL=ON" respectively to CMake.
+
+If no flags are passed, CMake enables Apple SSL for Mac or OpenSSL for others.
 
 ## iOS wrapper
 

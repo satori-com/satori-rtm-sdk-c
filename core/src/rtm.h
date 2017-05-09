@@ -41,10 +41,6 @@ extern "C" {
 #define RTM_API
 #endif
 
-#if defined(USE_APPLE_SSL) || defined(USE_OPENSSL) || defined(USE_GNUTLS)
-#define USE_TLS
-#endif
-
 /**
  * @brief Maximum size of a channel name.
  */
