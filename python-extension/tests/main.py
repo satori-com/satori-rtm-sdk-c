@@ -9,7 +9,7 @@ def main():
     with open(os.path.join(script_dir, "../../credentials.json"), "r") as creds:
         data = json.load(creds)
         os.environ["APPKEY"] = data["appkey"]
-        os.environ["ENDPOINT"] = data["endpoint"].replace("wss://", "ws://")
+        os.environ["ENDPOINT"] = data["endpoint"]
 
     if not nose.run(defaultTest=['positive_tests', 'negative_tests']):
         raise RuntimeError("Some tests failed")
