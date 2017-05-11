@@ -68,8 +68,6 @@ if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
   endif()
 endif()
 
-add_definitions(-DUSE_TLS)
-
 include_directories(.)
 include_directories(system ../vendor)
 
