@@ -5,9 +5,11 @@ crtm = Extension(
     sources = ['crtm.c',
         '../core/src/rtm.c',
         '../core/src/rtm_posix.c',
+        '../core/src/rtm_openssl.c',
         '../easy/rtm_easy.c',
         '../core/src/rtm_json.c'],
-    include_dirs = ['../vendor', '../core/src', '../easy'])
+    include_dirs = ['../vendor', '../core/src', '../easy'],
+    extra_compile_args=['-DUSE_OPENSSL=ON'])
 
 setup(name = 'crtm',
       version = '0.1.0',
