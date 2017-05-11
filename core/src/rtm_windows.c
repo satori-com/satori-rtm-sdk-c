@@ -150,11 +150,9 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
   if (output_size == 0)
     return 0;
 
-#if defined(USE_TLS)
   if (rtm->is_secure) {
     return _rtm_io_write_tls(rtm, output_buffer, output_size);
   }
-#endif
 
   ssize_t write_result;
   ssize_t written = 0;
@@ -188,11 +186,9 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
   if (input_size == 0)
     return 0;
 
-#if defined(USE_TLS)
   if (rtm->is_secure) {
     return _rtm_io_read_tls(rtm, input_buffer, input_size, wait);
   }
-#endif
 
   ssize_t read_result;
   while (TRUE) {
@@ -224,18 +220,11 @@ rtm_status _rtm_io_connect(rtm_client_t *rtm, const char *hostname, const char *
 
   rtm->fd = -1;
 
-#if !defined(USE_TLS)
-  if (use_tls) {
-    return RTM_ERR_NO_TLS;
-  }
-#endif
-
   rtm_status rc = connect_to_host_and_port(rtm, hostname, port);
   if (rc) {
     return rc;
   }
 
-#if defined(USE_TLS)
   rtm->is_secure = NO;
   if (use_tls) {
     rc = _rtm_io_open_tls_session(rtm, hostname);
@@ -245,19 +234,16 @@ rtm_status _rtm_io_connect(rtm_client_t *rtm, const char *hostname, const char *
     }
     rtm->is_secure = YES;
   }
-#endif
   return RTM_OK;
 }
 
 rtm_status _rtm_io_close(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
 
-#if defined(USE_TLS)
   if (rtm->is_secure) {
     _rtm_io_close_tls_session(rtm);
     rtm->is_secure = NO;
   }
-#endif
 
   if (rtm->fd >= 0) {
     closesocket(rtm->fd);
