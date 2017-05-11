@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <fcntl.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -22,10 +23,18 @@ static const SSL_METHOD *ssl_method = NULL;
 static rtm_status openssl_initialize(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+  if (!OPENSSL_init_ssl(OPENSSL_INIT_LOAD_CONFIG, NULL)) {
+    return _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL initialization failed");
+  }
+#else
+  (void) OPENSSL_config(NULL);
+#endif
+
   (void) OpenSSL_add_ssl_algorithms();
   ssl_method = SSLv23_client_method();
   (void) SSL_load_error_strings();
-  (void) OPENSSL_config(NULL);
+
 
   if (NULL == ssl_method) {
     return _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL initialization failed");
