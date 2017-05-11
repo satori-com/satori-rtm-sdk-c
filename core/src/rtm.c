@@ -408,6 +408,37 @@ void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       (void*) rtm, pdu->action, pdu->request_id, pdu->body);
 }
 
+const char *rtm_error_string(rtm_status status) {
+  switch (status) {
+    case RTM_OK:
+      return "RTM_OK: No error.";
+    case RTM_WOULD_BLOCK:
+      return "RTM_WOULD_BLOCK: The operation would be a blocking I/O operation.";
+    case RTM_ERR_PARAM:
+      return "RTM_ERR_PARAM: One of the parameters passed to the function is incorrect.";
+    case RTM_ERR_CONNECT:
+      return "RTM_ERR_CONNECT: The client could not connect to RTM.";
+    case RTM_ERR_NETWORK:
+      return "RTM_ERR_NETWORK: An unexpected network error occurred.";
+    case RTM_ERR_CLOSED:
+      return "RTM_ERR_CLOSED: The connection is closed.";
+    case RTM_ERR_READ:
+      return "RTM_ERR_READ: An error occurred while receiving data from RTM.";
+    case RTM_ERR_WRITE:
+      return "RTM_ERR_WRITE: An error occurred while sending data to RTM.";
+    case RTM_ERR_PROTOCOL:
+      return "RTM_ERR_PROTOCOL: An error occurred in the protocol layer.";
+    case RTM_ERR_NO_TLS:
+      return "RTM_ERR_NO_TLS: Trying to connect to TLS endpoint but the SDK was not built with TLS support.";
+    case RTM_ERR_TLS:
+      return "RTM_ERR_TLS: An unexpected error happened in the TLS layer.";
+    case RTM_ERR_TIMEOUT:
+      return "RTM_ERR_TIMEOUT: An unexpected error happened in the TLS layer.";
+    default:
+      return "RTM_UNKNOWN: Unknown status of operation.";
+  }
+}
+
 // Internal code
 
 static rtm_status check_http_upgrade_response(rtm_client_t *rtm) {

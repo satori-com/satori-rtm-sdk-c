@@ -619,6 +619,15 @@ RTM_API int rtm_get_fd(rtm_client_t *rtm);
  */
 RTM_API void *rtm_get_user_context(rtm_client_t *rtm);
 
+/**
+ * @brief Returns a human-readable string representing the status of operation.
+ *
+ * @param[in] status of operation.
+ *
+ * @returns a human-readable description of status.
+ */
+RTM_API const char *rtm_error_string(rtm_status status);
+
 #ifdef __cplusplus
 }
 #endif
