@@ -1,7 +1,6 @@
 C SDK for Satori RTM
 ====================
 
-
 This C SDK is a lightweight SDK:
  * It has no external dependencies, in particular it does not require a JSON library
  * It does not lock you into using any threading or event loop framework, but is ready to be used in any of those
@@ -81,7 +80,7 @@ The SatoriRtmSdkWrapper is available as a [CocoaPod](http://cocoapods.org). Coco
 1. Open your Podfile and add the following dependency in the `target "<your_app_target>" do` section:
 ```sh
 use_frameworks!
-pod 'SatoriRtmSdkWrapper', :git => "https://github.com/satori-com/satori-sdk-c.git"
+pod 'SatoriRtmSdkWrapper', :git => "https://github.com/satori-com/satori-rtm-sdk-c.git"
 ```
 2. Save your Podfile.
 3. Run `pod install` from command line.
@@ -90,7 +89,7 @@ You've now installed the SatoriRtmSdkWrapper framework. Refer to *Framework API 
 
 ### Manual installation using Source code
 
-Create a local repository by cloning the satori-sdk-c to your chosen location. Then,
+Create a local repository by cloning the satori-rtm-sdk-c to your chosen location. Then,
 
 #### Step 1: Build framework
 
@@ -161,10 +160,10 @@ For Windows (Visual Studio)
 Assuming Visual Studio and cmake are installed, open Developer Command Prompt for Visual Studio.
 
 ```sh
-C:\satori-sdk-c> mkdir vsprj
-C:\satori-sdk-c> cd vsprj
-C:\satori-sdk-c\vsprj> cmake -DBUILD_SHARED_LIBS=ON -G "Visual Studio 14 2015" ..
-C:\satori-sdk-c\vsprj> msbuild satori-sdk-c.sln
+C:\satori-rtm-sdk-c> mkdir vsprj
+C:\satori-rtm-sdk-c> cd vsprj
+C:\satori-rtm-sdk-c\vsprj> cmake -DBUILD_SHARED_LIBS=ON -G "Visual Studio 14 2015" ..
+C:\satori-rtm-sdk-c\vsprj> msbuild satori-sdk-c.sln
 ```
 
 Adjust the generator name from "Visual Studio 14 2015" to another if necessary.
