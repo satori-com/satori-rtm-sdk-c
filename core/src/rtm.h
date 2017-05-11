@@ -32,9 +32,7 @@ extern "C" {
 #endif
 
 #if defined(USE_APPLE_SSL) || defined(USE_OPENSSL) || defined(USE_GNUTLS)
-#ifndef USE_TLS
 #define USE_TLS
-#endif
 #endif
 
 /**
