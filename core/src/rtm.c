@@ -623,14 +623,14 @@ static ssize_t ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t l
 
   /* we send single frame, text */
   ws_mask(io_buffer, len, mask);
-  if (len < SCHAR_MAX) {
+  if (len < 126) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_SMALL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (len | 0x80);
     *(uint32_t *) (&io_buffer[2]) = mask;
     len += _RTM_OUTBOUND_HEADER_SIZE_SMALL;
 
-  } else if (len < USHRT_MAX) {
+  } else if (len < 65536) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (126 | 0x80);

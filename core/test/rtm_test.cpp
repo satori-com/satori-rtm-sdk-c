@@ -283,6 +283,24 @@ TEST(rtm_test, publish_and_receive) {
   rtm_close(rtm);
 }
 
+TEST(rtm_test, publish_ws_frame_with_126_bytes_payload) {
+  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
+
+  // channel is hardcoded with fixed length to get 126 bytes payload for WS frame
+  unsigned int request_id;
+  rc = rtm_publish_json(rtm, "xxxxxxxxxxxxxxx", "{\n   \"cmd_data\" : \"1\",\n   \"cmd_type\" : \"ack\"\n}\n", &request_id);
+  ASSERT_EQ(RTM_OK, rc) << "Failed while publishing";
+
+  pdu_t pdu;
+  rc = next_pdu(rtm, &pdu);
+  ASSERT_EQ(rc, RTM_OK) << "Failed to wait publish response";
+  ASSERT_EQ("rtm/publish/ok", pdu.action);
+
+  rtm_close(rtm);
+}
+
 TEST(rtm_test, disconnect) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
