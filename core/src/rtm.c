@@ -428,8 +428,6 @@ const char *rtm_error_string(rtm_status status) {
       return "RTM_ERR_WRITE: An error occurred while sending data to RTM.";
     case RTM_ERR_PROTOCOL:
       return "RTM_ERR_PROTOCOL: An error occurred in the protocol layer.";
-    case RTM_ERR_NO_TLS:
-      return "RTM_ERR_NO_TLS: Trying to connect to TLS endpoint but the SDK was not built with TLS support.";
     case RTM_ERR_TLS:
       return "RTM_ERR_TLS: An unexpected error happened in the TLS layer.";
     case RTM_ERR_TIMEOUT:

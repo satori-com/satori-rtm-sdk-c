@@ -161,9 +161,6 @@ typedef enum {
                                  RTM                                          */
     RTM_ERR_WRITE,          /*!< An error occurred while sending data to RTM  */
     RTM_ERR_PROTOCOL,       /*!< An error occurred in the protocol layer      */
-    RTM_ERR_NO_TLS,         /*!< The call to ::rtm_connect mentioned a TLS
-                                 endpoint, but the SDK was not built with TLS
-                                 support                                      */
     RTM_ERR_TLS,            /*!< An unexpected error happened in the TLS
                                  layer                                        */
     RTM_ERR_TIMEOUT         /*!< The operation timed out                      */
