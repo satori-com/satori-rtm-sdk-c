@@ -5,9 +5,9 @@
       location = "group:../SatoriRtmSdkWrapper/SatoriRtmSdkWrapper.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:FilterSubscribe.playground">
+      location = "group:SimpleSubscribe.playground">
    </FileRef>
    <FileRef
-      location = "group:SimpleSubscribe.playground">
+      location = "group:FilterSubscribe.playground">
    </FileRef>
 </Workspace>
