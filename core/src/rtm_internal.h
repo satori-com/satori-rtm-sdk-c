@@ -72,7 +72,6 @@ struct _rtm_client {
     unsigned is_verbose: 1;
     unsigned last_request_id;
 
-#if defined(USE_TLS)
     unsigned is_secure: 1;
 #if defined(USE_GNUTLS)
     gnutls_session_t session;
@@ -81,7 +80,6 @@ struct _rtm_client {
     SSL *ssl_connection;
 #elif defined(USE_APPLE_SSL)
     SSLContextRef sslContext;
-#endif
 #endif
 
     rtm_pdu_handler_t *handle_pdu;
@@ -107,13 +105,11 @@ rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeo
 ssize_t    _rtm_io_write(rtm_client_t *rtm, const char *buf, size_t len);
 ssize_t    _rtm_io_read(rtm_client_t *rtm, char *buf, size_t len, int wait);
 
-#if defined(USE_TLS)
 void _rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output);
 rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *host);
 rtm_status _rtm_io_close_tls_session(rtm_client_t *rtm);
 ssize_t    _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait);
 ssize_t    _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte);
-#endif
 
 void _rtm_b64encode_16bytes(char const *input, char *output);
 

@@ -41,8 +41,6 @@ extern "C" {
 #define RTM_API
 #endif
 
-#define USE_TLS
-
 /**
  * @brief Maximum size of a channel name.
  */
