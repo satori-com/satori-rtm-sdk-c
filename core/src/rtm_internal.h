@@ -125,7 +125,7 @@ RTM_API rtm_status _rtm_log_message(rtm_status status, const char *message);
 
 #define RTM_CLIENT_SIZE (sizeof(struct _rtm_client))
 
-#if defined(TEST)
+#if defined(RTM_TEST_ENV)
 RTM_API rtm_status _rtm_test_parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *hostname_out,
     char *port_out, char *path_out, unsigned *use_tls_out);
 RTM_API rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const char *appkey);

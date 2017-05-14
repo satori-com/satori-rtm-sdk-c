@@ -10,7 +10,6 @@ if(UNIX)
 endif()
 file(GLOB TEST_FILES *_test.cpp)
 add_executable(rtm_unit_tests ${TEST_FILES})
-add_definitions(-DTEST)
 
 if(USE_APPLE_SSL)
 add_definitions(-DUSE_APPLE_SSL)

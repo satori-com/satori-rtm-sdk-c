@@ -1008,7 +1008,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
   return return_code;
 }
 
-#if defined(TEST)
+#if defined(RTM_TEST_ENV)
 rtm_status _rtm_test_parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *hostname_out,
     char *port_out, char *path_out, unsigned *use_tls_out) {
   return parse_endpoint(rtm, endpoint, hostname_out, port_out, path_out, use_tls_out);

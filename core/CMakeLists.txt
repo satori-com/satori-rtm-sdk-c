@@ -204,7 +204,7 @@ if(samples)
 endif()
 
 if(test)
-  add_definitions(-DTEST)
+  add_definitions(-DRTM_TEST_ENV)
   add_subdirectory(test)
 endif()
 
