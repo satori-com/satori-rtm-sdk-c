@@ -172,6 +172,11 @@ typedef enum {
 RTM_API extern time_t rtm_connect_timeout;
 
 /**
+ * @brief Sending PING frame interval in seconds. The default value is @c 45.
+ */
+RTM_API extern time_t ws_ping_interval;
+
+/**
  * @brief Size of ::rtm_client_t in bytes.
  */
 RTM_API extern const size_t rtm_client_size;
@@ -452,6 +457,10 @@ RTM_API rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ac
  * @see ::rtm_status for detailed error codes
  */
 RTM_API rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id);
+
+/**
+*/
+RTM_API rtm_status rtm_send_ws_ping(rtm_client_t *rtm);
 
 /**
  * @brief Write the string value to a specific channel.

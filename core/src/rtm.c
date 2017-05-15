@@ -11,6 +11,7 @@
 
 const size_t rtm_client_size = RTM_CLIENT_SIZE;
 
+time_t ws_ping_interval = 45;
 time_t rtm_connect_timeout = 10;
 
 void(*rtm_error_logger)(const char *message) = rtm_default_error_logger;
@@ -83,6 +84,9 @@ rtm_status rtm_connect(rtm_client_t *rtm,
   rc = _rtm_io_connect(rtm, hostname, port, use_tls);
   if (rc)
     return rc;
+
+  // Connection established. Set current time as the last pong time.
+  rtm->last_pong_ts = time(NULL);
 
   rc = send_http_upgrade_request(rtm, hostname, path);
   if (rc)
@@ -354,6 +358,20 @@ rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json) {
   strncpy(buf, json, _RTM_MAX_BUFFER);
 
   ssize_t written = ws_write(rtm, WS_TEXT, buf, strlen(buf));
+  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+}
+
+rtm_status rtm_send_ws_ping(rtm_client_t *rtm) {
+  CHECK_PARAM(rtm);
+
+  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
+  const ssize_t size = _RTM_MAX_BUFFER;
+  char *p = buf;
+
+  // the contents of the body are arbitrary, but we "ping" to make a request obvious
+  p += safer_snprintf(p, size - (p - buf), "ping");
+
+  ssize_t written = ws_write(rtm, WS_PING, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -863,6 +881,20 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
   return error;
 }
 
+rtm_status _rtm_send_ws_ping(rtm_client_t *rtm) {
+  rtm_status rc = RTM_OK;
+
+  if ((rtm->last_pong_ts + ws_ping_interval) < time(NULL)) {
+    rc = rtm_send_ws_ping(rtm);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+    rtm->last_pong_ts = time(NULL) + 1 - ws_ping_interval; // Wait at least 1 second before next send
+  }
+
+  return rc;
+}
+
 rtm_status _rtm_log_message(rtm_status status, const char *message) {
   ASSERT_NOT_NULL(message);
   if (rtm_error_logger)
@@ -901,6 +933,11 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     return _rtm_log_error(rtm, RTM_ERR_CLOSED, "connection closed");
 
   rtm_status return_code = RTM_OK;
+
+  return_code = _rtm_send_ws_ping(rtm);
+  if (RTM_OK != return_code) {
+    return return_code;
+  }
 
   // will need space for a header if we want to respond to a ping
   // for instance, the header size will differ...
@@ -986,8 +1023,15 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
       if (WS_CLOSE == frame_opcode) {
         _rtm_io_close(rtm);
+
       } else if (WS_PING == frame_opcode) { /* ping */
         ws_write(rtm, WS_PONG, ws_frame, payload_length);
+
+      } else if (WS_PONG == frame_opcode) { /* pong response */
+        rtm->last_pong_ts = time(NULL);
+
+        // Pong response is for internal use. Call rtm_poll once again to get requested data
+        return rtm_poll(rtm);
       }
 
     } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode) { /* data frame */
