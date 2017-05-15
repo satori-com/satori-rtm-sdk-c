@@ -204,13 +204,17 @@ Usage
 =====
 ```C
 rtm_client_t *rtm = (rtm_client_t*) malloc (rtm_client_size);
-rtm_connect(rtm, "wss://myorg.api.satori.com/", "<APPKEY>", rtm_default_pdu_handler, NULL);
+rtm_status status = rtm_connect(rtm, "wss://myorg.api.satori.com/", "<APPKEY>", rtm_default_pdu_handler, NULL);
+if (status != RTM_OK) {
+  fprintf("Connecting to RTM failed: %s\n", rtm_error_string(status));
+  goto cleanup;
+}
 rtm_subscribe(rtm, "channel_a", NULL);
 rtm_publish_string(rtm, "channel_a", "Hello, world", NULL);
 rtm_publish_json(rtm, "channel_a", "{\"key\":\"value\", \"k2\":123}", NULL);
 while (rtm_poll(rtm)>=0) { sleep(1); }
 rtm_close(rtm);
-free(rtm);
+cleanup: free(rtm);
 ```
 
 `rtm_poll(rtm)` can be substitued for `rtm_wait(rtm)` to avoid the sleep when there is nothing better to do.

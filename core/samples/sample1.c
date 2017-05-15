@@ -23,7 +23,7 @@ int main(int argc, const char *argv[]) {
                    &rtm_default_pdu_handler, NULL);
 
   if (rc) {
-    fprintf(stderr, "Unable to connect to RTM\n");
+    fprintf(stderr, "Unable to connect to RTM: %s\n", rtm_error_string(rc));
     free(rtm);
     return rc;
   }
@@ -32,7 +32,7 @@ int main(int argc, const char *argv[]) {
 
   rc = rtm_subscribe(rtm, "test", &request_id);
   if (rc) {
-    fprintf(stderr, "Unable to subscribe to channel\n");
+    fprintf(stderr, "Unable to subscribe to channel: %s\n", rtm_error_string(rc));
     rtm_close(rtm);
     free(rtm);
     return rc;
