@@ -549,7 +549,7 @@ static rtm_status parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *
   const char port80[] = "80";
   const char port443[] = "443";
 
-  char *auto_port = NULL;
+  const char *auto_port = NULL;
   const char *hostname_start = NULL;
 
   if (strncmp(endpoint, WS_PREFIX, sizeof(WS_PREFIX) - 1) == 0) {
