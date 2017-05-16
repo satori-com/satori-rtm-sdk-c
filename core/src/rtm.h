@@ -459,6 +459,13 @@ RTM_API rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ac
 RTM_API rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id);
 
 /**
+ * @brief Send a websocket ping frame.
+ *
+ * @return the status of the operation
+ * @retval RTM_OK operation succeeded
+ * @retval RTM_ERR_* an error occurred
+ *
+ * @see ::rtm_status for detailed error codes
 */
 RTM_API rtm_status rtm_send_ws_ping(rtm_client_t *rtm);
 
