@@ -123,8 +123,8 @@ void on_message(rtm_client_t *rtm, const char* subscriptionId, const char* messa
     return rtm_handshake(self.rtm, role.UTF8String, requestId);
 }
 
-- (rtm_status)authenticateWithHash:(NSString *)hash andRequestId:(unsigned *)requestId {
-    return rtm_authenticate(self.rtm, hash.UTF8String, requestId);
+- (rtm_status)authenticate:(NSString *)roleSecret nonce:(NSString*)nonce andRequestId:(unsigned *)requestId {
+    return rtm_authenticate(self.rtm, roleSecret.UTF8String, nonce.UTF8String, requestId);
 }
 
 - (rtm_status)publishJson:(NSString *)json toChannel:(NSString *)channel andRequestId:(unsigned *)requestId {

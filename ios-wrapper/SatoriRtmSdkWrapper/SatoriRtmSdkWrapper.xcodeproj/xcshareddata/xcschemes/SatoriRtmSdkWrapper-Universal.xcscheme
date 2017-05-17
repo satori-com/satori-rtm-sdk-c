@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EFB7A0D01E69F9300024FADF"
-               BuildableName = "SatoriSDK-Universal"
-               BlueprintName = "SatoriSDK-Universal"
-               ReferencedContainer = "container:SatoriSDK.xcodeproj">
+               BuildableName = "SatoriRtmSdkWrapper-Universal"
+               BlueprintName = "SatoriRtmSdkWrapper-Universal"
+               ReferencedContainer = "container:SatoriRtmSdkWrapper.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,9 +46,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EFB7A0D01E69F9300024FADF"
-            BuildableName = "SatoriSDK-Universal"
-            BlueprintName = "SatoriSDK-Universal"
-            ReferencedContainer = "container:SatoriSDK.xcodeproj">
+            BuildableName = "SatoriRtmSdkWrapper-Universal"
+            BlueprintName = "SatoriRtmSdkWrapper-Universal"
+            ReferencedContainer = "container:SatoriRtmSdkWrapper.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -64,9 +64,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EFB7A0D01E69F9300024FADF"
-            BuildableName = "SatoriSDK-Universal"
-            BlueprintName = "SatoriSDK-Universal"
-            ReferencedContainer = "container:SatoriSDK.xcodeproj">
+            BuildableName = "SatoriRtmSdkWrapper-Universal"
+            BlueprintName = "SatoriRtmSdkWrapper-Universal"
+            ReferencedContainer = "container:SatoriRtmSdkWrapper.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>

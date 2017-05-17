@@ -142,9 +142,12 @@ rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
-rtm_status rtm_authenticate(rtm_client_t *rtm, const char *hash, unsigned *ack_id) {
+#if defined(USE_TLS)
+rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const char *nonce, unsigned *ack_id) {
   CHECK_PARAM(rtm);
-  CHECK_EXACT_SIZE(hash, RTM_AUTHENTICATION_HASH_SIZE);
+
+  char hash[RTM_AUTHENTICATION_HASH_SIZE + 1] = {0};
+  _rtm_calculate_auth_hash(role_secret, nonce, hash);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
   const ssize_t size = _RTM_MAX_BUFFER;
@@ -158,6 +161,14 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *hash, unsigned *ack_i
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
+#else
+rtm_status rtm_authenticate(rtm_client_t *rtm, const char *unused_role_secret, const char *unused_nonce, unsigned *unused_ack_id) {
+  (void)unused_role_secret;
+  (void)unused_nonce;
+  (void)unused_ack_id;
+  return _rtm_log_error(rtm, RTM_ERR_TLS, "`rtm_authenticate` is only available when the SDK is compiled with a TLS library.");
+}
+#endif
 
 rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
   CHECK_PARAM(rtm);
@@ -615,14 +626,14 @@ static ssize_t ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t l
 
   /* we send single frame, text */
   ws_mask(io_buffer, len, mask);
-  if (len < SCHAR_MAX) {
+  if (len < 126) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_SMALL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (len | 0x80);
     *(uint32_t *) (&io_buffer[2]) = mask;
     len += _RTM_OUTBOUND_HEADER_SIZE_SMALL;
 
-  } else if (len < USHRT_MAX) {
+  } else if (len < 65536) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (126 | 0x80);
@@ -658,7 +669,7 @@ static ssize_t prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
 static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out) {
   ASSERT_NOT_NULL(rtm);
-  ASSERT_NOT_NULL(str);
+  ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(action);
 
   char *p = buf;
@@ -731,7 +742,7 @@ void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t *pdu,
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(buf);
-  ASSERT_NOT_NULL(handler);
+  ASSERT_NOT_NULL(data_handler);
 
   if (strcmp(pdu->action, "rtm/subscription/data") != 0) {
     return;
@@ -849,7 +860,7 @@ void rtm_disable_verbose_logging(rtm_client_t *rtm) {
   rtm->is_verbose = NO;
 }
 
-void rtm_b64encode_16bytes(char const *input, char *output) {
+void _rtm_b64encode_16bytes(char const *input, char *output) {
     static char const lut[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     int i;
 
@@ -927,7 +938,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else { // 127 -> 64 bit size
       if (input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
         return RTM_WOULD_BLOCK;
-      payload_length = (size_t)htobe64(*(uint64_t *) (&ws_frame[6]));
+      payload_length = (size_t)be64toh(*(uint64_t *) (&ws_frame[2]));
       header_length = _RTM_INBOUND_HEADER_SIZE_LARGE;
     }
 

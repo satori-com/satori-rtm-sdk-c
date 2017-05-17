@@ -1,17 +1,18 @@
 #import <XCTest/XCTest.h>
-#import "SatoriSDK.h"
+#import "SatoriRtmSdkWrapper.h"
 
 // Add your API endpoint and appkey values here
 // TODO: make these configurable
 static NSString* const url = @"";
 static NSString* const appkey = @"";
+static NSString* const role_name = @"";
 
-@interface SatoriSDKTests : XCTestCase {
+@interface SatoriRtmSdkWrapperTests : XCTestCase {
     SatoriRtmConnection* rtmClient;
 }
 @end
 
-@implementation SatoriSDKTests
+@implementation SatoriRtmSdkWrapperTests
 
 - (void)setUp {
     [super setUp];
@@ -62,7 +63,7 @@ static NSString* const appkey = @"";
     XCTAssertEqual(status, RTM_OK, @"Failed to connect RTM");
     
     unsigned requestId;
-    status = [rtmClient handshakeWithRole:@"superuser" andRequestId:&requestId];
+    status = [rtmClient handshakeWithRole:role_name andRequestId:&requestId];
     XCTAssertEqual(status, RTM_OK, @"Failed to send handshake");
 }
 
