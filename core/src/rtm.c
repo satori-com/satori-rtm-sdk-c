@@ -179,6 +179,13 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
   p += _rtm_json_escape(p, size - (p - buf), string);
   p += safer_snprintf(p, size - (p - buf), "\"}}");
 
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_send_ws_ping(rtm);
+    if (rc)
+      return rc;
+  }
+
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
@@ -196,6 +203,13 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
   p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
   p += _rtm_json_escape(p, size - (p - buf), channel);
   p += safer_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
+
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_send_ws_ping(rtm);
+    if (rc)
+      return rc;
+  }
 
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
@@ -306,6 +320,13 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
   p += _rtm_json_escape(p, size - (p - buf), string);
   p += safer_snprintf(p, size - (p - buf), "\"}}");
 
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_send_ws_ping(rtm);
+    if (rc)
+      return rc;
+  }
+
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
@@ -323,6 +344,13 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
   p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
   p += _rtm_json_escape(p, size - (p - buf), channel);
   p += safer_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
+
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_send_ws_ping(rtm);
+    if (rc)
+      return rc;
+  }
 
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;

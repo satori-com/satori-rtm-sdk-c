@@ -734,13 +734,35 @@ int main(int argc, char **argv) {
 TEST(rtm_test, wait_ping) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
+
   ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 45);
   rtm_set_ws_ping_interval(rtm, 1);
-
   ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 1);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   time_t last_pong_ts = rtm->last_pong_ts;
   rtm_wait_timeout(rtm, 3);
+  ASSERT_GT(rtm->last_pong_ts, last_pong_ts);
+}
+
+TEST(rtm_test, publish_noack_ping) {
+  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
+  rtm_set_ws_ping_interval(rtm, 2);
+
+  time_t last_pong_ts = rtm->last_pong_ts;
+  std::string const channel = make_channel();
+
+  time_t start = time(NULL);
+  while (TRUE) {
+    time_t now = time(NULL);
+    if (now - start > 3) {
+      break;
+    }
+    rc = rtm_publish_string(rtm, channel.c_str(), "my message", nullptr);
+    ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
+  };
+
   ASSERT_GT(rtm->last_pong_ts, last_pong_ts);
 }
