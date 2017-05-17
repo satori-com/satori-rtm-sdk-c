@@ -172,11 +172,6 @@ typedef enum {
 RTM_API extern time_t rtm_connect_timeout;
 
 /**
- * @brief Sending PING frame interval in seconds. The default value is @c 45.
- */
-RTM_API extern time_t rtm_ws_ping_interval;
-
-/**
  * @brief Size of ::rtm_client_t in bytes.
  */
 RTM_API extern const size_t rtm_client_size;
@@ -213,6 +208,26 @@ void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
  * @param[in] pdu the ::rtm_pdu_t to process
  */
 RTM_API void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu);
+
+/**
+ * @brief Returns current WS ping interval (sec)
+ *
+ * @param[in] rtm instance of the client
+ *
+ * @return current ping interval
+ */
+RTM_API time_t rtm_get_ws_ping_interval(rtm_client_t *rtm);
+
+/**
+ * @brief Sets new WS ping interval. A ws ping frame will be perodically sent to server
+ * to avoid connection refusing. Default: 45 (sec)
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] ws_ping_interval new interval value (sec)
+ *
+ * @return current ping interval
+ */
+RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval);
 
 /**
  * @brief Initialize an instance of rtm_client_t and connects to RTM.

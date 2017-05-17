@@ -72,6 +72,7 @@ struct _rtm_client {
     unsigned is_verbose: 1;
     unsigned last_request_id;
     unsigned last_pong_ts;
+    time_t ws_ping_interval;
 
     unsigned is_secure: 1;
 #if defined(USE_GNUTLS)

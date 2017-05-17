@@ -732,10 +732,12 @@ int main(int argc, char **argv) {
 }
 
 TEST(rtm_test, wait_ping) {
-  rtm_ws_ping_interval = 1;
-
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 45);
+  rtm_set_ws_ping_interval(rtm, 1);
+
+  ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 1);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   time_t last_pong_ts = rtm->last_pong_ts;

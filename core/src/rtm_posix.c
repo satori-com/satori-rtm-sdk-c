@@ -116,19 +116,19 @@ rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeo
   pfd.events = (short) (((writable != 0) ? POLLOUT : 0) | ((readable != 0) ? POLLIN : 0));
   pfd.revents = 0;
 
-  int poll_result, ping_timeout;
-  int ping_interval_ms = rtm_ws_ping_interval * 1000;
+  int poll_result, effective_timeout;
+  int const ping_interval_ms = rtm->ws_ping_interval * 1000;
   unsigned ping_repeat;
   do {
     ping_repeat = FALSE;
-    ping_timeout = timeout > ping_interval_ms || timeout < 0 ? ping_interval_ms : timeout;
-    poll_result = poll(&pfd, 1, ping_timeout);
+    effective_timeout = timeout > ping_interval_ms || timeout < 0 ? ping_interval_ms : timeout;
+    poll_result = poll(&pfd, 1, effective_timeout);
     if (poll_result == 0) {
-      if (ping_timeout == timeout) {
+      if (effective_timeout == timeout) {
         return RTM_ERR_TIMEOUT;
 
       } else if (timeout > 0) {
-        timeout -= ping_timeout;
+        timeout -= effective_timeout;
       }
       rtm_status rc = _rtm_send_ws_ping(rtm);
       if (rc != RTM_OK) {

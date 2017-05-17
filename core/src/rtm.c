@@ -11,7 +11,6 @@
 
 const size_t rtm_client_size = RTM_CLIENT_SIZE;
 
-time_t rtm_ws_ping_interval = 45;
 time_t rtm_connect_timeout = 10;
 
 void(*rtm_error_logger)(const char *message) = rtm_default_error_logger;
@@ -54,6 +53,7 @@ rtm_status rtm_connect(rtm_client_t *rtm,
   rtm->user = user_context;
   rtm->scratch_buffer[0] = '\0';
   rtm->is_secure = NO;
+  rtm->ws_ping_interval = 45;
 
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
@@ -249,6 +249,16 @@ rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *subscription_id, unsig
 int rtm_get_fd(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
   return rtm->fd; // OR: rtm ? rtm->fd : -1;
+}
+
+time_t rtm_get_ws_ping_interval(rtm_client_t *rtm) {
+  ASSERT_NOT_NULL(rtm);
+  return rtm->ws_ping_interval;
+}
+
+void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval) {
+  ASSERT_NOT_NULL(rtm);
+  rtm->ws_ping_interval = ws_ping_interval;
 }
 
 rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
@@ -884,12 +894,12 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
 rtm_status _rtm_send_ws_ping(rtm_client_t *rtm) {
   rtm_status rc = RTM_OK;
 
-  if ((rtm->last_pong_ts + rtm_ws_ping_interval) < time(NULL)) {
+  if ((rtm->last_pong_ts + rtm->ws_ping_interval) < time(NULL)) {
     rc = rtm_send_ws_ping(rtm);
     if (RTM_OK != rc) {
       return rc;
     }
-    rtm->last_pong_ts = time(NULL) + 1 - rtm_ws_ping_interval; // Wait at least 1 second before next send
+    rtm->last_pong_ts = time(NULL) + 1 - rtm->ws_ping_interval; // Wait at least 1 second before next send
   }
 
   return rc;
