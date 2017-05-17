@@ -174,7 +174,7 @@ RTM_API extern time_t rtm_connect_timeout;
 /**
  * @brief Sending PING frame interval in seconds. The default value is @c 45.
  */
-RTM_API extern time_t ws_ping_interval;
+RTM_API extern time_t rtm_ws_ping_interval;
 
 /**
  * @brief Size of ::rtm_client_t in bytes.

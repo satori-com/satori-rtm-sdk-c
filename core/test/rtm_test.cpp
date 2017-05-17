@@ -732,7 +732,7 @@ int main(int argc, char **argv) {
 }
 
 TEST(rtm_test, wait_ping) {
-  ws_ping_interval = 1;
+  rtm_ws_ping_interval = 1;
 
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);

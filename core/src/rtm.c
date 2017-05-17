@@ -11,7 +11,7 @@
 
 const size_t rtm_client_size = RTM_CLIENT_SIZE;
 
-time_t ws_ping_interval = 45;
+time_t rtm_ws_ping_interval = 45;
 time_t rtm_connect_timeout = 10;
 
 void(*rtm_error_logger)(const char *message) = rtm_default_error_logger;
@@ -884,12 +884,12 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
 rtm_status _rtm_send_ws_ping(rtm_client_t *rtm) {
   rtm_status rc = RTM_OK;
 
-  if ((rtm->last_pong_ts + ws_ping_interval) < time(NULL)) {
+  if ((rtm->last_pong_ts + rtm_ws_ping_interval) < time(NULL)) {
     rc = rtm_send_ws_ping(rtm);
     if (RTM_OK != rc) {
       return rc;
     }
-    rtm->last_pong_ts = time(NULL) + 1 - ws_ping_interval; // Wait at least 1 second before next send
+    rtm->last_pong_ts = time(NULL) + 1 - rtm_ws_ping_interval; // Wait at least 1 second before next send
   }
 
   return rc;

@@ -117,7 +117,7 @@ rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeo
   pfd.revents = 0;
 
   int poll_result, ping_timeout;
-  int ping_interval_ms = ws_ping_interval * 1000;
+  int ping_interval_ms = rtm_ws_ping_interval * 1000;
   unsigned ping_repeat;
   do {
     ping_repeat = FALSE;
