@@ -528,15 +528,18 @@ static rtm_status parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *
   ASSERT_NOT_NULL(path_out);
   ASSERT_NOT_NULL(use_tls_out);
 
+  const char port80[] = "80";
+  const char port443[] = "443";
+
   char *auto_port = NULL;
   const char *hostname_start = NULL;
 
   if (strncmp(endpoint, WS_PREFIX, sizeof(WS_PREFIX) - 1) == 0) {
-    auto_port = "80";
+    auto_port = port80;
     hostname_start = endpoint + sizeof(WS_PREFIX) - 1;
     *use_tls_out = NO;
   } else if (strncmp(endpoint, WSS_PREFIX, sizeof(WSS_PREFIX) - 1) == 0) {
-    auto_port = "443";
+    auto_port = port443;
     hostname_start = endpoint + sizeof(WSS_PREFIX) - 1;
     *use_tls_out = YES;
   } else {
