@@ -130,7 +130,7 @@ rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeo
       } else if (timeout > 0) {
         timeout -= effective_timeout;
       }
-      rtm_status rc = _rtm_send_ws_ping(rtm);
+      rtm_status rc = _rtm_check_interval_and_send_ws_ping(rtm);
       if (rc != RTM_OK) {
         return rc;
       }

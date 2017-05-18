@@ -181,7 +181,7 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
 
   if (!ack_id) {
     rtm_status rc;
-    rc = _rtm_send_ws_ping(rtm);
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
     if (rc)
       return rc;
   }
@@ -206,7 +206,7 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
 
   if (!ack_id) {
     rtm_status rc;
-    rc = _rtm_send_ws_ping(rtm);
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
     if (rc)
       return rc;
   }
@@ -322,7 +322,7 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
 
   if (!ack_id) {
     rtm_status rc;
-    rc = _rtm_send_ws_ping(rtm);
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
     if (rc)
       return rc;
   }
@@ -347,7 +347,7 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
 
   if (!ack_id) {
     rtm_status rc;
-    rc = _rtm_send_ws_ping(rtm);
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
     if (rc)
       return rc;
   }
@@ -919,7 +919,7 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
   return error;
 }
 
-rtm_status _rtm_send_ws_ping(rtm_client_t *rtm) {
+rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   rtm_status rc = RTM_OK;
 
   if ((rtm->last_pong_ts + rtm->ws_ping_interval) < time(NULL)) {
@@ -972,7 +972,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
   rtm_status return_code = RTM_OK;
 
-  return_code = _rtm_send_ws_ping(rtm);
+  return_code = _rtm_check_interval_and_send_ws_ping(rtm);
   if (RTM_OK != return_code) {
     return return_code;
   }

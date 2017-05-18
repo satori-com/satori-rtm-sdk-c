@@ -106,7 +106,7 @@ rtm_status _rtm_io_close(rtm_client_t *rtm);
 rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeout);
 ssize_t    _rtm_io_write(rtm_client_t *rtm, const char *buf, size_t len);
 ssize_t    _rtm_io_read(rtm_client_t *rtm, char *buf, size_t len, int wait);
-rtm_status _rtm_send_ws_ping(rtm_client_t *rtm);
+rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm);
 
 void _rtm_calculate_auth_hash(char const *role_secret, char const *nonce, char *output);
 rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *host);
