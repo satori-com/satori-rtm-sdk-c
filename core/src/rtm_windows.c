@@ -123,15 +123,29 @@ rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeo
   pfd.events = (short)(((writable != 0) ? POLLOUT : 0) | ((readable != 0) ? POLLIN : 0));
   pfd.revents = 0;
 
-  int poll_result;
+  int poll_result, effective_timeout;
+  int const ping_interval_ms = rtm->ws_ping_interval * 1000;
   int last_error;
+  unsigned ping_repeat;
   do {
-    poll_result = WSAPoll(&pfd, 1, timeout);
+    ping_repeat = FALSE;
+    effective_timeout = timeout > ping_interval_ms || timeout < 0 ? ping_interval_ms : timeout;
+    poll_result = WSAPoll(&pfd, 1, effective_timeout);
     last_error = WSAGetLastError();
     if (poll_result == 0) {
-      return RTM_ERR_TIMEOUT;
+      if (effective_timeout == timeout) {
+        return RTM_ERR_TIMEOUT;
+
+      } else if (timeout > 0) {
+        timeout -= effective_timeout;
+      }
+      rtm_status rc = _rtm_check_interval_and_send_ws_ping(rtm);
+      if (rc != RTM_OK) {
+        return rc;
+      }
+      ping_repeat = TRUE;
     }
-  } while (poll_result < 0 && (WSAEWOULDBLOCK == last_error || WSAEINTR == last_error));
+  } while (ping_repeat || (poll_result < 0 && (WSAEWOULDBLOCK == last_error || WSAEINTR == last_error)));
 
   if (poll_result < 0) {
     return _rtm_log_error(rtm, RTM_ERR_NETWORK, "error while waiting for socket – errno=%d error=%s",

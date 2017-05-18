@@ -210,6 +210,26 @@ void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
 RTM_API void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu);
 
 /**
+ * @brief Returns current WS ping interval (sec)
+ *
+ * @param[in] rtm instance of the client
+ *
+ * @return current ping interval
+ */
+RTM_API time_t rtm_get_ws_ping_interval(rtm_client_t *rtm);
+
+/**
+ * @brief Sets new WS ping interval. A ws ping frame will be perodically sent to server
+ * to avoid connection refusing. Default: 45 (sec)
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] ws_ping_interval new interval value (sec)
+ *
+ * @return current ping interval
+ */
+RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval);
+
+/**
  * @brief Initialize an instance of rtm_client_t and connects to RTM.
  *
  * @param[in] rtm instance of the client
@@ -452,6 +472,17 @@ RTM_API rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ac
  * @see ::rtm_status for detailed error codes
  */
 RTM_API rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id);
+
+/**
+ * @brief Send a websocket ping frame.
+ *
+ * @return the status of the operation
+ * @retval RTM_OK operation succeeded
+ * @retval RTM_ERR_* an error occurred
+ *
+ * @see ::rtm_status for detailed error codes
+*/
+RTM_API rtm_status rtm_send_ws_ping(rtm_client_t *rtm);
 
 /**
  * @brief Write the string value to a specific channel.
