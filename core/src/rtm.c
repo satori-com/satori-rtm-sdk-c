@@ -922,7 +922,7 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
 rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   rtm_status rc = RTM_OK;
 
-  if ((rtm->last_pong_ts + rtm->ws_ping_interval) < time(NULL)) {
+  if (labs(rtm->last_pong_ts - time(NULL)) > rtm->ws_ping_interval) {
     rc = rtm_send_ws_ping(rtm);
     if (RTM_OK != rc) {
       return rc;
