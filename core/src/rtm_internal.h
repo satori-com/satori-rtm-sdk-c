@@ -71,7 +71,7 @@ struct _rtm_client {
     unsigned is_used: 1;
     unsigned is_verbose: 1;
     unsigned last_request_id;
-    unsigned last_pong_ts;
+    unsigned last_ping_ts;
     time_t ws_ping_interval;
 
     unsigned is_secure: 1;

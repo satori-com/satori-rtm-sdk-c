@@ -740,9 +740,9 @@ TEST(rtm_test, wait_ping) {
   rtm_set_ws_ping_interval(rtm, 1);
   ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 1);
 
-  time_t last_pong_ts = rtm->last_pong_ts;
+  time_t last_ping_ts = rtm->last_ping_ts;
   rtm_wait_timeout(rtm, 3);
-  ASSERT_GT(rtm->last_pong_ts, last_pong_ts);
+  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
 }
 
 TEST(rtm_test, publish_noack_ping) {
@@ -751,7 +751,7 @@ TEST(rtm_test, publish_noack_ping) {
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_set_ws_ping_interval(rtm, 2);
 
-  time_t last_pong_ts = rtm->last_pong_ts;
+  time_t last_ping_ts = rtm->last_ping_ts;
   std::string const channel = make_channel();
 
   time_t start = time(NULL);
@@ -764,5 +764,5 @@ TEST(rtm_test, publish_noack_ping) {
     ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
   };
 
-  ASSERT_GT(rtm->last_pong_ts, last_pong_ts);
+  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
 }
