@@ -234,6 +234,9 @@ You can set the global `rtm_connect_timeout` to the maximum number of seconds to
 
 A global error handler can be set by setting `rtm_error_logger` to any function that takes a `const char* msg`. The default one prints errors to stderr.
 
+> Please note that RTM can send you messages, like "invalid json error", "pong", "subscription error", etc. In order to avoid input buffer overflow
+> you must read incoming messages (`rtm_poll()` or `rtm_wait()`) at least once a minute.
+
 Verbose logging of all incoming and outcoming PDUs
 ==================================================
 
