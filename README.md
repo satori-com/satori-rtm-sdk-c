@@ -206,7 +206,7 @@ Usage
 rtm_client_t *rtm = (rtm_client_t*) malloc (rtm_client_size);
 rtm_status status = rtm_connect(rtm, "wss://myorg.api.satori.com/", "<APPKEY>", rtm_default_pdu_handler, NULL);
 if (status != RTM_OK) {
-  fprintf("Connecting to RTM failed: %s\n", rtm_error_string(status));
+  fprintf(stderr, "Connecting to RTM failed: %s\n", rtm_error_string(status));
   goto cleanup;
 }
 rtm_subscribe(rtm, "channel_a", NULL);
@@ -217,8 +217,15 @@ rtm_close(rtm);
 cleanup: free(rtm);
 ```
 
-`rtm_poll(rtm)` can be substitued for `rtm_wait(rtm)` to avoid the sleep when there is nothing better to do.
-```while (rtm_wait(rtm)>=0) {}```
+`rtm_poll(rtm)` can be substituted for `rtm_wait_timeout(rtm, timeout_in_seconds)` to avoid the sleep.
+```
+do {
+    rtm_status wait_status = rtm_wait_timeout(rtm, 1 /* second */);
+    if (wait_status != RTM_OK && wait_status != RTM_ERR_TIMEOUT) {
+      fprintf(stderr, "Error while waiting for RTM: %s\n", rtm_error_string(wait_status));
+      break;
+    }
+} while (1)```
 
 All channel data events go to the `message_handler` specified in the call to `rtm_connect`, other notifications, such as acknowledgements go to the `event_handler`. The default handlers simply print out to stdout.
 
@@ -227,7 +234,8 @@ In order to use RTM receipts/acknowledgements, simply provide the last argument 
 You can use `rtm_get_fd(rtm)` to get the underlying file descriptor in order to connect to a message loop / select / poll.
 In such a case, simply call `rtm_poll(rtm)` whenever there is data that can be read from the socket.
 `rtm_poll()` never blocks.
-`rtm_wait()` is a blocking alternative to `rtm_poll()` which blocks until at least one data message gets processed. Use it if you have nothing better to do.
+`rtm_wait()` is a blocking alternative to `rtm_poll()` which blocks until at least one data message gets processed.
+`rtm_wait_timeout()` is a variant of `rtm_wait()` that takes a timeout (in seconds). It returns RTM_ERR_TIMEOUT to indicate that timeout occurred.
 `rtm_publish_*()` may block if the network blocks.
 `rtm_connect()` will block until the connection handshake is complete.
 You can set the global `rtm_connect_timeout` to the maximum number of seconds to wait for the connection handshake to complete.
