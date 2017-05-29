@@ -71,7 +71,7 @@ If no flags are passed, CMake enables Apple SSL for Mac or OpenSSL for others.
 
 ## iOS wrapper
 
-The SatoriRtmSdkWrapper framework for iOS enables you to easily integrate your iOS apps with Satori RTM. Using the framework, you can publish and subscribe messages to RTM. There are multiple ways for installing the SatoriRtmSdkWrapper framework in your own project.
+The SatoriRtmSdkWrapper framework for iOS enables you to integrate your iOS apps with Satori RTM. Using the framework, you can publish and subscribe messages to RTM. There are multiple ways for installing the SatoriRtmSdkWrapper framework in your own project.
 
 ### Installation with CocoaPods
 
