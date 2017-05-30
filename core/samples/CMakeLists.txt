@@ -12,3 +12,4 @@ macro(compile_sample name)
 endmacro(compile_sample)
 
 compile_sample(sample1)
+compile_sample(subscribe_to_open_data_channel)
