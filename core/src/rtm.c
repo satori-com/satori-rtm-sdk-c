@@ -85,8 +85,8 @@ rtm_status rtm_connect(rtm_client_t *rtm,
   if (rc)
     return rc;
 
-  // Connection established. Set current time as the last pong time.
-  rtm->last_pong_ts = time(NULL);
+  // Connection established. Set current time as the last ping time.
+  rtm->last_ping_ts = time(NULL);
 
   rc = send_http_upgrade_request(rtm, hostname, path);
   if (rc)
@@ -168,6 +168,14 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
   CHECK_MAX_SIZE(string, RTM_MAX_MESSAGE_SIZE);
 
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+  }
+
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
@@ -179,13 +187,6 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
   p += _rtm_json_escape(p, size - (p - buf), string);
   p += safer_snprintf(p, size - (p - buf), "\"}}");
 
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
-      return rc;
-  }
-
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
@@ -195,6 +196,14 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
   CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
 
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+  }
+
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
@@ -203,13 +212,6 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
   p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
   p += _rtm_json_escape(p, size - (p - buf), channel);
   p += safer_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
-      return rc;
-  }
 
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
@@ -309,6 +311,14 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
   CHECK_MAX_SIZE(string, RTM_MAX_MESSAGE_SIZE);
 
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+  }
+
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
@@ -320,13 +330,6 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
   p += _rtm_json_escape(p, size - (p - buf), string);
   p += safer_snprintf(p, size - (p - buf), "\"}}");
 
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
-      return rc;
-  }
-
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
@@ -336,6 +339,14 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
   CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
 
+  if (!ack_id) {
+    rtm_status rc;
+    rc = _rtm_check_interval_and_send_ws_ping(rtm);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+  }
+
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
@@ -344,13 +355,6 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
   p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
   p += _rtm_json_escape(p, size - (p - buf), channel);
   p += safer_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
-      return rc;
-  }
 
   ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
@@ -922,12 +926,12 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
 rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   rtm_status rc = RTM_OK;
 
-  if (labs(rtm->last_pong_ts - time(NULL)) > rtm->ws_ping_interval) {
+  if (labs(time(NULL) - rtm->last_ping_ts) > rtm->ws_ping_interval) {
     rc = rtm_send_ws_ping(rtm);
     if (RTM_OK != rc) {
       return rc;
     }
-    rtm->last_pong_ts = time(NULL) + 1 - rtm->ws_ping_interval; // Wait at least 1 second before next send
+    rtm->last_ping_ts = time(NULL);
   }
 
   return rc;
@@ -1066,9 +1070,10 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         ws_write(rtm, WS_PONG, ws_frame, payload_length);
 
       } else if (WS_PONG == frame_opcode) { /* pong response */
-        rtm->last_pong_ts = time(NULL);
-
         // Pong response is for internal use. Call rtm_poll once again to get requested data
+        if (rtm->is_verbose) {
+          fprintf(stderr, "RECV: pong\n");
+        }
         return rtm_poll(rtm);
       }
 
