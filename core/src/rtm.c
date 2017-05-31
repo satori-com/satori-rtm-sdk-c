@@ -171,8 +171,9 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
   if (!ack_id) {
     rtm_status rc;
     rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
+    if (RTM_OK != rc) {
       return rc;
+    }
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
@@ -198,8 +199,9 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
   if (!ack_id) {
     rtm_status rc;
     rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
+    if (RTM_OK != rc) {
       return rc;
+    }
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
@@ -312,8 +314,9 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
   if (!ack_id) {
     rtm_status rc;
     rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
+    if (RTM_OK != rc) {
       return rc;
+    }
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
@@ -339,8 +342,9 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
   if (!ack_id) {
     rtm_status rc;
     rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (rc)
+    if (RTM_OK != rc) {
       return rc;
+    }
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
