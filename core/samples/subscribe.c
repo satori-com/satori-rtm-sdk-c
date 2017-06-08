@@ -32,7 +32,8 @@ void pdu_handler(rtm_client_t *rtm, rtm_pdu_t const *pdu) {
 
 int main(void) {
     rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
-    int rc = rtm_connect(rtm, endpoint, appkey, pdu_handler, 0);
+    rtm_init(rtm, pdu_handler, 0);
+    int rc = rtm_connect(rtm, endpoint, appkey);
 
     if (rc != RTM_OK) {
         printf("rtm_connect failed with status %d\n", rc);

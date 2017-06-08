@@ -112,7 +112,8 @@ static std::string make_channel(int len = 6) {
 TEST(rtm_test, subscribe) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, rtm_default_pdu_handler, nullptr);
+  rtm_init(rtm, rtm_default_pdu_handler, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
   rc = rtm_subscribe(rtm, channel.c_str(), &request_id);
@@ -123,7 +124,8 @@ TEST(rtm_test, subscribe) {
 TEST(rtm_test, publish_and_subscribe_with_history) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   std::string const channel = make_channel();
@@ -154,7 +156,8 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
 
 TEST(rtm_test, connect_ssl) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_close(rtm);
 }
@@ -162,7 +165,8 @@ TEST(rtm_test, connect_ssl) {
 TEST(rtm_test, publish) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
   rc = rtm_publish_string(rtm, channel.c_str(), "my message", nullptr);
@@ -174,7 +178,8 @@ TEST(rtm_test, publish) {
 TEST(rtm_test, overflow) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
 
@@ -189,7 +194,8 @@ TEST(rtm_test, publish_json_and_read) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   std::string const channel = make_channel();
@@ -217,7 +223,8 @@ TEST(rtm_test, read_write_delete) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   std::string const channel = make_channel();
@@ -271,7 +278,8 @@ TEST(rtm_test, read_write_delete) {
 TEST(rtm_test, handshake_and_authenticate) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   rc = rtm_handshake(rtm, role_name, &request_id);
@@ -295,7 +303,8 @@ TEST(rtm_test, handshake_and_authenticate) {
 TEST(rtm_test, publish_and_receive) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   std::string const channel = make_channel();
@@ -340,7 +349,8 @@ TEST(rtm_test, publish_ws_frame_with_126_bytes_payload) {
 TEST(rtm_test, disconnect) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_close(rtm);
   std::string const channel = make_channel();
@@ -350,7 +360,8 @@ TEST(rtm_test, disconnect) {
 
 TEST(rtm_test, rtm_poll_does_not_hang_ssl) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   ASSERT_EQ(RTM_WOULD_BLOCK, rtm_poll(rtm)) << "Failed to poll";
@@ -361,7 +372,8 @@ TEST(rtm_test, rtm_poll_does_not_hang_ssl) {
 
 TEST(rtm_test, rtm_poll_does_not_hang_nossl) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   ASSERT_EQ(RTM_WOULD_BLOCK, rtm_poll(rtm)) << "Failed to poll";
@@ -371,7 +383,8 @@ TEST(rtm_test, rtm_poll_does_not_hang_nossl) {
 
 TEST(rtm_test, rtm_wait_timeout) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   time_t before = time(nullptr);
@@ -406,7 +419,8 @@ TEST(rtm_test, unsubscribe) {
   unsigned int request_id;
 
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
   rc = rtm_subscribe(rtm, channel.c_str(), &request_id);
@@ -432,7 +446,8 @@ TEST(rtm_test, unsubscribe) {
 TEST(rtm_test, check_rtm_fd) {
   int fd;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, rtm_default_pdu_handler, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   fd = rtm_get_fd(rtm);
   ASSERT_GT(fd, 0);
@@ -451,7 +466,8 @@ TEST(rtm_test, get_user_context) {
   u_context context = {12, (char *)"Hello"};
 
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, &context);
+  rtm_init(rtm, pdu_recorder, &context);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   u_context *rtm_context = static_cast<u_context *>(rtm_get_user_context(rtm));
@@ -467,7 +483,8 @@ TEST(rtm_test, rtm_default_pdu_handler) {
   std::string const channel = make_channel();
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
-  int rc = rtm_connect(rtm, endpoint, appkey, rtm_default_pdu_handler, nullptr);
+  rtm_init(rtm, rtm_default_pdu_handler, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   rc = rtm_write_string(rtm, channel.c_str(), "publish_msg", &request_id);
@@ -484,7 +501,8 @@ TEST(rtm_test, read_with_body) {
 
   std::string const channel = make_channel();
 
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   std::string const body = R"({"channel":")" + channel + R"("})";
@@ -526,7 +544,8 @@ TEST(rtm_test, rtm_write_json) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
   std::string const channel = make_channel();
 
-  int rc = rtm_connect(rtm, endpoint, appkey, &pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   test_json["intval"] = 12345;
@@ -552,7 +571,8 @@ TEST(rtm_test, rtm_write_json) {
 TEST(rtm_test, publish_and_receive_all_json_types) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   std::string const channel = make_channel();
@@ -594,7 +614,8 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 TEST(rtm_test, DISABLED_rtm_search_test) {
   unsigned int request_id;
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   std::string const channel = make_channel();

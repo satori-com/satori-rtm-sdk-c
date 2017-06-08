@@ -9,8 +9,9 @@
  * @code{.c}
  * // allocate some memory to store the client
  * rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
+ * rtm_init(rtm, rtm_default_pdu_handler, 0);
  * // connect to RTM
- * int rc = rtm_connect(rtm, endpoint, appkey, rtm_default_pdu_handler, 0);
+ * int rc = rtm_connect(rtm, endpoint, appkey);
  * if (rc != RTM_OK) {
  *     printf("rtm_connect failed with status %d\n", rc);
  *     exit(1);
@@ -319,6 +320,26 @@ RTM_API time_t rtm_get_ws_ping_interval(rtm_client_t *rtm);
 RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval);
 
 /**
+ * @brief Initialize an instance of rtm_client_t
+ *
+ * @param[in] rtm a buffer of size RTM_CLIENT_SIZE
+ * @param[in] pdu_handler the callback for non data PDUs
+ * @param[in] user_context an opaque user specified data associated with this 
+ *            RTM object
+ *
+ *
+ * @return the status of the operation
+ * @retval RTM_OK
+ *
+ * @see ::rtm_close
+ * @see ::rtm_get_user_context
+ */
+RTM_API rtm_status rtm_init(
+  rtm_client_t *rtm,
+  rtm_pdu_handler_t *pdu_handler,
+  void *user_context);
+
+/**
  * @brief Initialize an instance of rtm_client_t and connects to RTM.
  *
  * @param[in] rtm instance of the client
@@ -341,9 +362,7 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  */
 RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
                        const char *endpoint,
-                       const char *appkey,
-                       rtm_pdu_handler_t *pdu_handler,
-                       void *user_context);
+                       const char *appkey);
 
 /**
  * @brief Enable logging of incoming and outcoming PDUs.
@@ -732,7 +751,7 @@ RTM_API int rtm_get_fd(rtm_client_t *rtm);
  *
  * @param[in] rtm instance of the client.
  *
- * @returns the user context pointer specified when calling ::rtm_connect
+ * @returns the user context pointer specified when calling ::rtm_init
  */
 RTM_API void *rtm_get_user_context(rtm_client_t *rtm);
 

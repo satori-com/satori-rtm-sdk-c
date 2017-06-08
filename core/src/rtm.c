@@ -34,14 +34,12 @@ static ssize_t prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
 static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out);
 
-rtm_status rtm_connect(rtm_client_t *rtm,
-                       const char *endpoint,
-                       const char *appkey,
-                       rtm_pdu_handler_t *pdu_handler,
-                       void *user_context) {
+RTM_API rtm_status rtm_init(
+  rtm_client_t *rtm,
+  rtm_pdu_handler_t *pdu_handler,
+  void *user_context) {
+
   CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(endpoint, RTM_MAX_ENDPOINT_SIZE);
-  CHECK_MAX_SIZE(appkey, RTM_MAX_APPKEY_SIZE);
   CHECK_PARAM(pdu_handler);
 
   memset(rtm, 0, RTM_CLIENT_SIZE);
@@ -59,6 +57,16 @@ rtm_status rtm_connect(rtm_client_t *rtm,
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
   }
+
+  return RTM_OK;
+}
+
+rtm_status rtm_connect(rtm_client_t *rtm,
+                       const char *endpoint,
+                       const char *appkey) {
+  CHECK_PARAM(rtm);
+  CHECK_MAX_SIZE(endpoint, RTM_MAX_ENDPOINT_SIZE);
+  CHECK_MAX_SIZE(appkey, RTM_MAX_APPKEY_SIZE);
 
   char hostname[_RTM_MAX_HOSTNAME_SIZE + 1] = { 0 };
   char port[_RTM_MAX_PORT_SIZE + 1] = { 0 };

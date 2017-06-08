@@ -89,9 +89,10 @@ int authenticate(rtm_client_t *rtm) {
 int main(int argc, const char *argv[]) {
   rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
   client_state state = {0};
+  rtm_init(rtm, &my_pdu_handler, &state);
   rtm_status rc;
 
-  rc = rtm_connect(rtm, endpoint, appkey, &my_pdu_handler, &state);
+  rc = rtm_connect(rtm, endpoint, appkey);
 
   if (RTM_OK != rc) {
     fprintf(stderr, "Unable to connect to RTM: %s\n", rtm_error_string(rc));
