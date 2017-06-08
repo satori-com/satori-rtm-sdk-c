@@ -14,14 +14,18 @@ struct program_state_t {
 void pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   struct program_state_t *program_state = (struct program_state_t *)rtm_get_user_context(rtm);
 
-  if (0 == strcmp("rtm/subscribe/ok", pdu->action)) {
-    program_state->subscribe_ok = 1;
-    return;
-  } else if (0 == strcmp("rtm/subscribe/error", pdu->action)) {
-    program_state->subscribe_ok = 0;
-    return;
-  } else if (0 == strcmp("rtm/subscription/data", pdu->action)) {
-    rtm_default_pdu_handler(rtm, pdu);
+  switch(pdu->action) {
+    case RTM_ACTION_SUBSCRIBE_OK:
+      program_state->subscribe_ok = 1;
+      return;
+    case RTM_ACTION_SUBSCRIBE_ERROR:
+      program_state->subscribe_ok = 0;
+      return;
+    case RTM_ACTION_SUBSCRIPTION_DATA:
+      rtm_default_pdu_handler(rtm, pdu);
+      return;
+    default:
+      return;
   }
 }
 
@@ -31,7 +35,8 @@ int main(void) {
   rtm_status status;
   struct program_state_t program_state = {0};
 
-  status = rtm_connect(rtm, endpoint, appkey, &pdu_handler, &program_state);
+  rtm_init(rtm, &pdu_handler, &program_state);
+  status = rtm_connect(rtm, endpoint, appkey);
 
   if (status != RTM_OK) {
     fprintf(stderr, "Connecting to RTM failed: %s\n", rtm_error_string(status));

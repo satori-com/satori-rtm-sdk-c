@@ -337,7 +337,8 @@ TEST(rtm_test, publish_and_receive) {
 
 TEST(rtm_test, publish_ws_frame_with_126_bytes_payload) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   // channel is hardcoded with fixed length to get 126 bytes payload for WS frame
@@ -345,10 +346,10 @@ TEST(rtm_test, publish_ws_frame_with_126_bytes_payload) {
   rc = rtm_publish_json(rtm, "xxxxxxxxxxxxxxx", "{\n   \"cmd_data\" : \"1\",\n   \"cmd_type\" : \"ack\"\n}\n", &request_id);
   ASSERT_EQ(RTM_OK, rc) << "Failed while publishing";
 
-  pdu_t pdu;
-  rc = next_pdu(rtm, &pdu);
+  event_t event;
+  rc = next_event(rtm, &event);
   ASSERT_EQ(rc, RTM_OK) << "Failed to wait publish response";
-  ASSERT_EQ("rtm/publish/ok", pdu.action);
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
 
   rtm_close(rtm);
 }
@@ -490,7 +491,7 @@ TEST(rtm_test, raw_pdu_handler) {
 
   rtm_init(rtm, rtm_default_pdu_handler, nullptr);
   rtm_set_raw_pdu_handler(rtm, raw_pdu_recorder);
-  int rc = rtm_connect(rtm, ws_endpoint, appkey);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   unsigned int request_id;
@@ -822,7 +823,8 @@ int main(int argc, char **argv) {
 
 TEST(rtm_test, wait_ping) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
   ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 45);
@@ -836,7 +838,8 @@ TEST(rtm_test, wait_ping) {
 
 TEST(rtm_test, publish_noack_ping) {
   auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  int rc = rtm_connect(rtm, endpoint, appkey, pdu_recorder, nullptr);
+  rtm_init(rtm, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_set_ws_ping_interval(rtm, 2);
 
