@@ -1001,6 +1001,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
           case FIELD_ITERATOR:
             el[el_len - 1] = 0;
             ASSERT(*el == '[');
+            // TODO: skip whitespace
             ((rtm_list_iterator_t *)field.dst)->position = el + 1;
             break;
         }
@@ -1031,6 +1032,7 @@ char *rtm_iterate(rtm_list_iterator_t const *iterator) {
     if (el[el_len] == ']') {
       iter->position = NULL;
     } else {
+      // TODO: skip whitespace
       iter->position = el + el_len + 1;
     }
   }
@@ -1049,83 +1051,6 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
   rtm->is_used = YES;
   rtm->handle_pdu(rtm, &pdu);
   rtm->is_used = NO;
-}
-
-void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t *pdu,
-    char* const buf, size_t size, rtm_message_handler_t *data_handler) {
-  ASSERT_NOT_NULL(rtm);
-  ASSERT_NOT_NULL(pdu);
-  ASSERT_NOT_NULL(buf);
-  ASSERT_NOT_NULL(data_handler);
-
-  if (pdu->action != RTM_ACTION_SUBSCRIPTION_DATA) {
-    return;
-  }
-
-  char *subid_json = NULL;
-  ssize_t subid_json_len = 0;
-
-  char *messages_json = NULL;
-
-  char *p = _rtm_json_find_begin_obj((char *) pdu->body);
-  while (TRUE) {
-    char *el;
-    ssize_t el_len;
-
-    p = _rtm_json_find_field_name(p, &el, &el_len);
-    if (el_len <= 0) {
-      break;
-    }
-    if (!strncmp("\"subscription_id\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &subid_json, &subid_json_len);
-    } else if (!strncmp("\"messages\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &messages_json, NULL);
-    } else {
-      p = _rtm_json_find_element(p, &el, &el_len);
-    }
-  }
-
-  if (!subid_json || !messages_json) {
-    return;
-  }
-
-  // skip string quotes
-  if (subid_json[0] == '\"' && subid_json[subid_json_len-1] == '\"') {
-    subid_json_len -= 2;
-    subid_json++;
-  }
-
-  if (size < subid_json_len) {
-    return;
-  }
-
-  // copy channel to buffer and skip quotes
-  char *subid = buf;
-  safer_snprintf(subid, size, "%.*s", subid_json_len, subid_json);
-  char *message = subid + subid_json_len + 1;
-
-  // skip square bracket
-  char *msg_start = strchr(messages_json, '[');
-  if (!msg_start) {
-    return;
-  }
-  msg_start++;
-
-  char *end_of_messages = strrchr(msg_start, ']');
-  if (!end_of_messages) {
-    return;
-  }
-
-  while (msg_start < end_of_messages) {
-    char *el;
-    ssize_t el_len;
-    msg_start = _rtm_json_find_element(msg_start, &el, &el_len);
-    if (0 == el_len) {
-      continue;
-    }
-    safer_snprintf(message, size - (message - buf), "%.*s", el_len, el);
-    data_handler(rtm, subid, message);
-  }
 }
 
 rtm_status _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {

@@ -9,30 +9,22 @@ struct subscription_data_t {
   std::string message;
 };
 
-void record_subscription_data(rtm_client_t* rtm, rtm_pdu_t& pdu) {
-  size_t const size = 1024;
-  char buf[size];
-  rtm_parse_subscription_data(rtm, &pdu, buf, size,
-      [](rtm_client_t *rtm, const char *sub_id, const char *message) {
-        std::queue<subscription_data_t> *q = static_cast<std::queue<subscription_data_t> *>(rtm->user);
-        subscription_data_t sub_data;
-        sub_data.sub_id = sub_id ? std::string(sub_id) : "null";
-        sub_data.message = message ? std::string(message) : "null";
-        q->push(sub_data);
-      });
-}
-
 rtm_client_t *rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
 TEST(rtm_json, pdu_rtm_standard_response) {
   rtm_pdu_t pdu{};
-  char json[] = R"({"action":"rtm/publish/ok","id":42,"body":{"position":"1479315802:0","messages":[ "a", null, 42 ]}})";
+  char json[] = R"({"action":"rtm/subscription/data","body":{"position":"1479315802:0","messages":["a",null,42 ]}})";
   rtm_parse_pdu(json, &pdu);
 
-  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.action);
+  ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, pdu.action);
   ASSERT_NOT_NULL(pdu.position);
   ASSERT_TRUE(0 == strcmp("1479315802:0", pdu.position));
-  ASSERT_EQ(42, pdu.request_id);
+
+  for (auto expected_message : {"\"a\"", "null", "42"}) {
+      char *got_message = rtm_iterate(&pdu.message_iterator);
+      ASSERT(got_message);
+      ASSERT_EQ(0, strcmp(expected_message, got_message));
+  }
 }
 
 TEST(rtm_json, pdu_field_in_random_order) {
@@ -73,65 +65,6 @@ TEST(rtm_json, pdu_empty_json) {
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
   ASSERT_TRUE(nullptr == pdu.body);
   ASSERT_EQ(0, pdu.request_id);
-}
-
-TEST(rtm_json, subscription_data) {
-  std::queue<subscription_data_t> message_queue;
-  rtm_client_t *rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
-  rtm->user = &message_queue;
-
-  rtm_pdu_t pdu{};
-  pdu.action = RTM_ACTION_SUBSCRIPTION_DATA;
-  pdu.body = R"({"next":"1479315802:0","messages":[ "a", null, 42, {} ],"subscription_id":"channel"})";
-  record_subscription_data(rtm, pdu);
-
-  ASSERT_FALSE(message_queue.empty());
-  ASSERT_EQ("channel", message_queue.front().sub_id);
-  ASSERT_EQ(R"("a")", message_queue.front().message);
-  message_queue.pop();
-
-  ASSERT_FALSE(message_queue.empty());
-  ASSERT_EQ("channel", message_queue.front().sub_id);
-  ASSERT_EQ("null", message_queue.front().message);
-  message_queue.pop();
-
-  ASSERT_FALSE(message_queue.empty());
-  ASSERT_EQ("channel", message_queue.front().sub_id);
-  ASSERT_EQ("42", message_queue.front().message);
-  message_queue.pop();
-
-  ASSERT_FALSE(message_queue.empty());
-  ASSERT_EQ("channel", message_queue.front().sub_id);
-  ASSERT_EQ("{}", message_queue.front().message);
-  message_queue.pop();
-
-  ASSERT_TRUE(message_queue.empty());
-
-  pdu.body = R"(  { "messages"   :   [ "foobar" ],  "subscription_id"  :"channel"  })";
-  record_subscription_data(rtm, pdu);
-
-  ASSERT_FALSE(message_queue.empty());
-  ASSERT_EQ("channel", message_queue.front().sub_id);
-  ASSERT_EQ(R"("foobar")", message_queue.front().message);
-  message_queue.pop();
-  ASSERT_TRUE(message_queue.empty());
-
-  pdu.body = R"(  {  "subscription_id"  :"channel",  "messages"   :   [  ]  })";
-  record_subscription_data(rtm, pdu);
-  ASSERT_TRUE(message_queue.empty());
-
-  pdu.body = R"({"subscription_id":"channel","messages":[]})";
-  record_subscription_data(rtm, pdu);
-  ASSERT_TRUE(message_queue.empty());
-
-  pdu.body = R"({"messages":[{"subscription_id":"another_channel"}],"subscription_id":"channel-2"})";
-  record_subscription_data(rtm, pdu);
-
-  ASSERT_FALSE(message_queue.empty());
-  ASSERT_EQ("channel-2", message_queue.front().sub_id);
-  ASSERT_EQ(R"({"subscription_id":"another_channel"})", message_queue.front().message);
-  message_queue.pop();
-  ASSERT_TRUE(message_queue.empty());
 }
 
 TEST(rtm_json, find_element) {
