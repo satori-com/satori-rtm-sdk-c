@@ -89,6 +89,13 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   event_queue.push(event);
 }
 
+void raw_pdu_recorder(rtm_client_t *rtm, char const *raw_pdu) {
+  event_t event{};
+  event.info = std::string(raw_pdu);
+  event_queue.push(event);
+}
+
+
 rtm_status next_event(rtm_client_t *rtm, event_t* event) {
   rtm_status rc = RTM_OK;
   while (event_queue.size() == 0 && rc == RTM_OK) {
@@ -474,6 +481,32 @@ TEST(rtm_test, get_user_context) {
   ASSERT_EQ(context.user_id, rtm_context->user_id);
   ASSERT_EQ(context.data, rtm_context->data);
 
+  rtm_close(rtm);
+}
+
+TEST(rtm_test, raw_pdu_handler) {
+  std::string const channel = make_channel();
+  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+
+  rtm_init(rtm, rtm_default_pdu_handler, nullptr);
+  rtm_set_raw_pdu_handler(rtm, raw_pdu_recorder);
+  int rc = rtm_connect(rtm, ws_endpoint, appkey);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
+
+  unsigned int request_id;
+  rc = rtm_write_string(rtm, channel.c_str(), "publish_msg", &request_id);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed while write";
+  
+  rc = rtm_wait_timeout(rtm, 15);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed while waiting rtm response";
+
+  event_t event;
+  rc = next_event(rtm, &event);
+
+  ASSERT_LE(event.info.find(R"("action":"rtm/write/ok")"), std::string::npos);
+  ASSERT_LE(event.info.find(R"("id":1)"), std::string::npos);
+
+  ASSERT_EQ(RTM_OK, rc);
   rtm_close(rtm);
 }
 

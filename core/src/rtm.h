@@ -221,6 +221,7 @@ typedef void(rtm_message_handler_t)(rtm_client_t *rtm, const char *subscription_
  *
  */
 typedef void(rtm_pdu_handler_t)(rtm_client_t *rtm, const rtm_pdu_t *pdu);
+typedef void(rtm_raw_pdu_handler_t)(rtm_client_t *rtm, char const *raw_pdu);
 
 /**
  * @brief Global error logging function.
@@ -363,6 +364,8 @@ RTM_API rtm_status rtm_init(
 RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
                        const char *endpoint,
                        const char *appkey);
+
+RTM_API void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler);
 
 /**
  * @brief Enable logging of incoming and outcoming PDUs.
