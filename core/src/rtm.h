@@ -543,8 +543,6 @@ RTM_API rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *channel,
  * @param[out] pdu_out parsed PDU.
  */
 RTM_API void rtm_parse_pdu(char *json, rtm_pdu_t *pdu_out);
-RTM_API void rtm_parse_subscription_data(rtm_client_t *rtm, const rtm_pdu_t* pdu,
-    char* const buf, size_t size, rtm_message_handler_t *handler);
 
 /**
  * @brief Read the latest published message.

@@ -154,26 +154,24 @@ static void calc_publish_ok_stats(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   }
 }
 
-static void on_subscription_data(rtm_client_t *rtm, const char *subscription_id, const char *message) {
-  rtm_stat* stat = (rtm_stat *) rtm_get_user_context(rtm);
-
-  double now = bump(stat);
-  maybe_print(stat, now, "subscription-data %.1f↓ rps\n");
-}
-
 void calc_subscription_data_stats(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   if (RTM_ACTION_SUBSCRIPTION_DATA != pdu->action) {
     return;
   }
-  rtm_parse_subscription_data(rtm, pdu, channel_data_buf, RTM_MAX_MESSAGE_SIZE,
-      &on_subscription_data);
+  rtm_stat* stat = (rtm_stat *) rtm_get_user_context(rtm);
+  char *message;
+  while ((message = rtm_iterate(&pdu->message_iterator))) {
+      double now = bump(stat);
+      maybe_print(stat, now, "subscription-data %.1f↓ rps\n");
+  }
 }
 
 static int bench_subscribe(struct bench_params *opts) {
   rtm_stat stat = create_stat();
   rtm_client_t* rtm = (rtm_client_t *) alloca(rtm_client_size);
 
-  int rc = rtm_connect(rtm, opts->endpoint, opts->appkey, &calc_subscription_data_stats, &stat);
+  rtm_init(rtm, &calc_subscription_data_stats, &stat);
+  int rc = rtm_connect(rtm, opts->endpoint, opts->appkey);
   if (RTM_OK != rc) {
     return rc;
   }
@@ -208,7 +206,8 @@ static int bench_publish(struct bench_params* opts) {
 
   rtm_client_t* rtm = (rtm_client_t *) alloca(rtm_client_size);
 
-  int rc = rtm_connect(rtm, opts->endpoint, opts->appkey, &calc_publish_ok_stats, &ack_stat);
+  rtm_init(rtm, &calc_publish_ok_stats, &ack_stat);
+  int rc = rtm_connect(rtm, opts->endpoint, opts->appkey);
   if (RTM_OK != rc) {
     return rc;
   }
