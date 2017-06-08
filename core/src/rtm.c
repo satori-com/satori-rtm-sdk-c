@@ -40,7 +40,6 @@ RTM_API rtm_status rtm_init(
   void *user_context) {
 
   CHECK_PARAM(rtm);
-  CHECK_PARAM(pdu_handler);
 
   memset(rtm, 0, RTM_CLIENT_SIZE);
   rtm->fd = -1;
@@ -1045,12 +1044,22 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
   ASSERT_NOT_NULL(message);
   ASSERT(message_len > 0);
 
-  rtm_pdu_t pdu = {0};
-  rtm_parse_pdu(message, &pdu);
-
   rtm->is_used = YES;
-  rtm->handle_pdu(rtm, &pdu);
+  if (rtm->handle_raw_pdu) {
+      rtm->handle_raw_pdu(rtm, message);
+  }
+
+  if (rtm->handle_pdu) {
+      rtm_pdu_t pdu = {0};
+      rtm_parse_pdu(message, &pdu);
+
+      rtm->handle_pdu(rtm, &pdu);
+  }
   rtm->is_used = NO;
+}
+
+void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler) {
+    rtm->handle_raw_pdu = handler;
 }
 
 rtm_status _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {

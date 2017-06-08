@@ -85,6 +85,7 @@ struct _rtm_client {
 #endif
 
     rtm_pdu_handler_t *handle_pdu;
+    rtm_raw_pdu_handler_t *handle_raw_pdu;
 
     // The buffers are padded so we are always guaranteed to have
     // enough bytes to pre pad any buffer with websocket framing
