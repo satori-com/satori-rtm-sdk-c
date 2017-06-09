@@ -23,7 +23,8 @@ void my_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   client_state *state = (client_state *) rtm_get_user_context(rtm);
   switch (pdu->action) {
     case RTM_ACTION_HANDSHAKE_OK:
-      strncpy(state->nonce, pdu->nonce, NONCE_SIZE - 1);
+      strncpy(state->nonce, pdu->nonce, NONCE_SIZE);
+      state->nonce[NONCE_SIZE - 1] = 0;
       break;
     case RTM_ACTION_AUTHENTICATE_OK:
       fprintf(stderr, "Authentication succeed\n");

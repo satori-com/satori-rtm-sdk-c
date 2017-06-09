@@ -78,6 +78,9 @@ extern "C" {
  */
 #define RTM_AUTHENTICATION_HASH_SIZE (24)
 
+/**
+ * @brief The set of all possible actions that PDUs incoming from RTM can have
+ */
 enum rtm_action_t {
     RTM_ACTION_UNKNOWN = 0,
     RTM_ACTION_AUTHENTICATE_ERROR,
@@ -106,6 +109,14 @@ enum rtm_action_t {
     RTM_ACTION_SENTINEL
 };
 
+/**
+ * @brief SDK uses this type to return collections of strings,
+ *        for example messages in subscription_data PDUs.
+ *        User code repeatedly calls ::rtm_iterate with the
+ *        iterator, getting all messages one by one.
+ *
+ * @see ::rtm_iterate
+ */
 typedef struct {
     char *position;
 } rtm_list_iterator_t;
@@ -180,7 +191,7 @@ typedef struct _rtm_client rtm_client_t;
 /**
  * @brief Type of callback function invoked when client receives messages from RTM.
  *
- * @note when ::rtm_connect is called, a pointer to a user defined structure
+ * @note when ::rtm_init is called, a pointer to a user defined structure
  * can be set. You can get this value from @p rtm in the context of this
  * callback by calling ::rtm_get_user_context:
  *
@@ -195,7 +206,7 @@ typedef struct _rtm_client rtm_client_t;
  *
  * @see ::rtm_default_message_handler for details.
  * @see ::rtm_get_user_context
- * @see ::rtm_connect
+ * @see ::rtm_init
  */
 typedef void(rtm_message_handler_t)(rtm_client_t *rtm, const char *subscription_id,
              const char *message);
@@ -203,7 +214,7 @@ typedef void(rtm_message_handler_t)(rtm_client_t *rtm, const char *subscription_
 /**
  * @brief Type of callback function invoked when client receives PDU from RTM.
  *
- * @note when ::rtm_connect is called, a pointer to a user defined structure can be
+ * @note when ::rtm_init is called, a pointer to a user defined structure can be
  * set. You can get this value from @p rtm in the context of this callback by 
  * calling ::rtm_get_user_context:
  *
@@ -216,7 +227,7 @@ typedef void(rtm_message_handler_t)(rtm_client_t *rtm, const char *subscription_
  * @endcode
  *
  * @see ::rtm_default_pdu_handler for details.
- * @see ::rtm_connect
+ * @see ::rtm_init
  * @see ::rtm_get_user_context
  *
  */
@@ -238,7 +249,6 @@ typedef enum {
     RTM_OK = 0,                   /*!< No error.                                     */
     RTM_WOULD_BLOCK,              /*!< The operation would be a blocking IO
                                        operation                                     */
-    RTM_ERR_BEGIN = -100,
     RTM_ERR_PARAM = -99,          /*!< One of the parameters passed to the function
                                        is incorrect                                  */
     RTM_ERR_PARAM_INVALID = -98,  /*!< A parameter of the function is invalid        */
@@ -249,12 +259,8 @@ typedef enum {
                                        RTM                                           */
     RTM_ERR_WRITE = -93,          /*!< An error occurred while sending data to RTM   */
     RTM_ERR_PROTOCOL = -92,       /*!< An error occurred in the protocol layer       */
-    RTM_ERR_NO_TLS = -91,         /*!< The call to ::rtm_connect mentioned a TLS
-                                       endpoint, but the SDK was not built with TLS
-                                       support                                       */
-    RTM_ERR_TLS = -90,            /*!< An unexpected error happened in the TLS layer */
-    RTM_ERR_TIMEOUT = -89,        /*!< The operation timed out                       */
-    RTM_ERR_END
+    RTM_ERR_TLS = -91,            /*!< An unexpected error happened in the TLS layer */
+    RTM_ERR_TIMEOUT = -90         /*!< The operation timed out                       */
 } rtm_status;
 
 /**
@@ -324,7 +330,7 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  * @brief Initialize an instance of rtm_client_t
  *
  * @param[in] rtm a buffer of size RTM_CLIENT_SIZE
- * @param[in] pdu_handler the callback for non data PDUs
+ * @param[in] pdu_handler the callback for all PDUs
  * @param[in] user_context an opaque user specified data associated with this 
  *            RTM object
  *
@@ -334,6 +340,10 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  *
  * @see ::rtm_close
  * @see ::rtm_get_user_context
+ *
+ * @note If you choose to work with unparsed PDUs, pass null as pdu_handler
+ *       here and then use ::rtm_set_raw_pdu_handler.
+ *
  */
 RTM_API rtm_status rtm_init(
   rtm_client_t *rtm,
@@ -365,6 +375,19 @@ RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
                        const char *endpoint,
                        const char *appkey);
 
+/**
+ * @brief Set the handler for not yet parsed PDUs
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] handler pointer to a function of type (rtm_client_t *rtm, char const *raw_pdu) -> void
+ *
+ * @note After this handler is called, raw_pdu will be parsed by the SDK and
+ *       the result will be passed to pdu_handler which was provided to
+ *       ::rtm_init function. If (non-raw) pdu_handler was null, that parsing
+ *       doesn't happen and you're free to cast raw_pdu to non-const char*
+ *       and modify it (for example if your json parser works in-place).
+ *
+ */
 RTM_API void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler);
 
 /**
