@@ -1,101 +1,67 @@
 #import "SatoriPdu.h"
 
+
 @implementation SatoriPdu
 
-- (instancetype)initWithAction:(enum rtm_action_t)action fields:(NSDictionary*)fields andRequestId:(unsigned)requestId {
+- (instancetype)initWithAction:(enum rtm_action_t)action body:(NSDictionary*)body andRequestId:(unsigned)requestId {
     self = [super init];
     if (self) {
         _action = action;
-        _fields = fields;
+        _body = body;
         _requestId = requestId;
     }
     return self;
 }
 
-- (instancetype)initWithLowLevelPdu:(const rtm_pdu_t *)pdu
+- (instancetype)initWithRawPdu:(char const *)pdu
 {
-    NSMutableDictionary *fields = [NSMutableDictionary new];
-    void (^addStringField)(NSString *, char const *) = ^(NSString *field_name, char const *s) {
-        if (!s) {
-            return;
-        }
-        fields[field_name] = [NSString stringWithUTF8String:s];
-
-    };
-    void (^addJSONField)(NSString *, char const *) = ^(NSString *field_name, char const *s) {
-        if (!s) {
-            return;
-        }
-        fields[field_name] = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:s length:strlen(s)] options:NSJSONReadingAllowFragments error:nil];
-    };
-    switch (pdu->action) {
-        case RTM_ACTION_AUTHENTICATE_ERROR:
-        case RTM_ACTION_DELETE_ERROR:
-        case RTM_ACTION_HANDSHAKE_ERROR:
-        case RTM_ACTION_PUBLISH_ERROR:
-        case RTM_ACTION_READ_ERROR:
-        case RTM_ACTION_SEARCH_ERROR:
-        case RTM_ACTION_SUBSCRIBE_ERROR:
-        case RTM_ACTION_UNSUBSCRIBE_ERROR:
-        case RTM_ACTION_WRITE_ERROR:
-            addStringField(@"error", pdu->error);
-            addStringField(@"reason", pdu->reason);
-            break;
-        case RTM_ACTION_HANDSHAKE_OK:
-            addStringField(@"nonce", pdu->nonce);
-            break;
-        case RTM_ACTION_PUBLISH_OK:
-        case RTM_ACTION_DELETE_OK:
-        case RTM_ACTION_WRITE_OK:
-            addStringField(@"position", pdu->position);
-            break;
-        case RTM_ACTION_SUBSCRIBE_OK:
-        case RTM_ACTION_UNSUBSCRIBE_OK:
-            addStringField(@"position", pdu->position);
-            addStringField(@"subscription_id", pdu->subscription_id);
-            break;
-        case RTM_ACTION_READ_OK:
-            addStringField(@"position", pdu->position);
-            addJSONField(@"message", pdu->message);
-            break;
-        case RTM_ACTION_AUTHENTICATE_OK:
-            break;
-        case RTM_ACTION_SUBSCRIPTION_DATA:
-            addStringField(@"position", pdu->position);
-            addStringField(@"subscription_id", pdu->subscription_id);
-            fields[@"messages"] = [NSMutableArray new];
-            char *message;
-            while ((message = rtm_iterate(&pdu->message_iterator))) {
-                id object = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:message length:strlen(message)] options:NSJSONReadingAllowFragments error:nil];
-                if (object) {
-                    [fields[@"messages"] addObject:object];
-                }
-            }
-            break;
-        case RTM_ACTION_SEARCH_DATA: // search results are parsed elsewhere
-        case RTM_ACTION_SEARCH_OK:
-            fields[@"results"] = [NSMutableArray new];
-            char *channel;
-            while ((channel = rtm_iterate(&pdu->channel_iterator))) {
-                id object = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:channel length:strlen(channel)] options:NSJSONReadingAllowFragments error:nil];
-                if (object) {
-                    [fields[@"results"] addObject:object];
-                }
-            }
-            break;
-        case RTM_ACTION_UNKNOWN: {
-            if (pdu->body) {
-                id body = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:pdu->body length:strlen(pdu->body)] options:NSJSONReadingAllowFragments error:nil];
-                if (body) {
-                    fields[@"body"] = body;
-                }
-            }
-            break;
-        }
-        case RTM_ACTION_SENTINEL:
-            assert(0); // Should never happen
+    self = [super init];
+    if (!self) {
+        return nil;
     }
-    return [[SatoriPdu alloc] initWithAction:pdu->action fields:fields andRequestId:pdu->request_id];
+
+    static NSDictionary *actionTable = nil;
+    if (!actionTable) {
+        actionTable = @{
+            @"auth/authenticate/error": @(RTM_ACTION_AUTHENTICATE_ERROR),
+            @"auth/authenticate/ok": @(RTM_ACTION_AUTHENTICATE_OK),
+            @"rtm/delete/error": @(RTM_ACTION_DELETE_ERROR),
+            @"rtm/delete/ok": @(RTM_ACTION_DELETE_OK),
+            @"auth/handshake/error": @(RTM_ACTION_HANDSHAKE_ERROR),
+            @"auth/handshake/ok": @(RTM_ACTION_HANDSHAKE_OK),
+            @"rtm/publish/error": @(RTM_ACTION_PUBLISH_ERROR),
+            @"rtm/publish/ok": @(RTM_ACTION_PUBLISH_OK),
+            @"rtm/read/error": @(RTM_ACTION_READ_ERROR),
+            @"rtm/read/ok": @(RTM_ACTION_READ_OK),
+            @"rtm/search/data": @(RTM_ACTION_SEARCH_DATA),
+            @"rtm/search/error": @(RTM_ACTION_SEARCH_ERROR),
+            @"rtm/search/ok": @(RTM_ACTION_SEARCH_OK),
+            @"rtm/subscribe/error": @(RTM_ACTION_SUBSCRIBE_ERROR),
+            @"rtm/subscribe/ok": @(RTM_ACTION_SUBSCRIBE_OK),
+            @"rtm/subscription/data": @(RTM_ACTION_SUBSCRIPTION_DATA),
+            @"rtm/subscription/info": @(RTM_ACTION_SUBSCRIPTION_INFO),
+            @"rtm/subscription/error": @(RTM_ACTION_SUBSCRIPTION_ERROR),
+            @"rtm/unsubscribe/error": @(RTM_ACTION_UNSUBSCRIBE_ERROR),
+            @"rtm/unsubscribe/ok": @(RTM_ACTION_UNSUBSCRIBE_OK),
+            @"rtm/write/error": @(RTM_ACTION_WRITE_ERROR),
+            @"rtm/write/ok": @(RTM_ACTION_WRITE_OK)
+        };
+    }
+
+    NSDictionary *pdu_json = [NSJSONSerialization
+        JSONObjectWithData:[NSData dataWithBytes:pdu length:strlen(pdu)]
+        options:0
+        error:nil];
+
+    _body = pdu_json[@"body"];
+    if (!_body) {
+        _body = @{};
+    }
+
+    _requestId = [pdu_json[@"id"] intValue];
+    _action = [actionTable[pdu_json[@"action"]] intValue];
+
+    return self;
 }
 
 @end

@@ -181,14 +181,14 @@ static NSString* const role_name = @"";
     XCTAssertEqual(pdu.action, RTM_ACTION_UNKNOWN);
     XCTAssertEqual(pdu.requestId, 42);
     NSDictionary *expectedBody = @{@"position":@"1479315802:0",@"messages":@[@"a", [NSNull null], @42]};
-    XCTAssertEqualObjects(pdu.fields[@"body"], expectedBody);
+    XCTAssertEqualObjects(pdu.body, expectedBody);
 }
 
 - (void)testParsePduWithEmptyJson {
     NSString* jsonStr = @"{}";
     SatoriPdu* pdu = [SatoriRtmConnection parsePdu:jsonStr];
     XCTAssertEqual(pdu.action, RTM_ACTION_UNKNOWN);
-    XCTAssertEqualObjects(pdu.fields, @{});
+    XCTAssertEqualObjects(pdu.body, @{});
 }
 
 - (void)testParsePdu {
@@ -197,8 +197,8 @@ static NSString* const role_name = @"";
     NSDictionary *expectedBody = @{@"position": @"1479315802:0", @"messages": @[@"a", [NSNull null], @(42)]};
     XCTAssertNotNil(pdu);
     XCTAssertEqual(pdu.action, RTM_ACTION_SUBSCRIPTION_DATA, @"Failed to parse pdu action");
-    XCTAssertEqualObjects(pdu.fields[@"position"], expectedBody[@"position"], @"Failed to parse position");
-    XCTAssertEqualObjects(pdu.fields[@"messages"], expectedBody[@"messages"], @"Failed to parse messages");
+    XCTAssertEqualObjects(pdu.body[@"position"], expectedBody[@"position"], @"Failed to parse position");
+    XCTAssertEqualObjects(pdu.body[@"messages"], expectedBody[@"messages"], @"Failed to parse messages");
     XCTAssertEqual(pdu.requestId, 42, @"Failed to parse pdu requestId");
 }
 @end

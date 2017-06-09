@@ -322,7 +322,6 @@ RTM_API time_t rtm_get_ws_ping_interval(rtm_client_t *rtm);
  * @param[in] rtm instance of the client
  * @param[in] ws_ping_interval new interval value (sec)
  *
- * @return current ping interval
  */
 RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval);
 
@@ -356,9 +355,6 @@ RTM_API rtm_status rtm_init(
  * @param[in] rtm instance of the client
  * @param[in] endpoint endpoint for the RTM Service.
  * @param[in] appkey application key to the RTM Service.
- * @param[in] pdu_handler the callback for non data PDUs
- * @param[in] user_context an opaque user specified data associated with this 
- *            RTM object
  *
  * @note The @p endpoint must be a well formed URL
  *      <tt>"wss://xxx.api.satori.com/"</tt>

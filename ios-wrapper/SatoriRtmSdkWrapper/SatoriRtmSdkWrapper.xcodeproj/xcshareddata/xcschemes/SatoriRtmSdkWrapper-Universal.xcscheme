@@ -28,7 +28,26 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "EFC8A4481E2D78B30050D8B1"
+               BuildableName = "SatoriRtmSdkWrapperTests.xctest"
+               BlueprintName = "SatoriRtmSdkWrapperTests"
+               ReferencedContainer = "container:SatoriRtmSdkWrapper.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "EFB7A0D01E69F9300024FADF"
+            BuildableName = "SatoriRtmSdkWrapper-Universal"
+            BlueprintName = "SatoriRtmSdkWrapper-Universal"
+            ReferencedContainer = "container:SatoriRtmSdkWrapper.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>

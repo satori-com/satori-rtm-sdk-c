@@ -20,34 +20,18 @@ static PduHandler _defaultPduHandler = nil;
 + (nonnull PduHandler)defaultPduHandler {
     if (_defaultPduHandler == nil) {
         _defaultPduHandler = ^(SatoriPdu * pdu) {
-            NSLog(@"Received pdu: action=%d, id=%u, fields=%@\n", pdu.action, pdu.requestId, pdu.fields);
+            NSLog(@"Received pdu: action=%d, id=%u, body=%@\n", pdu.action, pdu.requestId, pdu.body);
         };
     }
     return _defaultPduHandler;
 }
 
-#pragma mark - initializer
-- (nullable instancetype)initWithUrl:(nonnull NSString*)url andAppkey:(nonnull NSString*)appKey {
-    if (url == nil || appKey == nil) {
-        return nil;
-    }
-    
-    self = [super init];
-    if (self) {
-        self.url = url;
-        self.appKey = appKey;
-        _rtm = (rtm_client_t*) malloc (rtm_client_size);
-    }
-    return self;
-}
-
 #pragma mark - C functions
-void on_pdu(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
+void on_pdu(rtm_client_t *rtm, char const *raw_pdu) {
     SatoriRtmConnection* self = (__bridge SatoriRtmConnection *)(rtm_get_user_context(rtm));
-    NSMutableDictionary *fields = [NSMutableDictionary new];
     if (self.pduHandler) {
 
-        self.pduHandler([[SatoriPdu alloc] initWithLowLevelPdu:pdu]);
+        self.pduHandler([[SatoriPdu alloc] initWithRawPdu:raw_pdu]);
     }
 }
 
@@ -66,11 +50,28 @@ void on_message(rtm_client_t *rtm, const char* subscriptionId, const char* messa
     }
 }
 
+#pragma mark - initializer
+
+- (nullable instancetype)initWithUrl:(nonnull NSString*)url andAppkey:(nonnull NSString*)appKey {
+    if (url == nil || appKey == nil) {
+        return nil;
+    }
+    
+    self = [super init];
+    if (self) {
+        self.url = url;
+        self.appKey = appKey;
+        _rtm = (rtm_client_t*) malloc (rtm_client_size);
+        rtm_init(_rtm, nil, (__bridge void *)(self));
+        rtm_set_raw_pdu_handler(_rtm, on_pdu);
+    }
+    return self;
+}
+
 #pragma mark - API methods
 
 - (rtm_status)connect {
-    self.pduHandler = [[self class] defaultPduHandler];
-    return rtm_connect(self.rtm, self.url.UTF8String, self.appKey.UTF8String, &on_pdu, (__bridge void *)(self));
+    return [self connectWithPduHandler:[[self class] defaultPduHandler]];
 }
 
 - (rtm_status)connectWithPduHandler:(nonnull PduHandler)pduHandler {
@@ -78,7 +79,7 @@ void on_message(rtm_client_t *rtm, const char* subscriptionId, const char* messa
         return RTM_ERR_CONNECT;
     }
     self.pduHandler = pduHandler;
-    return rtm_connect(self.rtm, self.url.UTF8String, self.appKey.UTF8String, &on_pdu, (__bridge void *)(self));
+    return rtm_connect(self.rtm, self.url.UTF8String, self.appKey.UTF8String);
 }
 
 - (void)disconnect {
@@ -102,13 +103,7 @@ void on_message(rtm_client_t *rtm, const char* subscriptionId, const char* messa
 }
 
 + (SatoriPdu *)parsePdu:(NSString *)json {
-    rtm_pdu_t pdu = {};
-    char *dup = strdup(json.UTF8String);
-    rtm_parse_pdu(dup, &pdu);
-    
-    SatoriPdu* newPdu = [[SatoriPdu alloc] initWithLowLevelPdu:&pdu];
-    free(dup);
-    return newPdu;
+    return [[SatoriPdu alloc] initWithRawPdu:[json UTF8String]];
 }
 
 - (rtm_status)handshakeWithRole:(NSString*)role andRequestId:(unsigned *)requestId {
