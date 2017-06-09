@@ -10,8 +10,11 @@ set(SDK_SSL_OPTION "-DUSE_OPENSSL=ON")
 endif()
 
 ExternalProject_Add(satori_sdk
+  # Use this instead of GIT_REPOSITORY to use local copy
+  # SOURCE_DIR ..
+
   GIT_REPOSITORY https://github.com/satori-com/satori-rtm-sdk-c.git
-  GIT_TAG "v1.0.1"
+  GIT_TAG "v2.0"
   PREFIX "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
   DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"

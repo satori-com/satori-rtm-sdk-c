@@ -5,13 +5,15 @@
 
 // Replace these values with your project's credentials
 // from DevPortal (https://developer.satori.com/#/projects)
-static char const *endpoint = "wss://myendpoint.api.satori.com";
-static char const *appkey = "MY_APPKEY";
-static char const *role = "MY_ROLE";
-static char const *role_secret = "MY_ROLE_SECRET";
+static char const *endpoint = "YOUR_ENDPOINT";
+static char const *appkey = "YOUR_APPKEY";
+static char const *role = "YOUR_ROLE";
+static char const *role_secret = "YOUR_SECRET";
 
-static char const *channel = "MY_CHANNEL";
-static char const *message = "{\"hello\": \"World\"}";
+static char const *channel = "animal_sightings";
+static char const *message = "{\"who\": \"zebra\", \"where\":[34.134358, -118.321506]}";
+
+#define MAX_NONCE_SIZE 32
 
 // We'll be keeping the entirety of application state in this struct
 struct tutorial_state_t {
@@ -28,39 +30,31 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 
   struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *)rtm_get_user_context(rtm);
 
-  if (0 == strcmp("rtm/subscribe/ok", pdu->action)) {
-    tutorial_state->subscribe_ok = 1;
-    return;
-  } else if (0 == strcmp("rtm/subscribe/error", pdu->action)) {
-    tutorial_state->subscribe_ok = 0;
-    return;
-  } else if (0 == strcmp("rtm/publish/ok", pdu->action)) {
-    tutorial_state->publish_ok = 1;
-    return;
-  } else if (0 == strcmp("rtm/publish/error", pdu->action)) {
-    tutorial_state->publish_ok = 0;
-    return;
-  } else if (0 == strcmp("rtm/subscription/data", pdu->action)) {
-    tutorial_state->got_message = 1;
-  } else if (0 == strcmp(pdu->action, "auth/handshake/ok")) {
-    // pdu->body contains a serialized json object that looks like
-    // {"data": {"nonce": "<some bytes>"}} and we need to extract the
-    // nonce value. Since C standard library has no means for json parsing
-    // and we don't want to impose the choice of a third-party library
-    // for a tutorial, we extract it in an unsafe way relying on knowing
-    // the exact format and absence of whitespace.
-
-    int const prologue_length = strlen("{\"data\":{\"nonce\":\"");
-    int const epilogue_length = strlen("\"}}");
-    int const nonce_length = strlen(pdu->body) - prologue_length - epilogue_length;
-
-    free(tutorial_state->last_nonce);
-    tutorial_state->last_nonce = malloc(nonce_length + 1);
-
-    memcpy(tutorial_state->last_nonce, pdu->body + prologue_length, nonce_length);
-    tutorial_state->last_nonce[nonce_length] = 0;
-  } else if (0 == strcmp(pdu->action, "auth/authenticate/ok")) {
-    tutorial_state->authenticated = 1;
+  switch(pdu->action) {
+    case RTM_ACTION_SUBSCRIBE_OK:
+      tutorial_state->subscribe_ok = 1;
+      return;
+    case RTM_ACTION_SUBSCRIBE_ERROR:
+      tutorial_state->subscribe_ok = 0;
+      return;
+    case RTM_ACTION_PUBLISH_OK:
+      tutorial_state->publish_ok = 1;
+      return;
+    case RTM_ACTION_PUBLISH_ERROR:
+      tutorial_state->publish_ok = 0;
+      return;
+    case RTM_ACTION_SUBSCRIPTION_DATA:
+      tutorial_state->got_message = 1;
+      break;
+    case RTM_ACTION_HANDSHAKE_OK:
+      tutorial_state->last_nonce = malloc(strlen(pdu->nonce) + 1);
+      strcpy(tutorial_state->last_nonce, pdu->nonce);
+      break;
+    case RTM_ACTION_AUTHENTICATE_OK:
+      tutorial_state->authenticated = 1;
+      break;
+    default:
+      break;
   }
 
   // This implementation of pdu handler is provided by the SDK in rtm.h header.
@@ -121,10 +115,11 @@ int main(void) {
   rtm_status status;
   struct tutorial_state_t tutorial_state = {0};
 
-  // Connect to RTM. This function also initializes 'rtm' object.
   // All functions that take 'rtm' as an argument (like rtm_subscribe)
-  // must be called only after successful rtm_connect.
-  status = rtm_connect(rtm, endpoint, appkey, &tutorial_pdu_handler, &tutorial_state);
+  // must be called only after rtm_init.
+  rtm_init(rtm, tutorial_pdu_handler, &tutorial_state);
+
+  status = rtm_connect(rtm, endpoint, appkey);
 
   if (status != RTM_OK) {
     fprintf(stderr, "Unable to connect to RTM\n");
