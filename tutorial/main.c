@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <rtm.h>
 
 // Replace these values with your project's credentials
@@ -108,7 +109,7 @@ int authenticate(rtm_client_t *rtm) {
 }
 
 int main(void) {
-  // C SDK does not allocate memory on its own so you’re required to give it a
+  // C SDK does not allocate memory on its own so you're required to give it a
   // buffer to work with beforehand.
   rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
 
@@ -137,7 +138,7 @@ int main(void) {
       return status;
   }
 
-  fprintf(stderr, "Authenticated as %s\n", role);
+  printf("Authenticated as %s\n", role);
 
   // Send a subscribe request
   unsigned request_id;
@@ -176,56 +177,67 @@ int main(void) {
 
   printf("Successfully subscribed to %s\n", channel);
 
-  // Publish a message, taking care of error handling in similar manner.
-  status = rtm_publish_json(rtm, channel, message, &request_id);
-  if (status != RTM_OK) {
-    fprintf(stderr, "Failed to send publish request\n");
-    rtm_close(rtm);
-    free(rtm);
-    return status;
-  }
+  while (1) {
+    tutorial_state.got_message = 0;
+    tutorial_state.publish_ok = 0;
 
-  // Now we're expecting two PDUs to arrive: a publish reply one and (if publish
-  // succeeded) a subscription data one. There is no guarantee of which one comes
-  // first.
-  // Successful status from call to rtm_wait_timeout means that one or more PDUs
-  // were processed. Note that we say "one or more" and it is important because we
-  // cannot just call rtm_wait_timeout exactly twice for the two expected
-  // messagesWe need to check if we got both PDUs after the first call. And repeat
-  // the call if not.
-  // Real world applications are more complex than this tutorial and will likely
-  // have more convenient abstraction for getting PDUs, but that's out of scope of
-  // this tutorial. C Core SDK doesn't provide such built-in abstraction.
-  for (int i = 0; i < 2; ++i) {
-    status = rtm_wait_timeout(rtm, 10 /* seconds */);
+    // Publish a message, taking care of error handling in similar manner.
+    status = rtm_publish_json(rtm, channel, message, &request_id);
     if (status != RTM_OK) {
-      if (status == RTM_ERR_TIMEOUT) {
-          fprintf(stderr, "Timeout while waiting for subscription data and publish reply\n");
-      } else {
-          fprintf(stderr, "Failed to receive publish reply or subscription data, error %d\n", status);
-      }
+      fprintf(stderr, "Failed to send publish request\n");
       rtm_close(rtm);
       free(rtm);
       return status;
     }
 
-    if (tutorial_state.publish_ok && tutorial_state.got_message) {
-      break;
+    // Now we're expecting two PDUs to arrive: a publish reply one and (if publish
+    // succeeded) a subscription data one. There is no guarantee of which one comes
+    // first.
+    // Successful status from call to rtm_wait_timeout means that one or more PDUs
+    // were processed. Note that we say "one or more" and it is important because we
+    // cannot just call rtm_wait_timeout exactly twice for the two expected
+    // messagesWe need to check if we got both PDUs after the first call. And repeat
+    // the call if not.
+    // Real world applications are more complex than this tutorial and will likely
+    // have more convenient abstraction for getting PDUs, but that's out of scope of
+    // this tutorial. C Core SDK doesn't provide such built-in abstraction.
+    for (int i = 0; i < 2; ++i) {
+      status = rtm_wait_timeout(rtm, 10 /* seconds */);
+      if (status != RTM_OK) {
+        if (status == RTM_ERR_TIMEOUT) {
+            fprintf(stderr, "Timeout while waiting for subscription data and publish reply\n");
+        } else {
+            fprintf(stderr, "Failed to receive publish reply or subscription data, error %d\n", status);
+        }
+        rtm_close(rtm);
+        free(rtm);
+        return status;
+      }
+
+      if (tutorial_state.publish_ok && tutorial_state.got_message) {
+        break;
+      }
     }
+    if (!tutorial_state.publish_ok) {
+      fprintf(stderr, "Publish reply was an error\n");
+      rtm_close(rtm);
+      free(rtm);
+      return status;
+    }
+    if (!tutorial_state.got_message) {
+      fprintf(stderr, "Didn't receive the message\n");
+      rtm_close(rtm);
+      free(rtm);
+      return status;
+    }
+    printf("Successfully published '%s' to %s\n", message, channel);
+
+    fflush(stdout);
+    fflush(stderr);
+
+    rtm_wait_timeout(rtm, 2);
   }
-  if (!tutorial_state.publish_ok) {
-    fprintf(stderr, "Publish reply was an error\n");
-    rtm_close(rtm);
-    free(rtm);
-    return status;
-  }
-  if (!tutorial_state.got_message) {
-    fprintf(stderr, "Didn't receive the message\n");
-    rtm_close(rtm);
-    free(rtm);
-    return status;
-  }
-  printf("Successfully published '%s' to %s\n", message, channel);
+
   rtm_close(rtm);
   free(rtm);
 }
