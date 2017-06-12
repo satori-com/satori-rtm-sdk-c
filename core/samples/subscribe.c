@@ -31,8 +31,8 @@ void pdu_handler(rtm_client_t *rtm, rtm_pdu_t const *pdu) {
 }
 
 int main(void) {
-    rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
-    rtm_init(rtm, pdu_handler, 0);
+    void *memory = malloc(rtm_client_size);
+    rtm_client_t *rtm = rtm_init(memory, pdu_handler, 0);
     int rc = rtm_connect(rtm, endpoint, appkey);
 
     if (rc != RTM_OK) {

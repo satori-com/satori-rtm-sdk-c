@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+if(UNIX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c99")
+endif()
 
 include_directories(
   ${CMAKE_CURRENT_LIST_DIR}/../src

@@ -34,7 +34,7 @@ TEST(rtm_json, pdu_field_in_random_order) {
 
   ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.action);
   // ASSERT_TRUE(0 == strcmp(R"({ "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"})", pdu.body));
-  ASSERT_EQ(42, pdu.request_id);
+  ASSERT_EQ(42u, pdu.request_id);
 }
 
 TEST(rtm_json, pdu_body_is_absent) {
@@ -44,7 +44,7 @@ TEST(rtm_json, pdu_body_is_absent) {
 
   ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.action);
   ASSERT_TRUE(nullptr == pdu.body);
-  ASSERT_EQ(42, pdu.request_id);
+  ASSERT_EQ(42u, pdu.request_id);
 }
 
 TEST(rtm_json, pdu_action_is_absent) {
@@ -54,7 +54,7 @@ TEST(rtm_json, pdu_action_is_absent) {
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
   ASSERT_EQ(0, strcmp(R"({"stuff":[1,2,null]})", pdu.body));
-  ASSERT_EQ(42, pdu.request_id);
+  ASSERT_EQ(42u, pdu.request_id);
 }
 
 TEST(rtm_json, pdu_empty_json) {
@@ -64,7 +64,7 @@ TEST(rtm_json, pdu_empty_json) {
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
   ASSERT_TRUE(nullptr == pdu.body);
-  ASSERT_EQ(0, pdu.request_id);
+  ASSERT_EQ(0u, pdu.request_id);
 }
 
 TEST(rtm_json, find_element) {
@@ -97,7 +97,7 @@ TEST(rtm_json, escape) {
   //simple string
   const char simple[] = "foo bar";
   ret = _rtm_json_escape(buf, 128, simple);
-  ASSERT_EQ(strlen(simple), ret);
+  ASSERT_EQ(strlen(simple), (unsigned)ret);
   ASSERT_TRUE(0 == strcmp(buf, simple));
 
   // special characters
@@ -109,17 +109,17 @@ TEST(rtm_json, escape) {
   const char unicode_1[] = "Ǆ foo";
   ret = _rtm_json_escape(buf, 128, unicode_1);
   ASSERT_TRUE(0 == strcmp(buf, unicode_1));
-  ASSERT_EQ(strlen(unicode_1), ret);
+  ASSERT_EQ(strlen(unicode_1), (unsigned)ret);
 
   const char unicode_2[] = "௵ foo";
   ret = _rtm_json_escape(buf, 128, unicode_2);
   ASSERT_TRUE(0 == strcmp(buf, unicode_2));
-  ASSERT_EQ(strlen(unicode_2), ret);
+  ASSERT_EQ(strlen(unicode_2), (unsigned)ret);
 
   const char unicode_3[] = "😮 foo";
   ret = _rtm_json_escape(buf, 128, unicode_3);
   ASSERT_TRUE(0 == strcmp(buf, unicode_3));
-  ASSERT_EQ(strlen(unicode_3), ret);
+  ASSERT_EQ(strlen(unicode_3), (unsigned)ret);
 
   ret = _rtm_json_escape(buf, -1, "foo bar");
   ASSERT_EQ(0, ret);

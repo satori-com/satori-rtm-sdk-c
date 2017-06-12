@@ -203,8 +203,8 @@ Additionally, WinSock subsystem must be initialized prior to connecting to RTM.
 Usage
 =====
 ```C
-rtm_client_t *rtm = (rtm_client_t*) malloc (rtm_client_size);
-rtm_init(rtm, rtm_default_pdu_handler, NULL)
+void *memory = malloc(rtm_client_size);
+rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, NULL)
 rtm_status status = rtm_connect(rtm, "wss://myorg.api.satori.com/", "YOUR_APPKEY");
 if (status != RTM_OK) {
   fprintf(stderr, "Connecting to RTM failed: %s\n", rtm_error_string(status));
@@ -251,7 +251,7 @@ Verbose logging of all incoming and outcoming PDUs
 
 You can enable dumping of all PDUs to stderr either from your code::
 
-  rtm_init(rtm, ...);
+  rtm_client_t *rtm = rtm_init(...);
   rtm_enable_verbose_logging(rtm);
 
 or by setting DEBUG_SATORI_SDK environment variable prior to running your application::
