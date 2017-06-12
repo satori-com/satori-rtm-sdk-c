@@ -168,9 +168,9 @@ void calc_subscription_data_stats(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 
 static int bench_subscribe(struct bench_params *opts) {
   rtm_stat stat = create_stat();
-  rtm_client_t* rtm = (rtm_client_t *) alloca(rtm_client_size);
+  void *memory = alloca(rtm_client_size);
 
-  rtm_init(rtm, &calc_subscription_data_stats, &stat);
+  rtm_client_t* rtm = rtm_init(memory, &calc_subscription_data_stats, &stat);
   int rc = rtm_connect(rtm, opts->endpoint, opts->appkey);
   if (RTM_OK != rc) {
     return rc;
@@ -204,9 +204,9 @@ static int bench_publish(struct bench_params* opts) {
   unsigned *ack_id = NULL;
   char message[opts->message_size+1];
 
-  rtm_client_t* rtm = (rtm_client_t *) alloca(rtm_client_size);
+  void *memory = alloca(rtm_client_size);
 
-  rtm_init(rtm, &calc_publish_ok_stats, &ack_stat);
+  rtm_client_t* rtm = rtm_init(memory, &calc_publish_ok_stats, &ack_stat);
   int rc = rtm_connect(rtm, opts->endpoint, opts->appkey);
   if (RTM_OK != rc) {
     return rc;

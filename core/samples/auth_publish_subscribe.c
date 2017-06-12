@@ -88,9 +88,9 @@ int authenticate(rtm_client_t *rtm) {
 }
 
 int main(int argc, const char *argv[]) {
-  rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
+  void *memory = malloc(rtm_client_size);
   client_state state = {0};
-  rtm_init(rtm, &my_pdu_handler, &state);
+  rtm_client_t *rtm = rtm_init(memory, &my_pdu_handler, &state);
   rtm_status rc;
 
   rc = rtm_connect(rtm, endpoint, appkey);
@@ -117,7 +117,8 @@ int main(int argc, const char *argv[]) {
   }
 
   rtm_publish_string(rtm, channel, "Hello world!", NULL);
-  for (int i = 0; i < 100; i++) {
+  int i = 0;
+  for (i = 0; i < 100; i++) {
     char buffer[1024];
     sprintf(buffer, "This is the index %d", i);
     rtm_publish_string(rtm, channel, buffer, NULL);

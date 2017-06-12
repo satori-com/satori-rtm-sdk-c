@@ -109,16 +109,16 @@ int authenticate(rtm_client_t *rtm) {
 }
 
 int main(void) {
-  // C SDK does not allocate memory on its own so you're required to give it a
-  // buffer to work with beforehand.
-  rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
-
   rtm_status status;
   struct tutorial_state_t tutorial_state = {0};
 
+  // C SDK does not allocate memory on its own so you're required to give it a
+  // buffer to work with beforehand.
+  void *memory_for_rtm_client = malloc(rtm_client_size);
+
   // All functions that take 'rtm' as an argument (like rtm_subscribe)
   // must be called only after rtm_init.
-  rtm_init(rtm, tutorial_pdu_handler, &tutorial_state);
+  rtm_client_t *rtm = rtm_init(memory_for_rtm_client, tutorial_pdu_handler, &tutorial_state);
 
   status = rtm_connect(rtm, endpoint, appkey);
 

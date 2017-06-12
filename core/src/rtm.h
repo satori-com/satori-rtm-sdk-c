@@ -8,8 +8,8 @@
  *
  * @code{.c}
  * // allocate some memory to store the client
- * rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
- * rtm_init(rtm, rtm_default_pdu_handler, 0);
+ * void *memory = malloc(rtm_client_size);
+ * rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, 0);
  * // connect to RTM
  * int rc = rtm_connect(rtm, endpoint, appkey);
  * if (rc != RTM_OK) {
@@ -328,14 +328,13 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
 /**
  * @brief Initialize an instance of rtm_client_t
  *
- * @param[in] rtm a buffer of size RTM_CLIENT_SIZE
+ * @param[in] memory a buffer of size RTM_CLIENT_SIZE
  * @param[in] pdu_handler the callback for all PDUs
  * @param[in] user_context an opaque user specified data associated with this 
  *            RTM object
  *
  *
- * @return the status of the operation
- * @retval RTM_OK
+ * @return initialized rtm_client_t object
  *
  * @see ::rtm_close
  * @see ::rtm_get_user_context
@@ -344,8 +343,8 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  *       here and then use ::rtm_set_raw_pdu_handler.
  *
  */
-RTM_API rtm_status rtm_init(
-  rtm_client_t *rtm,
+RTM_API rtm_client_t *rtm_init(
+  void *memory,
   rtm_pdu_handler_t *pdu_handler,
   void *user_context);
 

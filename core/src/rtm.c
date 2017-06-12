@@ -34,14 +34,19 @@ static ssize_t prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
 static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out);
 
-RTM_API rtm_status rtm_init(
-  rtm_client_t *rtm,
+RTM_API rtm_client_t * rtm_init(
+  void *memory,
   rtm_pdu_handler_t *pdu_handler,
   void *user_context) {
 
-  CHECK_PARAM(rtm);
+  if (memory == NULL) {
+    _rtm_log_message(RTM_ERR_PARAM, "param memory is required");
+    return NULL;
+  }
 
-  memset(rtm, 0, RTM_CLIENT_SIZE);
+  memset(memory, 0, RTM_CLIENT_SIZE);
+
+  rtm_client_t *rtm = (rtm_client_t *)memory;
   rtm->fd = -1;
   rtm->input_length = 0;
   rtm->last_request_id = 0;
@@ -57,7 +62,7 @@ RTM_API rtm_status rtm_init(
     rtm->is_verbose = YES;
   }
 
-  return RTM_OK;
+  return rtm;
 }
 
 rtm_status rtm_connect(rtm_client_t *rtm,

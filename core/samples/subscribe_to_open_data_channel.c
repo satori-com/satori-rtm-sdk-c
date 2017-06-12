@@ -30,12 +30,12 @@ void pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 }
 
 int main(void) {
-  rtm_client_t *rtm = (rtm_client_t *)malloc(rtm_client_size);
+  void *memory = malloc(rtm_client_size);
 
   rtm_status status;
   struct program_state_t program_state = {0};
 
-  rtm_init(rtm, &pdu_handler, &program_state);
+  rtm_client_t *rtm = rtm_init(memory, &pdu_handler, &program_state);
   status = rtm_connect(rtm, endpoint, appkey);
 
   if (status != RTM_OK) {
