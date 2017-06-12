@@ -201,7 +201,8 @@ int main(void) {
     // Real world applications are more complex than this tutorial and will likely
     // have more convenient abstraction for getting PDUs, but that's out of scope of
     // this tutorial. C Core SDK doesn't provide such built-in abstraction.
-    for (int i = 0; i < 2; ++i) {
+    int i = 0;
+    for (i = 0; i < 2; ++i) {
       status = rtm_wait_timeout(rtm, 10 /* seconds */);
       if (status != RTM_OK) {
         if (status == RTM_ERR_TIMEOUT) {
