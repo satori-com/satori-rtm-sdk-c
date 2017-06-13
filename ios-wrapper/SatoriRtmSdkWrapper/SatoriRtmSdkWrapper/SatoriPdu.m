@@ -23,6 +23,7 @@
     static NSDictionary *actionTable = nil;
     if (!actionTable) {
         actionTable = @{
+            @"/error": @(RTM_ACTION_GENERAL_ERROR),
             @"auth/authenticate/error": @(RTM_ACTION_AUTHENTICATE_ERROR),
             @"auth/authenticate/ok": @(RTM_ACTION_AUTHENTICATE_OK),
             @"rtm/delete/error": @(RTM_ACTION_DELETE_ERROR),
@@ -53,13 +54,13 @@
         options:0
         error:nil];
 
-    _body = pdu_json[@"body"];
+    _body = [pdu_json objectForKey:@"body"];
     if (!_body) {
         _body = @{};
     }
 
-    _requestId = [pdu_json[@"id"] intValue];
-    _action = [actionTable[pdu_json[@"action"]] intValue];
+    _requestId = [[pdu_json objectForKey:@"id"] intValue];
+    _action = [[actionTable objectForKey:pdu_json[@"action"]] intValue];
 
     return self;
 }
