@@ -11,7 +11,7 @@ static char const *appkey = "YOUR_APPKEY";
 static char const *role = "YOUR_ROLE";
 static char const *role_secret = "YOUR_SECRET";
 
-static char const *channel = "animal_sightings";
+static char const *channel = "animals";
 static char const *message = "{\"who\": \"zebra\", \"where\":[34.134358, -118.321506]}";
 
 #define MAX_NONCE_SIZE 32
