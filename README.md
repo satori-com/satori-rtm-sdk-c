@@ -288,16 +288,20 @@ Verbose logging of all incoming and outcoming PDUs
 
 You can enable dumping of all PDUs to stderr either from your code::
 
+```
   rtm_client_t *rtm = rtm_init(...);
   rtm_enable_verbose_logging(rtm);
+```
 
 or by setting DEBUG_SATORI_SDK environment variable prior to running your application::
 
+```
   export DEBUG_SATORI_SDK=1
   ./my_program
+```
 
 
 Missing functionality
 =====================
+
 - Handling of network errors is left to the user
-- Providing access to the `position` in RTM messages (and during subscription)
