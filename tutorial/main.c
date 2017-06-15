@@ -35,33 +35,43 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     case RTM_ACTION_SUBSCRIBE_OK:
       tutorial_state->subscribe_ok = 1;
       return;
-    case RTM_ACTION_SUBSCRIBE_ERROR:
-      tutorial_state->subscribe_ok = 0;
-      return;
     case RTM_ACTION_PUBLISH_OK:
       tutorial_state->publish_ok = 1;
       return;
-    case RTM_ACTION_PUBLISH_ERROR:
-      tutorial_state->publish_ok = 0;
-      return;
-    case RTM_ACTION_SUBSCRIPTION_DATA:
+    case RTM_ACTION_SUBSCRIPTION_DATA: {
+      char *message;
+      while ((message = rtm_iterate(&pdu->message_iterator))) {
+          // Note that unlike other Satori RTM SDKs, C Core SDK does not parse
+          // messages into objects, because C has neither appropriate data
+          // structures nor JSON parsing functionality in the standard library.
+          printf("Got message: %s\n", message);
+      }
       tutorial_state->got_message = 1;
-      break;
+      return;
+    }
     case RTM_ACTION_HANDSHAKE_OK:
       tutorial_state->last_nonce = malloc(strlen(pdu->nonce) + 1);
       strcpy(tutorial_state->last_nonce, pdu->nonce);
-      break;
+      return;
     case RTM_ACTION_AUTHENTICATE_OK:
       tutorial_state->authenticated = 1;
-      break;
+      return;
+    case RTM_ACTION_GENERAL_ERROR:
+    case RTM_ACTION_AUTHENTICATE_ERROR:
+    case RTM_ACTION_DELETE_ERROR:
+    case RTM_ACTION_HANDSHAKE_ERROR:
+    case RTM_ACTION_PUBLISH_ERROR:
+    case RTM_ACTION_READ_ERROR:
+    case RTM_ACTION_SEARCH_ERROR:
+    case RTM_ACTION_SUBSCRIBE_ERROR:
+    case RTM_ACTION_UNSUBSCRIBE_ERROR:
+    case RTM_ACTION_WRITE_ERROR:
+      // Print errors, if any
+      fprintf(stderr, "error: %s, reason: %s\n", pdu->error, pdu->reason);
+      return;
     default:
-      break;
+      return;
   }
-
-  // This implementation of pdu handler is provided by the SDK in rtm.h header.
-  // It prints the given pdu to stdout. We use it here to see all the replies
-  // and subscription data when running the program.
-  rtm_default_pdu_handler(rtm, pdu);
 }
 
 int authenticate(rtm_client_t *rtm) {

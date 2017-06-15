@@ -469,6 +469,31 @@ rtm_status rtm_wait_timeout(rtm_client_t *rtm, int timeout_in_seconds) {
   };
 }
 
+static const char *const action_table[] = {
+    [RTM_ACTION_GENERAL_ERROR] = "/error",
+    [RTM_ACTION_AUTHENTICATE_ERROR] = "auth/authenticate/error",
+    [RTM_ACTION_AUTHENTICATE_OK] = "auth/authenticate/ok",
+    [RTM_ACTION_DELETE_ERROR] = "rtm/delete/error",
+    [RTM_ACTION_DELETE_OK] = "rtm/delete/ok",
+    [RTM_ACTION_HANDSHAKE_ERROR] = "auth/handshake/error",
+    [RTM_ACTION_HANDSHAKE_OK] = "auth/handshake/ok",
+    [RTM_ACTION_PUBLISH_ERROR] = "rtm/publish/error",
+    [RTM_ACTION_PUBLISH_OK] = "rtm/publish/ok",
+    [RTM_ACTION_READ_ERROR] = "rtm/read/error",
+    [RTM_ACTION_READ_OK] = "rtm/read/ok",
+    [RTM_ACTION_SEARCH_DATA] = "rtm/search/data",
+    [RTM_ACTION_SEARCH_ERROR] = "rtm/search/error",
+    [RTM_ACTION_SEARCH_OK] = "rtm/search/ok",
+    [RTM_ACTION_SUBSCRIBE_ERROR] = "rtm/subscribe/error",
+    [RTM_ACTION_SUBSCRIBE_OK] = "rtm/subscribe/ok",
+    [RTM_ACTION_SUBSCRIPTION_DATA] = "rtm/subscription/data",
+    [RTM_ACTION_SUBSCRIPTION_INFO] = "rtm/subscription/info",
+    [RTM_ACTION_SUBSCRIPTION_ERROR] = "rtm/subscription/error",
+    [RTM_ACTION_UNSUBSCRIBE_ERROR] = "rtm/unsubscribe/error",
+    [RTM_ACTION_UNSUBSCRIBE_OK] = "rtm/unsubscribe/ok",
+    [RTM_ACTION_WRITE_ERROR] = "rtm/write/error",
+    [RTM_ACTION_WRITE_OK] = "rtm/write/ok"
+};
 
 void rtm_default_error_logger(const char *message) {
   // FIXME USE NSLog on Mac and iOS
@@ -477,8 +502,31 @@ void rtm_default_error_logger(const char *message) {
 }
 
 void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
-  printf("received pdu: client=%p, action=%d, id=%u, body=%s\n",
-      (void*) rtm, pdu->action, pdu->request_id, pdu->body);
+  printf("received pdu: client=%p, action=%s, id=%u\n",
+      (void*) rtm, action_table[pdu->action], pdu->request_id);
+  switch (pdu->action) {
+    case RTM_ACTION_SUBSCRIPTION_DATA: {
+      char *message;
+      while ((message = rtm_iterate(&pdu->message_iterator))) {
+          printf("%s\n", message);
+      }
+      break;
+    }
+    case RTM_ACTION_GENERAL_ERROR:
+    case RTM_ACTION_AUTHENTICATE_ERROR:
+    case RTM_ACTION_DELETE_ERROR:
+    case RTM_ACTION_HANDSHAKE_ERROR:
+    case RTM_ACTION_PUBLISH_ERROR:
+    case RTM_ACTION_READ_ERROR:
+    case RTM_ACTION_SEARCH_ERROR:
+    case RTM_ACTION_SUBSCRIBE_ERROR:
+    case RTM_ACTION_UNSUBSCRIBE_ERROR:
+    case RTM_ACTION_WRITE_ERROR:
+      printf("error: %s, reason: %s\n", pdu->error, pdu->reason);
+      break;
+    default:
+      break;
+  }
 }
 
 const char *rtm_error_string(rtm_status status) {
@@ -772,32 +820,6 @@ static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t si
   p += safer_snprintf(p, size - (p - buf), "\"body\":");
   return p - buf;
 }
-
-static const char *const action_table[] = {
-    [RTM_ACTION_GENERAL_ERROR] = "/error",
-    [RTM_ACTION_AUTHENTICATE_ERROR] = "auth/authenticate/error",
-    [RTM_ACTION_AUTHENTICATE_OK] = "auth/authenticate/ok",
-    [RTM_ACTION_DELETE_ERROR] = "rtm/delete/error",
-    [RTM_ACTION_DELETE_OK] = "rtm/delete/ok",
-    [RTM_ACTION_HANDSHAKE_ERROR] = "auth/handshake/error",
-    [RTM_ACTION_HANDSHAKE_OK] = "auth/handshake/ok",
-    [RTM_ACTION_PUBLISH_ERROR] = "rtm/publish/error",
-    [RTM_ACTION_PUBLISH_OK] = "rtm/publish/ok",
-    [RTM_ACTION_READ_ERROR] = "rtm/read/error",
-    [RTM_ACTION_READ_OK] = "rtm/read/ok",
-    [RTM_ACTION_SEARCH_DATA] = "rtm/search/data",
-    [RTM_ACTION_SEARCH_ERROR] = "rtm/search/error",
-    [RTM_ACTION_SEARCH_OK] = "rtm/search/ok",
-    [RTM_ACTION_SUBSCRIBE_ERROR] = "rtm/subscribe/error",
-    [RTM_ACTION_SUBSCRIBE_OK] = "rtm/subscribe/ok",
-    [RTM_ACTION_SUBSCRIPTION_DATA] = "rtm/subscription/data",
-    [RTM_ACTION_SUBSCRIPTION_INFO] = "rtm/subscription/info",
-    [RTM_ACTION_SUBSCRIPTION_ERROR] = "rtm/subscription/error",
-    [RTM_ACTION_UNSUBSCRIBE_ERROR] = "rtm/unsubscribe/error",
-    [RTM_ACTION_UNSUBSCRIBE_OK] = "rtm/unsubscribe/ok",
-    [RTM_ACTION_WRITE_ERROR] = "rtm/write/error",
-    [RTM_ACTION_WRITE_OK] = "rtm/write/ok"
-};
 
 enum rtm_field_type_t {
   FIELD_JSON,

@@ -28,7 +28,6 @@ def main():
         time.sleep(10)
         assert p.returncode == None
     finally:
-        # os.pkill(p)
         p.terminate()
 
     out, err = p.communicate()
