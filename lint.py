@@ -65,7 +65,7 @@ def main():
 
     cmake_defines = [
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
-        '-Dsamples=ON',
+        '-Dexamples=ON',
         '-Dperf=ON',
         '-Dtest=ON',
         '-Dbench=ON',

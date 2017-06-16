@@ -7,7 +7,7 @@ include_directories(.)
 
 option(test "Build all test." OFF)
 option(bench "Build all benchmarks." OFF)
-option(samples "Build all samples." OFF)
+option(examples "Build all examples." OFF)
 
 if(test)
   ExternalProject_Add(googletest

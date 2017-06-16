@@ -281,7 +281,7 @@ cleanup:
 }
 ```
 
-To learn more, look at tutorial and core/samples directories and visit [documentation page](https://www.satori.com/docs).
+To learn more, look at tutorial and core/examples directories and visit [documentation page](https://www.satori.com/docs).
 
 Verbose logging of all incoming and outcoming PDUs
 ==================================================

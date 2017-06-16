@@ -199,8 +199,8 @@ ELSEIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
            )
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
-if(samples)
-  add_subdirectory(samples)
+if(examples)
+  add_subdirectory(examples)
 endif()
 
 if(test)
