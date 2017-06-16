@@ -264,11 +264,6 @@ typedef enum {
 } rtm_status;
 
 /**
- * @brief Global connection timeout in seconds. The default value is @c 10.
- */
-RTM_API extern time_t rtm_connect_timeout;
-
-/**
  * @brief Size of ::rtm_client_t in bytes.
  */
 RTM_API extern const size_t rtm_client_size;
@@ -314,6 +309,15 @@ RTM_API void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu);
  * @return current ping interval
  */
 RTM_API time_t rtm_get_ws_ping_interval(rtm_client_t *rtm);
+
+/**
+ * @brief Sets the given connection timeout in seconds. Default is 5 seconds.
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] timeout_in_seconds new timeout value
+ *
+ */
+RTM_API void rtm_set_connection_timeout(rtm_client_t *rtm, unsigned timeout_in_seconds);
 
 /**
  * @brief Sets new WS ping interval. A ws ping frame will be perodically sent to server

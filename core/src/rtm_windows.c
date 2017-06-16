@@ -49,11 +49,11 @@ try_again:
       pfd.revents = 0;  // get ready to receive the events
 
       time_t dt = (time(NULL) - start_time);
-      if (dt > rtm_connect_timeout) {
+      if (dt > rtm->connect_timeout) {
         break;
       }
 
-      poll_result = WSAPoll(&pfd, 1, (int)(rtm_connect_timeout - dt) * 1000);
+      poll_result = WSAPoll(&pfd, 1, (int)(rtm->connect_timeout - dt) * 1000);
       if (poll_result < 0 && (WSAEWOULDBLOCK == last_error || WSAEINTR == last_error)) {
         poll_result = 0;
       }
