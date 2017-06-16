@@ -56,9 +56,6 @@ extern "C" {
 
 #define _RTM_MAX_CONTROL_FRAME_SIZE (125)
 
-// connect timeout in seconds
-#define _RTM_CONNECT_TIMEOUT (5)
-
 // value returned by c_{tls_,}{read,write}
 #define READ_FAILURE (-1)
 #define WRITE_FAILURE (-1)
@@ -84,6 +81,7 @@ struct _rtm_client {
     SSLContextRef sslContext;
 #endif
 
+    unsigned connect_timeout;
     rtm_pdu_handler_t *handle_pdu;
     rtm_raw_pdu_handler_t *handle_raw_pdu;
 

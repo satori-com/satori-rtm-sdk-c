@@ -12,8 +12,6 @@
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
 const size_t rtm_client_size = RTM_CLIENT_SIZE;
 
-time_t rtm_connect_timeout = 10;
-
 void(*rtm_error_logger)(const char *message) = rtm_default_error_logger;
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len);
@@ -57,6 +55,7 @@ RTM_API rtm_client_t * rtm_init(
   rtm->scratch_buffer[0] = '\0';
   rtm->is_secure = NO;
   rtm->ws_ping_interval = 45;
+  rtm->connect_timeout = 5;
 
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
@@ -283,6 +282,11 @@ int rtm_get_fd(rtm_client_t *rtm) {
 time_t rtm_get_ws_ping_interval(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
   return rtm->ws_ping_interval;
+}
+
+void rtm_set_connection_timeout(rtm_client_t *rtm, unsigned timeout_in_seconds) {
+  ASSERT_NOT_NULL(rtm);
+  rtm->connect_timeout = timeout_in_seconds;
 }
 
 void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval) {

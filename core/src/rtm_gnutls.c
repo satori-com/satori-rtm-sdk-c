@@ -54,7 +54,7 @@ static rtm_status gtls_create_session(rtm_client_t *rtm, const char *hostname) {
 
 #if GNUTLS_VERSION_MAJOR >= 3
   gnutls_transport_set_int(rtm->session, rtm->fd);
-  gnutls_handshake_set_timeout(rtm->session, (unsigned) rtm_connect_timeout * 1000);
+  gnutls_handshake_set_timeout(rtm->session, rtm->connect_timeout * 1000);
 #else
   gnutls_transport_set_ptr(rtm->session, (void *) (long) rtm->fd);
 #endif
