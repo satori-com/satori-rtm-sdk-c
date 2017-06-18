@@ -12,7 +12,7 @@ static char const *role = "YOUR_ROLE";
 static char const *role_secret = "YOUR_SECRET";
 
 static char const *channel = "animals";
-static char const *message = "{\"who\": \"zebra\", \"where\":[34.134358, -118.321506]}";
+static char const *message_as_json = "{\"who\": \"zebra\", \"where\":[34.134358, -118.321506]}";
 
 #define MAX_NONCE_SIZE 32
 
@@ -29,64 +29,63 @@ struct tutorial_state_t {
 // on every incoming pdu
 void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 
-  struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *)rtm_get_user_context(rtm);
+  struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *) rtm_get_user_context(rtm);
 
-  switch(pdu->action) {
+  switch (pdu->action) {
     case RTM_ACTION_SUBSCRIBE_OK:
+      printf("Successfully subscribed to %s\n", pdu->subscription_id);
       tutorial_state->subscribe_ok = 1;
-      return;
+      break;
     case RTM_ACTION_PUBLISH_OK:
+      printf("Animal is published\n");
       tutorial_state->publish_ok = 1;
-      return;
+      break;
     case RTM_ACTION_SUBSCRIPTION_DATA: {
       char *message;
       while ((message = rtm_iterate(&pdu->message_iterator))) {
-          // Note that unlike other Satori RTM SDKs, C Core SDK does not parse
-          // messages into objects, because C has neither appropriate data
-          // structures nor JSON parsing functionality in the standard library.
-          printf("Got message: %s\n", message);
+        // Note that unlike other Satori RTM SDKs, C Core SDK does not parse
+        // messages into objects, because C has neither appropriate data
+        // structures nor JSON parsing functionality in the standard library.
+        printf("Animal is received: %s\n", message);
       }
       tutorial_state->got_message = 1;
-      return;
+      break;
     }
     case RTM_ACTION_HANDSHAKE_OK:
       tutorial_state->last_nonce = malloc(strlen(pdu->nonce) + 1);
       strcpy(tutorial_state->last_nonce, pdu->nonce);
-      return;
+      break;
     case RTM_ACTION_AUTHENTICATE_OK:
       tutorial_state->authenticated = 1;
-      return;
+      break;
     case RTM_ACTION_GENERAL_ERROR:
     case RTM_ACTION_AUTHENTICATE_ERROR:
-    case RTM_ACTION_DELETE_ERROR:
     case RTM_ACTION_HANDSHAKE_ERROR:
     case RTM_ACTION_PUBLISH_ERROR:
-    case RTM_ACTION_READ_ERROR:
-    case RTM_ACTION_SEARCH_ERROR:
     case RTM_ACTION_SUBSCRIBE_ERROR:
-    case RTM_ACTION_UNSUBSCRIBE_ERROR:
-    case RTM_ACTION_WRITE_ERROR:
-      // Print errors, if any
+    case RTM_ACTION_SUBSCRIPTION_ERROR:
+    case RTM_ACTION_SUBSCRIPTION_INFO:
       fprintf(stderr, "error: %s, reason: %s\n", pdu->error, pdu->reason);
-      return;
+      break;
     default:
-      return;
+      rtm_default_pdu_handler(rtm, pdu);
+      break;
   }
 }
 
 int authenticate(rtm_client_t *rtm) {
   unsigned request_id;
-  struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *)rtm_get_user_context(rtm);
+  struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *) rtm_get_user_context(rtm);
 
   rtm_status status = rtm_handshake(rtm, role, &request_id);
-  if (status) {
-    fprintf(stderr, "Failed to send handshake request\n");
+  if (RTM_OK != status) {
+    fprintf(stderr, "Failed to send handshake request: %s\n", rtm_error_string(status));
     return status;
   }
 
   status = rtm_wait_timeout(rtm, 10 /* seconds */);
-  if (status) {
-    fprintf(stderr, "Failed to receive handshake reply\n");
+  if (RTM_OK != status) {
+    fprintf(stderr, "Failed to receive handshake reply: %s\n", rtm_error_string(status));
     return status;
   }
 
@@ -99,14 +98,14 @@ int authenticate(rtm_client_t *rtm) {
   free(tutorial_state->last_nonce);
   tutorial_state->last_nonce = NULL;
 
-  if (status) {
-    fprintf(stderr, "Failed to send authenticate request\n");
+  if (RTM_OK != status) {
+    fprintf(stderr, "Failed to send authenticate request: %s\n", rtm_error_string(status));
     return status;
   }
 
   status = rtm_wait_timeout(rtm, 10 /* seconds */);
-  if (status) {
-    fprintf(stderr, "Failed to receive authenticate reply\n");
+  if (RTM_OK != status) {
+    fprintf(stderr, "Failed to receive authenticate reply: %s\n", rtm_error_string(status));
     return status;
   }
 
@@ -119,7 +118,6 @@ int authenticate(rtm_client_t *rtm) {
 }
 
 int main(void) {
-  rtm_status status;
   struct tutorial_state_t tutorial_state = {0};
 
   // C SDK does not allocate memory on its own so you're required to give it a
@@ -130,31 +128,33 @@ int main(void) {
   // must be called only after rtm_init.
   rtm_client_t *rtm = rtm_init(memory_for_rtm_client, tutorial_pdu_handler, &tutorial_state);
 
-  status = rtm_connect(rtm, endpoint, appkey);
-
-  if (status != RTM_OK) {
-    fprintf(stderr, "Unable to connect to RTM\n");
+  rtm_status status = rtm_connect(rtm, endpoint, appkey);
+  if (RTM_OK != status) {
+    fprintf(stderr, "Failed to connect: %s\n", rtm_error_string(status));
     free(rtm);
     return status;
   }
+  printf("Connected to Satori!\n");
 
-  // Perform authentication process to obtain permissions to subscribe
-  // and publish to the channel. This step is not necessary if you just
-  // want to read from an open data channel.
-  status = authenticate(rtm);
-  if (status) {
+  if (0 != strcmp(role, "YOUR_ROLE")) {
+    // Perform authentication process to obtain permissions to subscribe
+    // and publish to the channel. This step is not necessary if you just
+    // want to read from an open data channel.
+    status = authenticate(rtm);
+    if (RTM_OK != status) {
       rtm_close(rtm);
       free(rtm);
       return status;
-  }
+    }
 
-  printf("Authenticated as %s\n", role);
+    printf("Authenticated as %s\n", role);
+  }
 
   // Send a subscribe request
   unsigned request_id;
   status = rtm_subscribe(rtm, channel, &request_id);
-  if (status != RTM_OK) {
-    fprintf(stderr, "Unable to send subscribe request\n");
+  if (RTM_OK != status) {
+    fprintf(stderr, "Unable to send subscribe request: %s\n", rtm_error_string(status));
     rtm_close(rtm);
     free(rtm);
     return status;
@@ -163,20 +163,16 @@ int main(void) {
   // Wait for a subscribe reply
   status = rtm_wait_timeout(rtm, 10 /* seconds */);
   if (status != RTM_OK) {
-    if (status == RTM_ERR_TIMEOUT) {
-        fprintf(stderr, "Unable to receive subscribe reply in time\n");
-    } else {
-        fprintf(stderr, "Failed to receive subscribe reply, error %d\n", status);
-    }
+    fprintf(stderr, "Failed to receive subscribe reply: %s\n", rtm_error_string(status));
     rtm_close(rtm);
     free(rtm);
     return status;
   }
 
   // Note that RTM_OK result above refers only to the fact that we
-  // have successfully received a reply. RTM_OK does not mean that the outcome
-  // inside that reply was itself an 'ok'. The inspection of the reply happens
-  // in tutorial_pdu_handler function and here we the use 'subscribe_ok' variable
+  // have successfully received a reply. RTM_OK does not mean that the reply is
+  // positive. The inspection of the reply happens in tutorial_pdu_handler
+  // function and here we the use 'subscribe_ok' variable
   // which was or was not set to 1 in that process.
   if (!tutorial_state.subscribe_ok) {
     fprintf(stderr, "Subscribe reply was an error\n");
@@ -185,16 +181,15 @@ int main(void) {
     return status;
   }
 
-  printf("Successfully subscribed to %s\n", channel);
 
   while (1) {
     tutorial_state.got_message = 0;
     tutorial_state.publish_ok = 0;
 
     // Publish a message, taking care of error handling in similar manner.
-    status = rtm_publish_json(rtm, channel, message, &request_id);
+    status = rtm_publish_json(rtm, channel, message_as_json, &request_id);
     if (status != RTM_OK) {
-      fprintf(stderr, "Failed to send publish request\n");
+      fprintf(stderr, "Failed to send publish request: %s\n", rtm_error_string(status));
       rtm_close(rtm);
       free(rtm);
       return status;
@@ -215,11 +210,7 @@ int main(void) {
     for (i = 0; i < 2; ++i) {
       status = rtm_wait_timeout(rtm, 10 /* seconds */);
       if (status != RTM_OK) {
-        if (status == RTM_ERR_TIMEOUT) {
-            fprintf(stderr, "Timeout while waiting for subscription data and publish reply\n");
-        } else {
-            fprintf(stderr, "Failed to receive publish reply or subscription data, error %d\n", status);
-        }
+        fprintf(stderr, "Failed to receive publish reply or subscription data: %s\n", rtm_error_string(status));
         rtm_close(rtm);
         free(rtm);
         return status;
@@ -241,14 +232,10 @@ int main(void) {
       free(rtm);
       return status;
     }
-    printf("Successfully published '%s' to %s\n", message, channel);
 
     fflush(stdout);
     fflush(stderr);
 
     rtm_wait_timeout(rtm, 2);
   }
-
-  rtm_close(rtm);
-  free(rtm);
 }
