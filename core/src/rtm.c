@@ -556,7 +556,7 @@ const char *rtm_error_string(rtm_status status) {
     case RTM_ERR_TLS:
       return "RTM_ERR_TLS: An unexpected error happened in the TLS layer.";
     case RTM_ERR_TIMEOUT:
-      return "RTM_ERR_TIMEOUT: An unexpected error happened in the TLS layer.";
+      return "RTM_ERR_TIMEOUT: The operation timed out.";
     default:
       return "RTM_UNKNOWN: Unknown status of operation.";
   }
