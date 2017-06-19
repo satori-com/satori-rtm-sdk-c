@@ -21,7 +21,7 @@ struct tutorial_state_t {
     int subscribe_ok;
     int publish_ok;
     int got_message;
-    char *last_nonce;
+    char last_nonce[MAX_NONCE_SIZE + 1];
     int authenticated;
 };
 
@@ -52,8 +52,7 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       break;
     }
     case RTM_ACTION_HANDSHAKE_OK:
-      tutorial_state->last_nonce = malloc(strlen(pdu->nonce) + 1);
-      strcpy(tutorial_state->last_nonce, pdu->nonce);
+      strncpy(tutorial_state->last_nonce, pdu->nonce, MAX_NONCE_SIZE);
       break;
     case RTM_ACTION_AUTHENTICATE_OK:
       tutorial_state->authenticated = 1;
@@ -73,7 +72,7 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   }
 }
 
-int authenticate(rtm_client_t *rtm) {
+rtm_status handshake_and_authenticate(rtm_client_t *rtm) {
   unsigned request_id;
   struct tutorial_state_t *tutorial_state = (struct tutorial_state_t *) rtm_get_user_context(rtm);
 
@@ -89,14 +88,7 @@ int authenticate(rtm_client_t *rtm) {
     return status;
   }
 
-  if (!tutorial_state->last_nonce) {
-    fprintf(stderr, "Failed to get nonce from the handshake reply\n");
-    return RTM_ERR_PARAM;
-  }
-
   status = rtm_authenticate(rtm, role_secret, tutorial_state->last_nonce, &request_id);
-  free(tutorial_state->last_nonce);
-  tutorial_state->last_nonce = NULL;
 
   if (RTM_OK != status) {
     fprintf(stderr, "Failed to send authenticate request: %s\n", rtm_error_string(status));
@@ -128,6 +120,16 @@ int main(void) {
   // must be called only after rtm_init.
   rtm_client_t *rtm = rtm_init(memory_for_rtm_client, tutorial_pdu_handler, &tutorial_state);
 
+  puts("RTM client config:");
+  printf("\tendpoint = %s\n", endpoint);
+  printf("\tappkey = %s\n", appkey);
+  int should_authenticate = (0 != strcmp(role, "YOUR_ROLE"));
+  if (should_authenticate) {
+      printf("\tauthenticate? = True (as %s)\n", role);
+  } else {
+      printf("\tauthenticate? = False\n");
+  }
+
   rtm_status status = rtm_connect(rtm, endpoint, appkey);
   if (RTM_OK != status) {
     fprintf(stderr, "Failed to connect: %s\n", rtm_error_string(status));
@@ -136,11 +138,11 @@ int main(void) {
   }
   printf("Connected to Satori!\n");
 
-  if (0 != strcmp(role, "YOUR_ROLE")) {
+  if (should_authenticate) {
     // Perform authentication process to obtain permissions to subscribe
     // and publish to the channel. This step is not necessary if you just
     // want to read from an open data channel.
-    status = authenticate(rtm);
+    status = handshake_and_authenticate(rtm);
     if (RTM_OK != status) {
       rtm_close(rtm);
       free(rtm);

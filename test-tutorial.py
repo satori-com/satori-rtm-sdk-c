@@ -32,8 +32,8 @@ def main():
 
     out, err = p.communicate()
 
-    assert 'Successfully published' in out, out
-    assert 'Successfully subscribed' in out, out
+    assert 'Animal is received' in out, out
+    assert 'Animal is published' in out, out
 
     print('Tutorial seems to be working fine')
 
