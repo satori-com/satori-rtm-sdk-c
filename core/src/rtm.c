@@ -1275,6 +1275,14 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         if (rtm->is_verbose) {
           fprintf(stderr, "RECV: pong\n");
         }
+
+        // We're done with this pong, move next frame (if any) into the
+        // beginning of input buffer.
+        rtm->input_length -= (header_length + payload_length);
+        if (rtm->input_length > 0) {
+          memmove(input_buffer, ws_frame, rtm->input_length);
+        }
+
         return rtm_poll(rtm);
       }
 
