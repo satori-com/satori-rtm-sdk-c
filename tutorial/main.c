@@ -33,11 +33,11 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 
   switch (pdu->action) {
     case RTM_ACTION_SUBSCRIBE_OK:
-      printf("Successfully subscribed to %s\n", pdu->subscription_id);
+      printf("Subscribed to the channel: %s\n", pdu->subscription_id);
       tutorial_state->subscribe_ok = 1;
       break;
     case RTM_ACTION_PUBLISH_OK:
-      printf("Animal is published\n");
+      puts("Animal is published");
       tutorial_state->publish_ok = 1;
       break;
     case RTM_ACTION_SUBSCRIPTION_DATA: {
@@ -125,18 +125,17 @@ int main(void) {
   printf("\tappkey = %s\n", appkey);
   int should_authenticate = (0 != strcmp(role, "YOUR_ROLE"));
   if (should_authenticate) {
-      printf("\tauthenticate? = True (as %s)\n", role);
+    printf("\tauthenticate? = True (as %s)\n", role);
   } else {
-      printf("\tauthenticate? = False\n");
+    printf("\tauthenticate? = False\n");
   }
 
   rtm_status status = rtm_connect(rtm, endpoint, appkey);
   if (RTM_OK != status) {
     fprintf(stderr, "Failed to connect: %s\n", rtm_error_string(status));
-    free(rtm);
-    return status;
+    goto cleanup;
   }
-  printf("Connected to Satori!\n");
+  puts("Connected to Satori!");
 
   if (should_authenticate) {
     // Perform authentication process to obtain permissions to subscribe
@@ -207,7 +206,7 @@ int main(void) {
     rtm_wait_timeout(rtm, 2);
   }
 
-cleanup:
+  cleanup:
   rtm_close(rtm);
   free(rtm);
   return status;
