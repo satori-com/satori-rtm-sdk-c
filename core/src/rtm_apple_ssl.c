@@ -164,12 +164,8 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
     size_t processed = 0;
     status = SSLWrite(rtm->sslContext, buf, nbyte, &processed);
     ret += processed;
-
-    if (errSSLWouldBlock == status && processed < nbyte) {
-      buf += processed;
-      nbyte -= processed;
-      status = errSSLWouldBlock;
-    }
+    buf += processed;
+    nbyte -= processed;
   } while (nbyte > 0 && errSSLWouldBlock == status);
 
   if (ret == 0 && errSSLClosedAbort != status)
