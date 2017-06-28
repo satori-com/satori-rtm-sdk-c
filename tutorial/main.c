@@ -5,9 +5,10 @@
 #include <rtm.h>
 
 // Replace these values with your project's credentials
-// from DevPortal (https://developer.satori.com/#/projects)
+// from DevPortal (https://developer.satori.com/)
 static char const *endpoint = "YOUR_ENDPOINT";
 static char const *appkey = "YOUR_APPKEY";
+// Role and secret are optional: replace only if you need to authenticate.
 static char const *role = "YOUR_ROLE";
 static char const *role_secret = "YOUR_SECRET";
 
