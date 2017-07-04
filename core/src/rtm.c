@@ -1207,6 +1207,11 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
   char *ws_frame = input_buffer;
   ssize_t input_length = rtm->input_length;
 
+  // RTM_OK is returned if any data frame presents and no protocol errors
+  // RTM_WOULD_BLOCK is returned if there are no data frames and no protocol errors
+  // RTM_ERR_PROTCOL is returned if parser detects protocol error
+  // RTM_ERR_CLOSE is returned if socket is closed or CLOSE frame is received
+  return_code = RTM_WOULD_BLOCK;
   while (input_length > 2) { // must be at least 4 bytes to read a ws frame
 
     // Decode frame header
@@ -1266,28 +1271,14 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
       if (WS_CLOSE == frame_opcode) {
         _rtm_io_close(rtm);
-
-      } else if (WS_PING == frame_opcode) { /* ping */
-        ws_write(rtm, WS_PONG, ws_frame, payload_length);
-
-      } else if (WS_PONG == frame_opcode) { /* pong response */
-        // Pong response is for internal use. Call rtm_poll once again to get requested data
+        return RTM_ERR_CLOSED;
+      } else if (WS_PING == frame_opcode || WS_PONG == frame_opcode) {
+        const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
         if (rtm->is_verbose) {
-          fprintf(stderr, "RECV: pong\n");
+          fprintf(stderr, "RECV: %s\n", frame_type);
         }
-
-        // We're done with this pong, move next frame (if any) into the
-        // beginning of input buffer.
-        rtm->input_length -= (header_length + payload_length);
-        if (rtm->input_length > 0) {
-          memmove(input_buffer, ws_frame, rtm->input_length);
-        }
-
-        return rtm_poll(rtm);
       }
-
     } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode) { /* data frame */
-
       if (!frame_fin) {
         // TODO: add split frame support?
         return_code = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unhandled split frame.");

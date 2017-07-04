@@ -5,7 +5,6 @@
 
 static char const *endpoint = "YOUR_ENDPOINT";
 static char const *appkey = "YOUR_APPKEY";
-static char const *channel = "animals";
 
 void pdu_handler(rtm_client_t *client, rtm_pdu_t const *pdu) {
   switch (pdu->action) {
