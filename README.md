@@ -300,6 +300,10 @@ or by setting DEBUG_SATORI_SDK environment variable prior to running your applic
   ./my_program
 ```
 
+Migrating from C Core SDK v1
+============================
+
+See [Migration notes](Migrating_to_API_v2.md)
 
 Missing functionality
 =====================
