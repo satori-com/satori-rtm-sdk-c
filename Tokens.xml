@@ -85,7 +85,7 @@
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
     <Anchor>a76e6947b67e9c81dbafe8580611256e7</Anchor>
-    <Abstract>Structure representing received PDU JSON object. </Abstract>
+    <Abstract>Structure containing information about the received PDU. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -134,6 +134,17 @@
   </Token>
   <Token>
     <TokenIdentifier>
+      <Name>rtm_iterate</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a065f39d8529968def798008c928f8353</Anchor>
+    <Abstract>get next element in iterator or NULL if there are none </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
       <Name>rtm_default_error_logger</Name>
       <APILanguage>c</APILanguage>
       <Type>func</Type>
@@ -167,13 +178,68 @@
   </Token>
   <Token>
     <TokenIdentifier>
+      <Name>rtm_get_ws_ping_interval</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a5d31fd8f8535da9e0435a639e101e68a</Anchor>
+    <Abstract>Returns current WS ping interval (sec) </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_set_connection_timeout</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a12d06c4f2919491bc857f9f3b4eaf1b1</Anchor>
+    <Abstract>Sets the given connection timeout in seconds. Default is 5 seconds. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_set_ws_ping_interval</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>af8ad81bd31a23ffe170f7ddfc24c206b</Anchor>
+    <Abstract>Sets new WS ping interval. A ws ping frame will be perodically sent to server to avoid connection ref...</Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_init</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a749eeb668d1e3b8088a24df19f2dbd31</Anchor>
+    <Abstract>Initialize an instance of rtm_client_t. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
       <Name>rtm_connect</Name>
       <APILanguage>c</APILanguage>
       <Type>func</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
-    <Anchor>af70683e190e41c1823fd6aa606d59252</Anchor>
+    <Anchor>a7ea7668c0cedee2e5eac4959ac957ee6</Anchor>
     <Abstract>Initialize an instance of rtm_client_t and connects to RTM. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_set_raw_pdu_handler</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>ac3edce5acb40aae24dc1b9836fee7592</Anchor>
+    <Abstract>Set the handler for not yet parsed PDUs. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -218,6 +284,17 @@
     <Path>rtm_8h.html</Path>
     <Anchor>ac0d6fe626d60c1ea9aed8689545335f0</Anchor>
     <Abstract>Send the handshake request to obtain nonce from the server. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_authenticate</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>aada09fdfb1664cb2d20236a3eaf70833</Anchor>
+    <Abstract>Send the authenticate request to establish the identity of the client. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -306,6 +383,17 @@
     <Path>rtm_8h.html</Path>
     <Anchor>acaa8a63e20597cc682da38c1273c1581</Anchor>
     <Abstract>Read the latest published message with specifying a full body of read PDU request. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_send_ws_ping</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a15e0ecc89976efe0ce29673cf2593756</Anchor>
+    <Abstract>Send a websocket ping frame. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -420,13 +508,13 @@
   </Token>
   <Token>
     <TokenIdentifier>
-      <Name>rtm_connect_timeout</Name>
+      <Name>rtm_error_string</Name>
       <APILanguage>c</APILanguage>
-      <Type>data</Type>
+      <Type>func</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
-    <Anchor>a15ee7c7ebf92a582649187c8335eeb62</Anchor>
-    <Abstract>Global connection timeout in seconds. The default value is 10. </Abstract>
+    <Anchor>a7c42c8fcb8788a16b260cf18e9b5d081</Anchor>
+    <Abstract>Returns a human-readable string representing the status of operation. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -553,16 +641,6 @@
   </Token>
   <Token>
     <TokenIdentifier>
-      <Name>RTM_ERR_NO_TLS</Name>
-      <APILanguage>c</APILanguage>
-      <Type>econst</Type>
-    </TokenIdentifier>
-    <Path>rtm_8h.html</Path>
-    <Anchor>a14c1c9f22306549de95a3d4117da124ba354cb0805d2ccd4fb24f90db2914196f</Anchor>
-    <DeclaredIn>rtm.h</DeclaredIn>
-  </Token>
-  <Token>
-    <TokenIdentifier>
       <Name>RTM_ERR_TLS</Name>
       <APILanguage>c</APILanguage>
       <Type>econst</Type>
@@ -589,37 +667,27 @@
       <Scope>_rtm_pdu</Scope>
     </TokenIdentifier>
     <Path>struct__rtm__pdu.html</Path>
-    <Abstract>Structure representing received PDU JSON object. </Abstract>
+    <Abstract>Structure containing information about the received PDU. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
     <TokenIdentifier>
-      <Name>action</Name>
-      <APILanguage>cpp</APILanguage>
-      <Type>data</Type>
-      <Scope>_rtm_pdu</Scope>
+      <Name>field_t</Name>
+      <APILanguage>c</APILanguage>
+      <Type>cl</Type>
+      <Scope>field_t</Scope>
     </TokenIdentifier>
-    <Path>struct__rtm__pdu.html</Path>
-    <Anchor>a8ba2444bff1ae78259f26e82807637e3</Anchor>
+    <Path>structfield__t.html</Path>
   </Token>
   <Token>
     <TokenIdentifier>
-      <Name>body</Name>
-      <APILanguage>cpp</APILanguage>
-      <Type>data</Type>
-      <Scope>_rtm_pdu</Scope>
+      <Name>rtm_list_iterator_t</Name>
+      <APILanguage>c</APILanguage>
+      <Type>cl</Type>
+      <Scope>rtm_list_iterator_t</Scope>
     </TokenIdentifier>
-    <Path>struct__rtm__pdu.html</Path>
-    <Anchor>a8777abbaba4b6e99b9a885b60df0d758</Anchor>
-  </Token>
-  <Token>
-    <TokenIdentifier>
-      <Name>request_id</Name>
-      <APILanguage>cpp</APILanguage>
-      <Type>data</Type>
-      <Scope>_rtm_pdu</Scope>
-    </TokenIdentifier>
-    <Path>struct__rtm__pdu.html</Path>
-    <Anchor>a2db9e88687a2c13a61fa4eea55793e8e</Anchor>
+    <Path>structrtm__list__iterator__t.html</Path>
+    <Abstract>SDK uses this type to return collections of strings, for example messages in subscription_data PDUs...</Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
 </Tokens>

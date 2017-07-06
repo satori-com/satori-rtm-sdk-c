@@ -68,7 +68,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_4270bfced15e0e73154b13468c7c9ad9.html">core</a></li><li class="navelem"><a class="el" href="dir_90fd98a0ba30abf7a6068a44995d2d6b.html">src</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -100,8 +100,11 @@ Include dependency graph for rtm.h:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrtm__list__iterator__t.html">rtm_list_iterator_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SDK uses this type to return collections of strings, for example messages in subscription_data PDUs. User code repeatedly calls <a class="el" href="rtm_8h.html#a065f39d8529968def798008c928f8353" title="get next element in iterator or NULL if there are none ">rtm_iterate</a> with the iterator, getting all messages one by one.  <a href="structrtm__list__iterator__t.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct__rtm__pdu.html">_rtm_pdu</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure representing received PDU JSON object.  <a href="struct__rtm__pdu.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure containing information about the received PDU.  <a href="struct__rtm__pdu.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
@@ -137,15 +140,11 @@ Macros</h2></td></tr>
 #define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a426f7c8a0b0c11d395ae3e56ddbfbb34">RTM_AUTHENTICATION_HASH_SIZE</a>&#160;&#160;&#160;(24)</td></tr>
 <tr class="memdesc:a426f7c8a0b0c11d395ae3e56ddbfbb34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expected size of the authentication hash parameter in bytes. <br /></td></tr>
 <tr class="separator:a426f7c8a0b0c11d395ae3e56ddbfbb34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4548313331cfa1ba7ac3b90e01e927e"><td class="memItemLeft" align="right" valign="top"><a id="af4548313331cfa1ba7ac3b90e01e927e"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>rtm_authenticate</b>(...)&#160;&#160;&#160;_Pragma (&quot;GCC error \&quot;This function is only available when compiling with a TLS library\&quot;&quot;)</td></tr>
-<tr class="separator:af4548313331cfa1ba7ac3b90e01e927e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a76e6947b67e9c81dbafe8580611256e7"><td class="memItemLeft" align="right" valign="top"><a id="a76e6947b67e9c81dbafe8580611256e7"></a>
-typedef struct <a class="el" href="struct__rtm__pdu.html">_rtm_pdu</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7">rtm_pdu_t</a></td></tr>
-<tr class="memdesc:a76e6947b67e9c81dbafe8580611256e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure representing received PDU JSON object. <br /></td></tr>
+<tr class="memitem:a76e6947b67e9c81dbafe8580611256e7"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct__rtm__pdu.html">_rtm_pdu</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7">rtm_pdu_t</a></td></tr>
+<tr class="memdesc:a76e6947b67e9c81dbafe8580611256e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure containing information about the received PDU.  <a href="#a76e6947b67e9c81dbafe8580611256e7">More...</a><br /></td></tr>
 <tr class="separator:a76e6947b67e9c81dbafe8580611256e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f68a9585c25eca96358e223d2a2f6c7"><td class="memItemLeft" align="right" valign="top"><a id="a0f68a9585c25eca96358e223d2a2f6c7"></a>
 typedef struct _rtm_client&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a></td></tr>
@@ -157,6 +156,9 @@ typedef struct _rtm_client&#160;</td><td class="memItemRight" valign="bottom"><a
 <tr class="memitem:a1f8dc4bd0b4af8664f31a912927361a3"><td class="memItemLeft" align="right" valign="top">typedef void(&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a1f8dc4bd0b4af8664f31a912927361a3">rtm_pdu_handler_t</a>) (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const <a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7">rtm_pdu_t</a> *pdu)</td></tr>
 <tr class="memdesc:a1f8dc4bd0b4af8664f31a912927361a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type of callback function invoked when client receives PDU from RTM.  <a href="#a1f8dc4bd0b4af8664f31a912927361a3">More...</a><br /></td></tr>
 <tr class="separator:a1f8dc4bd0b4af8664f31a912927361a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfd7e068a7f4dd01a92fa78918b949ae"><td class="memItemLeft" align="right" valign="top"><a id="adfd7e068a7f4dd01a92fa78918b949ae"></a>
+typedef void(&#160;</td><td class="memItemRight" valign="bottom"><b>rtm_raw_pdu_handler_t</b>) (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, char const *raw_pdu)</td></tr>
+<tr class="separator:adfd7e068a7f4dd01a92fa78918b949ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3db8bd23afa763bb9e43ab36f6c37171"><td class="memItemLeft" align="right" valign="top"><a id="a3db8bd23afa763bb9e43ab36f6c37171"></a>
 typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a3db8bd23afa763bb9e43ab36f6c37171">rtm_error_logger_t</a>) (const char *message)</td></tr>
 <tr class="memdesc:a3db8bd23afa763bb9e43ab36f6c37171"><td class="mdescLeft">&#160;</td><td class="mdescRight">Global error logging function. <br /></td></tr>
@@ -164,23 +166,57 @@ typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
+<tr class="memitem:ab9d53f2fd076509f1059196abb331d55"><td class="memItemLeft" align="right" valign="top"><a id="ab9d53f2fd076509f1059196abb331d55"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#ab9d53f2fd076509f1059196abb331d55">rtm_action_t</a> { <br />
+&#160;&#160;<b>RTM_ACTION_UNKNOWN</b> = 0, 
+<b>RTM_ACTION_AUTHENTICATE_ERROR</b>, 
+<b>RTM_ACTION_AUTHENTICATE_OK</b>, 
+<b>RTM_ACTION_DELETE_ERROR</b>, 
+<br />
+&#160;&#160;<b>RTM_ACTION_DELETE_OK</b>, 
+<b>RTM_ACTION_GENERAL_ERROR</b>, 
+<b>RTM_ACTION_HANDSHAKE_ERROR</b>, 
+<b>RTM_ACTION_HANDSHAKE_OK</b>, 
+<br />
+&#160;&#160;<b>RTM_ACTION_PUBLISH_ERROR</b>, 
+<b>RTM_ACTION_PUBLISH_OK</b>, 
+<b>RTM_ACTION_READ_ERROR</b>, 
+<b>RTM_ACTION_READ_OK</b>, 
+<br />
+&#160;&#160;<b>RTM_ACTION_SEARCH_DATA</b>, 
+<b>RTM_ACTION_SEARCH_ERROR</b>, 
+<b>RTM_ACTION_SEARCH_OK</b>, 
+<b>RTM_ACTION_SUBSCRIBE_ERROR</b>, 
+<br />
+&#160;&#160;<b>RTM_ACTION_SUBSCRIBE_OK</b>, 
+<b>RTM_ACTION_SUBSCRIPTION_DATA</b>, 
+<b>RTM_ACTION_SUBSCRIPTION_ERROR</b>, 
+<b>RTM_ACTION_SUBSCRIPTION_INFO</b>, 
+<br />
+&#160;&#160;<b>RTM_ACTION_UNSUBSCRIBE_ERROR</b>, 
+<b>RTM_ACTION_UNSUBSCRIBE_OK</b>, 
+<b>RTM_ACTION_WRITE_ERROR</b>, 
+<b>RTM_ACTION_WRITE_OK</b>, 
+<br />
+&#160;&#160;<b>RTM_ACTION_SENTINEL</b>
+<br />
+ }<tr class="memdesc:ab9d53f2fd076509f1059196abb331d55"><td class="mdescLeft">&#160;</td><td class="mdescRight">The set of all possible actions that PDUs incoming from RTM can have. <br /></td></tr>
+</td></tr>
+<tr class="separator:ab9d53f2fd076509f1059196abb331d55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14c1c9f22306549de95a3d4117da124b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a> { <br />
 &#160;&#160;<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba817168c8511df43249b5ccf5ac47f8f9">RTM_OK</a> = 0, 
 <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124babc0b9242533d061f58d93b9368f8c34e">RTM_WOULD_BLOCK</a>, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bafdd0baf481594d0ff844a54dabc0e4e0">RTM_ERR_PARAM</a> = -100, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bad2c1b5a799946f962d596e8ad037421f">RTM_ERR_PARAM_INVALID</a>, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bafdd0baf481594d0ff844a54dabc0e4e0">RTM_ERR_PARAM</a> = -99, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bad2c1b5a799946f962d596e8ad037421f">RTM_ERR_PARAM_INVALID</a> = -98, 
 <br />
-&#160;&#160;<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124baef57d00dbd4695ec942e20d63f47e731">RTM_ERR_CONNECT</a>, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124baea0a1dae257ef108190f45b12d0f31a2">RTM_ERR_NETWORK</a>, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124baa11146c30350469cc9ba7366ba257fa4">RTM_ERR_CLOSED</a>, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bae47460845ae43459d174b460b40a571c">RTM_ERR_READ</a>, 
+&#160;&#160;<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124baef57d00dbd4695ec942e20d63f47e731">RTM_ERR_CONNECT</a> = -97, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124baea0a1dae257ef108190f45b12d0f31a2">RTM_ERR_NETWORK</a> = -96, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124baa11146c30350469cc9ba7366ba257fa4">RTM_ERR_CLOSED</a> = -95, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bae47460845ae43459d174b460b40a571c">RTM_ERR_READ</a> = -94, 
 <br />
-&#160;&#160;<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba87d8dd1496a0253412417c3a936f2196">RTM_ERR_WRITE</a>, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bacaa63a70c57efda36aedd256ff16d6e6">RTM_ERR_PROTOCOL</a>, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba354cb0805d2ccd4fb24f90db2914196f">RTM_ERR_NO_TLS</a>, 
-<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba3d7159cbd3f0cd9716fa3cd38b5bfade">RTM_ERR_TLS</a>, 
-<br />
-&#160;&#160;<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba9a34332eba483965424a1e3909bf06ee">RTM_ERR_TIMEOUT</a>
+&#160;&#160;<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba87d8dd1496a0253412417c3a936f2196">RTM_ERR_WRITE</a> = -93, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124bacaa63a70c57efda36aedd256ff16d6e6">RTM_ERR_PROTOCOL</a> = -92, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba3d7159cbd3f0cd9716fa3cd38b5bfade">RTM_ERR_TLS</a> = -91, 
+<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba9a34332eba483965424a1e3909bf06ee">RTM_ERR_TIMEOUT</a> = -90
 <br />
  }<tr class="memdesc:a14c1c9f22306549de95a3d4117da124b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type used internally to report errors.  <a href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">More...</a><br /></td></tr>
 </td></tr>
@@ -188,6 +224,10 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a065f39d8529968def798008c928f8353"><td class="memItemLeft" align="right" valign="top"><a id="a065f39d8529968def798008c928f8353"></a>
+RTM_API char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a065f39d8529968def798008c928f8353">rtm_iterate</a> (<a class="el" href="structrtm__list__iterator__t.html">rtm_list_iterator_t</a> const *iterator)</td></tr>
+<tr class="memdesc:a065f39d8529968def798008c928f8353"><td class="mdescLeft">&#160;</td><td class="mdescRight">get next element in iterator or NULL if there are none <br /></td></tr>
+<tr class="separator:a065f39d8529968def798008c928f8353"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8b23bbc548152e3384fd071e1e1d819"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#af8b23bbc548152e3384fd071e1e1d819">rtm_default_error_logger</a> (const char *message)</td></tr>
 <tr class="memdesc:af8b23bbc548152e3384fd071e1e1d819"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default error handler.  <a href="#af8b23bbc548152e3384fd071e1e1d819">More...</a><br /></td></tr>
 <tr class="separator:af8b23bbc548152e3384fd071e1e1d819"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -197,9 +237,24 @@ Functions</h2></td></tr>
 <tr class="memitem:ad7e42fc880685b070f1046f6f0463978"><td class="memItemLeft" align="right" valign="top">RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#ad7e42fc880685b070f1046f6f0463978">rtm_default_pdu_handler</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const <a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7">rtm_pdu_t</a> *pdu)</td></tr>
 <tr class="memdesc:ad7e42fc880685b070f1046f6f0463978"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default PDU handler prints all PDUs to stdout.  <a href="#ad7e42fc880685b070f1046f6f0463978">More...</a><br /></td></tr>
 <tr class="separator:ad7e42fc880685b070f1046f6f0463978"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af70683e190e41c1823fd6aa606d59252"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252">rtm_connect</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *endpoint, const char *appkey, <a class="el" href="rtm_8h.html#a1f8dc4bd0b4af8664f31a912927361a3">rtm_pdu_handler_t</a> *pdu_handler, void *user_context)</td></tr>
-<tr class="memdesc:af70683e190e41c1823fd6aa606d59252"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize an instance of rtm_client_t and connects to RTM.  <a href="#af70683e190e41c1823fd6aa606d59252">More...</a><br /></td></tr>
-<tr class="separator:af70683e190e41c1823fd6aa606d59252"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d31fd8f8535da9e0435a639e101e68a"><td class="memItemLeft" align="right" valign="top">RTM_API time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a5d31fd8f8535da9e0435a639e101e68a">rtm_get_ws_ping_interval</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm)</td></tr>
+<tr class="memdesc:a5d31fd8f8535da9e0435a639e101e68a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current WS ping interval (sec)  <a href="#a5d31fd8f8535da9e0435a639e101e68a">More...</a><br /></td></tr>
+<tr class="separator:a5d31fd8f8535da9e0435a639e101e68a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12d06c4f2919491bc857f9f3b4eaf1b1"><td class="memItemLeft" align="right" valign="top">RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a12d06c4f2919491bc857f9f3b4eaf1b1">rtm_set_connection_timeout</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, unsigned timeout_in_seconds)</td></tr>
+<tr class="memdesc:a12d06c4f2919491bc857f9f3b4eaf1b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the given connection timeout in seconds. Default is 5 seconds.  <a href="#a12d06c4f2919491bc857f9f3b4eaf1b1">More...</a><br /></td></tr>
+<tr class="separator:a12d06c4f2919491bc857f9f3b4eaf1b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8ad81bd31a23ffe170f7ddfc24c206b"><td class="memItemLeft" align="right" valign="top">RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#af8ad81bd31a23ffe170f7ddfc24c206b">rtm_set_ws_ping_interval</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, time_t ws_ping_interval)</td></tr>
+<tr class="memdesc:af8ad81bd31a23ffe170f7ddfc24c206b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets new WS ping interval. A ws ping frame will be perodically sent to server to avoid connection refusing. Default: 45 (sec)  <a href="#af8ad81bd31a23ffe170f7ddfc24c206b">More...</a><br /></td></tr>
+<tr class="separator:af8ad81bd31a23ffe170f7ddfc24c206b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a749eeb668d1e3b8088a24df19f2dbd31"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31">rtm_init</a> (void *memory, <a class="el" href="rtm_8h.html#a1f8dc4bd0b4af8664f31a912927361a3">rtm_pdu_handler_t</a> *pdu_handler, void *user_context)</td></tr>
+<tr class="memdesc:a749eeb668d1e3b8088a24df19f2dbd31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize an instance of rtm_client_t.  <a href="#a749eeb668d1e3b8088a24df19f2dbd31">More...</a><br /></td></tr>
+<tr class="separator:a749eeb668d1e3b8088a24df19f2dbd31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ea7668c0cedee2e5eac4959ac957ee6"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a7ea7668c0cedee2e5eac4959ac957ee6">rtm_connect</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *endpoint, const char *appkey)</td></tr>
+<tr class="memdesc:a7ea7668c0cedee2e5eac4959ac957ee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize an instance of rtm_client_t and connects to RTM.  <a href="#a7ea7668c0cedee2e5eac4959ac957ee6">More...</a><br /></td></tr>
+<tr class="separator:a7ea7668c0cedee2e5eac4959ac957ee6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3edce5acb40aae24dc1b9836fee7592"><td class="memItemLeft" align="right" valign="top">RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#ac3edce5acb40aae24dc1b9836fee7592">rtm_set_raw_pdu_handler</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, rtm_raw_pdu_handler_t *handler)</td></tr>
+<tr class="memdesc:ac3edce5acb40aae24dc1b9836fee7592"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the handler for not yet parsed PDUs.  <a href="#ac3edce5acb40aae24dc1b9836fee7592">More...</a><br /></td></tr>
+<tr class="separator:ac3edce5acb40aae24dc1b9836fee7592"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa740dee45ebd4c5a3cf9909a87333555"><td class="memItemLeft" align="right" valign="top">RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#aa740dee45ebd4c5a3cf9909a87333555">rtm_enable_verbose_logging</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm)</td></tr>
 <tr class="memdesc:aa740dee45ebd4c5a3cf9909a87333555"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable logging of incoming and outcoming PDUs.  <a href="#aa740dee45ebd4c5a3cf9909a87333555">More...</a><br /></td></tr>
 <tr class="separator:aa740dee45ebd4c5a3cf9909a87333555"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -212,6 +267,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ac0d6fe626d60c1ea9aed8689545335f0"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#ac0d6fe626d60c1ea9aed8689545335f0">rtm_handshake</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *role, unsigned *ack_id)</td></tr>
 <tr class="memdesc:ac0d6fe626d60c1ea9aed8689545335f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send the handshake request to obtain nonce from the server.  <a href="#ac0d6fe626d60c1ea9aed8689545335f0">More...</a><br /></td></tr>
 <tr class="separator:ac0d6fe626d60c1ea9aed8689545335f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aada09fdfb1664cb2d20236a3eaf70833"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#aada09fdfb1664cb2d20236a3eaf70833">rtm_authenticate</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *role_secret, const char *nonce, unsigned *ack_id)</td></tr>
+<tr class="memdesc:aada09fdfb1664cb2d20236a3eaf70833"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send the authenticate request to establish the identity of the client.  <a href="#aada09fdfb1664cb2d20236a3eaf70833">More...</a><br /></td></tr>
+<tr class="separator:aada09fdfb1664cb2d20236a3eaf70833"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a020fe06f60e0185251136a9c29dcb8ea"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a020fe06f60e0185251136a9c29dcb8ea">rtm_publish_json</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *channel, const char *json, unsigned *ack_id)</td></tr>
 <tr class="memdesc:a020fe06f60e0185251136a9c29dcb8ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Publish the well-formed JSON string to RTM.  <a href="#a020fe06f60e0185251136a9c29dcb8ea">More...</a><br /></td></tr>
 <tr class="separator:a020fe06f60e0185251136a9c29dcb8ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -230,15 +288,15 @@ Functions</h2></td></tr>
 <tr class="memitem:ae1456d9bb9896ddb9e5c9deda258c423"><td class="memItemLeft" align="right" valign="top">RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#ae1456d9bb9896ddb9e5c9deda258c423">rtm_parse_pdu</a> (char *json, <a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7">rtm_pdu_t</a> *pdu_out)</td></tr>
 <tr class="memdesc:ae1456d9bb9896ddb9e5c9deda258c423"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse string as top-level PDU object.  <a href="#ae1456d9bb9896ddb9e5c9deda258c423">More...</a><br /></td></tr>
 <tr class="separator:ae1456d9bb9896ddb9e5c9deda258c423"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a841ea96c3cbe777790a85025a8bdc924"><td class="memItemLeft" align="right" valign="top"><a id="a841ea96c3cbe777790a85025a8bdc924"></a>
-RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><b>rtm_parse_subscription_data</b> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const <a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7">rtm_pdu_t</a> *pdu, char *const buf, size_t size, <a class="el" href="rtm_8h.html#a8e6de3266bfe965afc5dfd7ef6d5623b">rtm_message_handler_t</a> *handler)</td></tr>
-<tr class="separator:a841ea96c3cbe777790a85025a8bdc924"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af75ee560059f5e8f88e981202af68dd7"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#af75ee560059f5e8f88e981202af68dd7">rtm_read</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *channel, unsigned *ack_id)</td></tr>
 <tr class="memdesc:af75ee560059f5e8f88e981202af68dd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read the latest published message.  <a href="#af75ee560059f5e8f88e981202af68dd7">More...</a><br /></td></tr>
 <tr class="separator:af75ee560059f5e8f88e981202af68dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acaa8a63e20597cc682da38c1273c1581"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#acaa8a63e20597cc682da38c1273c1581">rtm_read_with_body</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *body, unsigned *ack_id)</td></tr>
 <tr class="memdesc:acaa8a63e20597cc682da38c1273c1581"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read the latest published message with specifying a full body of read PDU request.  <a href="#acaa8a63e20597cc682da38c1273c1581">More...</a><br /></td></tr>
 <tr class="separator:acaa8a63e20597cc682da38c1273c1581"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15e0ecc89976efe0ce29673cf2593756"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a15e0ecc89976efe0ce29673cf2593756">rtm_send_ws_ping</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm)</td></tr>
+<tr class="memdesc:a15e0ecc89976efe0ce29673cf2593756"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a websocket ping frame.  <a href="#a15e0ecc89976efe0ce29673cf2593756">More...</a><br /></td></tr>
+<tr class="separator:a15e0ecc89976efe0ce29673cf2593756"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b5e34fdd700fa6178d1ffca7db51bfb"><td class="memItemLeft" align="right" valign="top">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a4b5e34fdd700fa6178d1ffca7db51bfb">rtm_write_string</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, const char *key, const char *string, unsigned *ack_id)</td></tr>
 <tr class="memdesc:a4b5e34fdd700fa6178d1ffca7db51bfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write the string value to a specific channel.  <a href="#a4b5e34fdd700fa6178d1ffca7db51bfb">More...</a><br /></td></tr>
 <tr class="separator:a4b5e34fdd700fa6178d1ffca7db51bfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -269,13 +327,12 @@ RTM_API void&#160;</td><td class="memItemRight" valign="bottom"><b>rtm_parse_sub
 <tr class="memitem:aad58ac508e442fa34abd41127dd7541c"><td class="memItemLeft" align="right" valign="top">RTM_API void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c">rtm_get_user_context</a> (<a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm)</td></tr>
 <tr class="memdesc:aad58ac508e442fa34abd41127dd7541c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the user specific pointer from the client.  <a href="#aad58ac508e442fa34abd41127dd7541c">More...</a><br /></td></tr>
 <tr class="separator:aad58ac508e442fa34abd41127dd7541c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c42c8fcb8788a16b260cf18e9b5d081"><td class="memItemLeft" align="right" valign="top">RTM_API const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a7c42c8fcb8788a16b260cf18e9b5d081">rtm_error_string</a> (<a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a> status)</td></tr>
+<tr class="memdesc:a7c42c8fcb8788a16b260cf18e9b5d081"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a human-readable string representing the status of operation.  <a href="#a7c42c8fcb8788a16b260cf18e9b5d081">More...</a><br /></td></tr>
+<tr class="separator:a7c42c8fcb8788a16b260cf18e9b5d081"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a15ee7c7ebf92a582649187c8335eeb62"><td class="memItemLeft" align="right" valign="top"><a id="a15ee7c7ebf92a582649187c8335eeb62"></a>
-RTM_API time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a15ee7c7ebf92a582649187c8335eeb62">rtm_connect_timeout</a></td></tr>
-<tr class="memdesc:a15ee7c7ebf92a582649187c8335eeb62"><td class="mdescLeft">&#160;</td><td class="mdescRight">Global connection timeout in seconds. The default value is <code>10</code>. <br /></td></tr>
-<tr class="separator:a15ee7c7ebf92a582649187c8335eeb62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96be59feb12b3e857102d136646b62d6"><td class="memItemLeft" align="right" valign="top"><a id="a96be59feb12b3e857102d136646b62d6"></a>
 RTM_API const size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rtm_8h.html#a96be59feb12b3e857102d136646b62d6">rtm_client_size</a></td></tr>
 <tr class="memdesc:a96be59feb12b3e857102d136646b62d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of <a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7" title="Opaque rtm client structure. ">rtm_client_t</a> in bytes. <br /></td></tr>
@@ -288,7 +345,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>RTM CORE SDK documentation. </p>
 <p>This Core SDK is a very low level to the RTM service.</p>
-<div class="fragment"><div class="line"><span class="comment">// allocate some memory to store the client</span></div><div class="line"><a class="code" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm = (<a class="code" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *)malloc(<a class="code" href="rtm_8h.html#a96be59feb12b3e857102d136646b62d6">rtm_client_size</a>);</div><div class="line"><span class="comment">// connect to RTM</span></div><div class="line"><span class="keywordtype">int</span> rc = <a class="code" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252">rtm_connect</a>(rtm, endpoint, appkey, <a class="code" href="rtm_8h.html#ad7e42fc880685b070f1046f6f0463978">rtm_default_pdu_handler</a>, 0);</div><div class="line"><span class="keywordflow">if</span> (rc != <a class="code" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba817168c8511df43249b5ccf5ac47f8f9">RTM_OK</a>) {</div><div class="line">    printf(<span class="stringliteral">&quot;rtm_connect failed with status %d\n&quot;</span>, rc);</div><div class="line">    exit(1);</div><div class="line">}</div><div class="line"><span class="comment">// publish message</span></div><div class="line">rc = <a class="code" href="rtm_8h.html#a380bc8383bba494fd2f68f997137f9be">rtm_publish_string</a>(rtm, <span class="stringliteral">&quot;channel&quot;</span>, <span class="stringliteral">&quot;Hello, World!&quot;</span>, NULL);</div><div class="line"><span class="keywordflow">if</span> (rc != <a class="code" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba817168c8511df43249b5ccf5ac47f8f9">RTM_OK</a>) {</div><div class="line">    printf(<span class="stringliteral">&quot;rtm_publish_string failed with status %d\n&quot;</span>, rc);</div><div class="line">    exit(1);</div><div class="line">}</div><div class="line"><a class="code" href="rtm_8h.html#a74f63635f0459af16b57f206679da285">rtm_close</a>(rtm);</div></div><!-- fragment --> </div><h2 class="groupheader">Typedef Documentation</h2>
+<div class="fragment"><div class="line"><span class="comment">// allocate some memory to store the client</span></div><div class="line"><span class="keywordtype">void</span> *memory = malloc(<a class="code" href="rtm_8h.html#a96be59feb12b3e857102d136646b62d6">rtm_client_size</a>);</div><div class="line"><a class="code" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm = <a class="code" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31">rtm_init</a>(memory, <a class="code" href="rtm_8h.html#ad7e42fc880685b070f1046f6f0463978">rtm_default_pdu_handler</a>, 0);</div><div class="line"><span class="comment">// connect to RTM</span></div><div class="line"><span class="keywordtype">int</span> rc = <a class="code" href="rtm_8h.html#a7ea7668c0cedee2e5eac4959ac957ee6">rtm_connect</a>(rtm, endpoint, appkey);</div><div class="line"><span class="keywordflow">if</span> (rc != <a class="code" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba817168c8511df43249b5ccf5ac47f8f9">RTM_OK</a>) {</div><div class="line">    printf(<span class="stringliteral">&quot;rtm_connect failed with status %d\n&quot;</span>, rc);</div><div class="line">    exit(1);</div><div class="line">}</div><div class="line"><span class="comment">// publish message</span></div><div class="line">rc = <a class="code" href="rtm_8h.html#a380bc8383bba494fd2f68f997137f9be">rtm_publish_string</a>(rtm, <span class="stringliteral">&quot;channel&quot;</span>, <span class="stringliteral">&quot;Hello, World!&quot;</span>, NULL);</div><div class="line"><span class="keywordflow">if</span> (rc != <a class="code" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba817168c8511df43249b5ccf5ac47f8f9">RTM_OK</a>) {</div><div class="line">    printf(<span class="stringliteral">&quot;rtm_publish_string failed with status %d\n&quot;</span>, rc);</div><div class="line">    exit(1);</div><div class="line">}</div><div class="line"><a class="code" href="rtm_8h.html#a74f63635f0459af16b57f206679da285">rtm_close</a>(rtm);</div></div><!-- fragment --> </div><h2 class="groupheader">Typedef Documentation</h2>
 <a id="a8e6de3266bfe965afc5dfd7ef6d5623b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8e6de3266bfe965afc5dfd7ef6d5623b">&sect;&nbsp;</a></span>rtm_message_handler_t</h2>
 
@@ -302,12 +359,12 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 </div><div class="memdoc">
 
 <p>Type of callback function invoked when client receives messages from RTM. </p>
-<dl class="section note"><dt>Note</dt><dd>when <a class="el" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252" title="Initialize an instance of rtm_client_t and connects to RTM. ">rtm_connect</a> is called, a pointer to a user defined structure can be set. You can get this value from <code>rtm</code> in the context of this callback by calling <a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c" title="Retrieve the user specific pointer from the client. ">rtm_get_user_context</a>:</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>when <a class="el" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31" title="Initialize an instance of rtm_client_t. ">rtm_init</a> is called, a pointer to a user defined structure can be set. You can get this value from <code>rtm</code> in the context of this callback by calling <a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c" title="Retrieve the user specific pointer from the client. ">rtm_get_user_context</a>:</dd></dl>
 <div class="fragment"><div class="line"><span class="keywordtype">void</span> my_message_callback(<a class="code" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, <span class="keyword">const</span> <span class="keywordtype">char</span> *subscription_id,</div><div class="line">                         <span class="keyword">const</span> <span class="keywordtype">char</span> *message) {</div><div class="line">   my_context *context = (my_context *) <a class="code" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c">rtm_get_user_context</a>(rtm);</div><div class="line">   context-&gt;message_count++;</div><div class="line">   ...</div><div class="line">}</div></div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="rtm_8h.html#adb1ccf1c1bb6be7394e2f3d275cf1f95" title="Default message handler prints all messages to stdout. ">rtm_default_message_handler</a> for details. </dd>
 <dd>
 <a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c" title="Retrieve the user specific pointer from the client. ">rtm_get_user_context</a> </dd>
 <dd>
-<a class="el" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252" title="Initialize an instance of rtm_client_t and connects to RTM. ">rtm_connect</a> </dd></dl>
+<a class="el" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31" title="Initialize an instance of rtm_client_t. ">rtm_init</a> </dd></dl>
 
 </div>
 </div>
@@ -324,13 +381,54 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 </div><div class="memdoc">
 
 <p>Type of callback function invoked when client receives PDU from RTM. </p>
-<dl class="section note"><dt>Note</dt><dd>when <a class="el" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252" title="Initialize an instance of rtm_client_t and connects to RTM. ">rtm_connect</a> is called, a pointer to a user defined structure can be set. You can get this value from <code>rtm</code> in the context of this callback by calling <a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c" title="Retrieve the user specific pointer from the client. ">rtm_get_user_context</a>:</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>when <a class="el" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31" title="Initialize an instance of rtm_client_t. ">rtm_init</a> is called, a pointer to a user defined structure can be set. You can get this value from <code>rtm</code> in the context of this callback by calling <a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c" title="Retrieve the user specific pointer from the client. ">rtm_get_user_context</a>:</dd></dl>
 <div class="fragment"><div class="line"><span class="keywordtype">void</span> my_pdu_callback(<a class="code" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *rtm, <span class="keyword">const</span> <a class="code" href="struct__rtm__pdu.html">rtm_pdu_t</a> *pdu) {</div><div class="line">   my_context *context = (my_context *) <a class="code" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c">rtm_get_user_context</a>(rtm);</div><div class="line">   context-&gt;event_count++;</div><div class="line">   ...</div><div class="line">}</div></div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="rtm_8h.html#ad7e42fc880685b070f1046f6f0463978" title="Default PDU handler prints all PDUs to stdout. ">rtm_default_pdu_handler</a> for details. </dd>
 <dd>
-<a class="el" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252" title="Initialize an instance of rtm_client_t and connects to RTM. ">rtm_connect</a> </dd>
+<a class="el" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31" title="Initialize an instance of rtm_client_t. ">rtm_init</a> </dd>
 <dd>
 <a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c" title="Retrieve the user specific pointer from the client. ">rtm_get_user_context</a> </dd></dl>
 
+</div>
+</div>
+<a id="a76e6947b67e9c81dbafe8580611256e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76e6947b67e9c81dbafe8580611256e7">&sect;&nbsp;</a></span>rtm_pdu_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="struct__rtm__pdu.html">_rtm_pdu</a>  <a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7">rtm_pdu_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Structure containing information about the received PDU. </p>
+<p>Extra fields availability: </p><pre class="fragment">  Action              | Fields
+  ------------------- | -------------
+  UNKNOWN             | body
+  AUTHENTICATE_ERROR  | error, reason
+  GENERAL_ERROR       | error, reason
+  DELETE_ERROR        | error, reason
+  HANDSHAKE_ERROR     | error, reason
+  PUBLISH_ERROR       | error, reason
+  READ_ERROR          | error, reason
+  WRITE_ERROR         | error, reason
+  SEARCH_ERROR        | error, reason
+  SUBSCRIBE_ERROR     | error, reason
+  UNSUBSCRIBE_ERROR   | error, reason
+  SUBSCRIPTION_ERROR  | subscription_id, error, reason
+  SUBSCRIPTION_INFO   | subscription_id, info, reason
+  SUBSCRIPTION_DATA   | subscription_id, message_iterator, position
+  SUBSCRIBE_OK        | subscription_id, position
+  UNSUBSCRIBE_OK      | subscription_id, position
+  AUTHENTICATE_OK     | ---
+  HANDSHAKE_OK        | nonce
+  PUBLISH_OK          | position
+  DELETE_OK           | position
+  WRITE_OK            | position
+  READ_OK             | message, position
+  SEARCH_DATA         | channel_iterator
+  SEARCH_OK           | channel_iterator</pre> 
 </div>
 </div>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
@@ -369,8 +467,6 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 </td></tr>
 <tr><td class="fieldname"><a id="a14c1c9f22306549de95a3d4117da124bacaa63a70c57efda36aedd256ff16d6e6"></a>RTM_ERR_PROTOCOL&#160;</td><td class="fielddoc"><p>An error occurred in the protocol layer </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a14c1c9f22306549de95a3d4117da124ba354cb0805d2ccd4fb24f90db2914196f"></a>RTM_ERR_NO_TLS&#160;</td><td class="fielddoc"><p>The call to <a class="el" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252" title="Initialize an instance of rtm_client_t and connects to RTM. ">rtm_connect</a> mentioned a TLS endpoint, but the SDK was not built with TLS support </p>
-</td></tr>
 <tr><td class="fieldname"><a id="a14c1c9f22306549de95a3d4117da124ba3d7159cbd3f0cd9716fa3cd38b5bfade"></a>RTM_ERR_TLS&#160;</td><td class="fielddoc"><p>An unexpected error happened in the TLS layer </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a14c1c9f22306549de95a3d4117da124ba9a34332eba483965424a1e3909bf06ee"></a>RTM_ERR_TIMEOUT&#160;</td><td class="fielddoc"><p>The operation timed out </p>
@@ -380,6 +476,67 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="aada09fdfb1664cb2d20236a3eaf70833"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aada09fdfb1664cb2d20236a3eaf70833">&sect;&nbsp;</a></span>rtm_authenticate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a> rtm_authenticate </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *&#160;</td>
+          <td class="paramname"><em>rtm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>role_secret</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>nonce</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned *&#160;</td>
+          <td class="paramname"><em>ack_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Send the authenticate request to establish the identity of the client. </p>
+<p>RTM reply will have same identifier as value of <code>ack_id</code>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">rtm</td><td>instance of the client. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">role_secret</td><td>a secret token from Dev Portal. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">nonce</td><td>from handshare request. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">ack_id</td><td>the id of the message sent.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the status of the operation </dd></dl>
+<dl class="retval"><dt>Return values</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">RTM_OK</td><td>the operation succeeded </td></tr>
+    <tr><td class="paramname">RTM_ERR_*</td><td>an error occurred</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b" title="Type used internally to report errors. ">rtm_status</a> for detailed error codes </dd></dl>
+
+</div>
+</div>
 <a id="a74f63635f0459af16b57f206679da285"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a74f63635f0459af16b57f206679da285">&sect;&nbsp;</a></span>rtm_close()</h2>
 
@@ -409,8 +566,8 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 
 </div>
 </div>
-<a id="af70683e190e41c1823fd6aa606d59252"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af70683e190e41c1823fd6aa606d59252">&sect;&nbsp;</a></span>rtm_connect()</h2>
+<a id="a7ea7668c0cedee2e5eac4959ac957ee6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ea7668c0cedee2e5eac4959ac957ee6">&sect;&nbsp;</a></span>rtm_connect()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -431,19 +588,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>appkey</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="rtm_8h.html#a1f8dc4bd0b4af8664f31a912927361a3">rtm_pdu_handler_t</a> *&#160;</td>
-          <td class="paramname"><em>pdu_handler</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>user_context</em>&#160;</td>
+          <td class="paramname"><em>appkey</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -458,9 +603,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">rtm</td><td>instance of the client </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">endpoint</td><td>endpoint for the RTM Service. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">appkey</td><td>application key to the RTM Service. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">pdu_handler</td><td>the callback for non data PDUs </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">user_context</td><td>an opaque user specified data associated with this RTM object</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">appkey</td><td>application key to the RTM Service.</td></tr>
   </table>
   </dd>
 </dl>
@@ -580,7 +723,7 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">rtm</td><td>instance of the client </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">pdu</td><td>the <a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7" title="Structure representing received PDU JSON object. ">rtm_pdu_t</a> to process </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pdu</td><td>the <a class="el" href="rtm_8h.html#a76e6947b67e9c81dbafe8580611256e7" title="Structure containing information about the received PDU. ">rtm_pdu_t</a> to process </td></tr>
   </table>
   </dd>
 </dl>
@@ -694,6 +837,33 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 
 </div>
 </div>
+<a id="a7c42c8fcb8788a16b260cf18e9b5d081"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c42c8fcb8788a16b260cf18e9b5d081">&sect;&nbsp;</a></span>rtm_error_string()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API const char* rtm_error_string </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a>&#160;</td>
+          <td class="paramname"><em>status</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a human-readable string representing the status of operation. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">status</td><td>of operation.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a human-readable description of status. </dd></dl>
+
+</div>
+</div>
 <a id="acf923d7c41d5c48fb63af00472586f56"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acf923d7c41d5c48fb63af00472586f56">&sect;&nbsp;</a></span>rtm_get_fd()</h2>
 
@@ -744,7 +914,34 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>the user context pointer specified when calling <a class="el" href="rtm_8h.html#af70683e190e41c1823fd6aa606d59252" title="Initialize an instance of rtm_client_t and connects to RTM. ">rtm_connect</a> </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the user context pointer specified when calling <a class="el" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31" title="Initialize an instance of rtm_client_t. ">rtm_init</a> </dd></dl>
+
+</div>
+</div>
+<a id="a5d31fd8f8535da9e0435a639e101e68a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d31fd8f8535da9e0435a639e101e68a">&sect;&nbsp;</a></span>rtm_get_ws_ping_interval()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API time_t rtm_get_ws_ping_interval </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *&#160;</td>
+          <td class="paramname"><em>rtm</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns current WS ping interval (sec) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">rtm</td><td>instance of the client</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>current ping interval </dd></dl>
 
 </div>
 </div>
@@ -803,6 +1000,55 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
 
 </div>
 </div>
+<a id="a749eeb668d1e3b8088a24df19f2dbd31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a749eeb668d1e3b8088a24df19f2dbd31">&sect;&nbsp;</a></span>rtm_init()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API <a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a>* rtm_init </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>memory</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a1f8dc4bd0b4af8664f31a912927361a3">rtm_pdu_handler_t</a> *&#160;</td>
+          <td class="paramname"><em>pdu_handler</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>user_context</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize an instance of rtm_client_t. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">memory</td><td>a buffer of size RTM_CLIENT_SIZE </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pdu_handler</td><td>the callback for all PDUs </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">user_context</td><td>an opaque user specified data associated with this RTM object</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>initialized rtm_client_t object</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="rtm_8h.html#a74f63635f0459af16b57f206679da285" title="Close an RTM connection. ">rtm_close</a> </dd>
+<dd>
+<a class="el" href="rtm_8h.html#aad58ac508e442fa34abd41127dd7541c" title="Retrieve the user specific pointer from the client. ">rtm_get_user_context</a></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>If you choose to work with unparsed PDUs, pass null as pdu_handler here and then use <a class="el" href="rtm_8h.html#ac3edce5acb40aae24dc1b9836fee7592" title="Set the handler for not yet parsed PDUs. ">rtm_set_raw_pdu_handler</a>. </dd></dl>
+
+</div>
+</div>
 <a id="ae1456d9bb9896ddb9e5c9deda258c423"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae1456d9bb9896ddb9e5c9deda258c423">&sect;&nbsp;</a></span>rtm_parse_pdu()</h2>
 
@@ -838,6 +1084,14 @@ void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rt
   </table>
   </dd>
 </dl>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="rtm_8h_ae1456d9bb9896ddb9e5c9deda258c423_icgraph.png" border="0" usemap="#rtm_8h_ae1456d9bb9896ddb9e5c9deda258c423_icgraph" alt=""/></div>
+<map name="rtm_8h_ae1456d9bb9896ddb9e5c9deda258c423_icgraph" id="rtm_8h_ae1456d9bb9896ddb9e5c9deda258c423_icgraph">
+<area shape="rect" id="node2" href="rtm_8h.html#a065f39d8529968def798008c928f8353" title="get next element in iterator or NULL if there are none " alt="" coords="164,5,249,31"/>
+</map>
+</div>
 
 </div>
 </div>
@@ -1215,6 +1469,147 @@ Here is the caller graph for this function:</div>
   </dd>
 </dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b" title="Type used internally to report errors. ">rtm_status</a> for detailed error codes </dd></dl>
+
+</div>
+</div>
+<a id="a15e0ecc89976efe0ce29673cf2593756"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15e0ecc89976efe0ce29673cf2593756">&sect;&nbsp;</a></span>rtm_send_ws_ping()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API <a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b">rtm_status</a> rtm_send_ws_ping </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *&#160;</td>
+          <td class="paramname"><em>rtm</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Send a websocket ping frame. </p>
+<dl class="section return"><dt>Returns</dt><dd>the status of the operation </dd></dl>
+<dl class="retval"><dt>Return values</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">RTM_OK</td><td>operation succeeded </td></tr>
+    <tr><td class="paramname">RTM_ERR_*</td><td>an error occurred</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="rtm_8h.html#a14c1c9f22306549de95a3d4117da124b" title="Type used internally to report errors. ">rtm_status</a> for detailed error codes </dd></dl>
+
+</div>
+</div>
+<a id="a12d06c4f2919491bc857f9f3b4eaf1b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12d06c4f2919491bc857f9f3b4eaf1b1">&sect;&nbsp;</a></span>rtm_set_connection_timeout()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API void rtm_set_connection_timeout </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *&#160;</td>
+          <td class="paramname"><em>rtm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>timeout_in_seconds</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets the given connection timeout in seconds. Default is 5 seconds. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">rtm</td><td>instance of the client </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">timeout_in_seconds</td><td>new timeout value </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ac3edce5acb40aae24dc1b9836fee7592"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3edce5acb40aae24dc1b9836fee7592">&sect;&nbsp;</a></span>rtm_set_raw_pdu_handler()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API void rtm_set_raw_pdu_handler </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *&#160;</td>
+          <td class="paramname"><em>rtm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">rtm_raw_pdu_handler_t *&#160;</td>
+          <td class="paramname"><em>handler</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the handler for not yet parsed PDUs. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">rtm</td><td>instance of the client </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">handler</td><td>pointer to a function of type (rtm_client_t *rtm, char const *raw_pdu) -&gt; void</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>After this handler is called, raw_pdu will be parsed by the SDK and the result will be passed to pdu_handler which was provided to <a class="el" href="rtm_8h.html#a749eeb668d1e3b8088a24df19f2dbd31" title="Initialize an instance of rtm_client_t. ">rtm_init</a> function. If (non-raw) pdu_handler was null, that parsing doesn't happen and you're free to cast raw_pdu to non-const char* and modify it (for example if your json parser works in-place). </dd></dl>
+
+</div>
+</div>
+<a id="af8ad81bd31a23ffe170f7ddfc24c206b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8ad81bd31a23ffe170f7ddfc24c206b">&sect;&nbsp;</a></span>rtm_set_ws_ping_interval()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RTM_API void rtm_set_ws_ping_interval </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="rtm_8h.html#a0f68a9585c25eca96358e223d2a2f6c7">rtm_client_t</a> *&#160;</td>
+          <td class="paramname"><em>rtm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">time_t&#160;</td>
+          <td class="paramname"><em>ws_ping_interval</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets new WS ping interval. A ws ping frame will be perodically sent to server to avoid connection refusing. Default: 45 (sec) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">rtm</td><td>instance of the client </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">ws_ping_interval</td><td>new interval value (sec) </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

@@ -75,69 +75,106 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Structure representing received PDU JSON object.  
+<p>Structure containing information about the received PDU.  
  <a href="struct__rtm__pdu.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="rtm_8h_source.html">rtm.h</a>&gt;</code></p>
+<div class="dynheader">
+Collaboration diagram for _rtm_pdu:</div>
+<div class="dyncontent">
+<div class="center"><img src="struct__rtm__pdu__coll__graph.png" border="0" usemap="#__rtm__pdu_coll__map" alt="Collaboration graph"/></div>
+<map name="__rtm__pdu_coll__map" id="__rtm__pdu_coll__map">
+<area shape="rect" id="node2" href="structrtm__list__iterator__t.html" title="SDK uses this type to return collections of strings, for example messages in subscription_data PDUs..." alt="" coords="5,5,130,31"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a8ba2444bff1ae78259f26e82807637e3"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct__rtm__pdu.html#a8ba2444bff1ae78259f26e82807637e3">action</a></td></tr>
-<tr class="separator:a8ba2444bff1ae78259f26e82807637e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8777abbaba4b6e99b9a885b60df0d758"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct__rtm__pdu.html#a8777abbaba4b6e99b9a885b60df0d758">body</a></td></tr>
-<tr class="separator:a8777abbaba4b6e99b9a885b60df0d758"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2db9e88687a2c13a61fa4eea55793e8e"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct__rtm__pdu.html#a2db9e88687a2c13a61fa4eea55793e8e">request_id</a></td></tr>
+<tr class="memitem:a2db9e88687a2c13a61fa4eea55793e8e"><td class="memItemLeft" align="right" valign="top"><a id="a2db9e88687a2c13a61fa4eea55793e8e"></a>
+unsigned&#160;</td><td class="memItemRight" valign="bottom"><b>request_id</b></td></tr>
 <tr class="separator:a2db9e88687a2c13a61fa4eea55793e8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7992be27420513d448f5c9235bb2618"><td class="memItemLeft" align="right" valign="top"><a id="ae7992be27420513d448f5c9235bb2618"></a>
+enum <a class="el" href="rtm_8h.html#ab9d53f2fd076509f1059196abb331d55">rtm_action_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>action</b></td></tr>
+<tr class="separator:ae7992be27420513d448f5c9235bb2618"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a782c77bd9ec62cf9563233ca9224f4a8"><td class="memItemLeft" ><a id="a782c77bd9ec62cf9563233ca9224f4a8"></a>
+union {</td></tr>
+<tr class="memitem:a27ef3754954fa217d1c89647ed05d4cf"><td class="memItemLeft" ><a id="a27ef3754954fa217d1c89647ed05d4cf"></a>
+&#160;&#160;&#160;struct {</td></tr>
+<tr class="memitem:a5029173b213cd559fda9742baa54d24a"><td class="memItemLeft" ><a id="a5029173b213cd559fda9742baa54d24a"></a>
+&#160;&#160;&#160;&#160;&#160;&#160;union {</td></tr>
+<tr class="memitem:a9bac28a714953a0baef852af5a824b13"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>error</b></td></tr>
+<tr class="separator:a9bac28a714953a0baef852af5a824b13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34c91a68edafc7d051c70f83522e59f8"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>info</b></td></tr>
+<tr class="separator:a34c91a68edafc7d051c70f83522e59f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5029173b213cd559fda9742baa54d24a"><td class="memItemLeft" valign="top">&#160;&#160;&#160;&#160;&#160;&#160;}&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:a5029173b213cd559fda9742baa54d24a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26c3ed4610a759f8a85bdbbc0d448140"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>reason</b></td></tr>
+<tr class="separator:a26c3ed4610a759f8a85bdbbc0d448140"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27ef3754954fa217d1c89647ed05d4cf"><td class="memItemLeft" valign="top">&#160;&#160;&#160;}&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:a27ef3754954fa217d1c89647ed05d4cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a451fb0ee50f22db4339de423f8a5b95d"><td class="memItemLeft" ><a id="a451fb0ee50f22db4339de423f8a5b95d"></a>
+&#160;&#160;&#160;struct {</td></tr>
+<tr class="memitem:a85a2a29a4767cae7b38eef2ff7034830"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>position</b></td></tr>
+<tr class="separator:a85a2a29a4767cae7b38eef2ff7034830"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a944e69628a26821923c8539ca9797dec"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>subscription_id</b></td></tr>
+<tr class="separator:a944e69628a26821923c8539ca9797dec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3581479efc8daa3523dd58c443e7606"><td class="memItemLeft" ><a id="aa3581479efc8daa3523dd58c443e7606"></a>
+&#160;&#160;&#160;&#160;&#160;&#160;union {</td></tr>
+<tr class="memitem:af023359e69205502d873d5c40e32794c"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>message</b></td></tr>
+<tr class="separator:af023359e69205502d873d5c40e32794c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4760d2a1dcd01de2cbbb41bb2886563"><td class="memItemLeft" >
+&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;<a class="el" href="structrtm__list__iterator__t.html">rtm_list_iterator_t</a>&#160;&#160;&#160;<b>message_iterator</b></td></tr>
+<tr class="separator:aa4760d2a1dcd01de2cbbb41bb2886563"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3581479efc8daa3523dd58c443e7606"><td class="memItemLeft" valign="top">&#160;&#160;&#160;&#160;&#160;&#160;}&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:aa3581479efc8daa3523dd58c443e7606"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a451fb0ee50f22db4339de423f8a5b95d"><td class="memItemLeft" valign="top">&#160;&#160;&#160;}&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:a451fb0ee50f22db4339de423f8a5b95d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f9b40155e3fc9feaeacc2af22cca805"><td class="memItemLeft" >
+&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>body</b></td></tr>
+<tr class="separator:a9f9b40155e3fc9feaeacc2af22cca805"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7239a7a23c203f3ce4a7e19aa5e544c4"><td class="memItemLeft" >
+&#160;&#160;&#160;char const  *&#160;&#160;&#160;<b>nonce</b></td></tr>
+<tr class="separator:a7239a7a23c203f3ce4a7e19aa5e544c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc12f81589a464ac2a979b49d6e1ac29"><td class="memItemLeft" >
+&#160;&#160;&#160;<a class="el" href="structrtm__list__iterator__t.html">rtm_list_iterator_t</a>&#160;&#160;&#160;<b>channel_iterator</b></td></tr>
+<tr class="separator:acc12f81589a464ac2a979b49d6e1ac29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a782c77bd9ec62cf9563233ca9224f4a8"><td class="memItemLeft" valign="top">};&#160;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr class="separator:a782c77bd9ec62cf9563233ca9224f4a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Structure representing received PDU JSON object. </p>
-</div><h2 class="groupheader">Field Documentation</h2>
-<a id="a8ba2444bff1ae78259f26e82807637e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ba2444bff1ae78259f26e82807637e3">&sect;&nbsp;</a></span>action</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char* _rtm_pdu::action</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>RTM action string. </p>
-
-</div>
-</div>
-<a id="a8777abbaba4b6e99b9a885b60df0d758"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8777abbaba4b6e99b9a885b60df0d758">&sect;&nbsp;</a></span>body</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char* _rtm_pdu::body</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Data associated with a given action. </p>
-
-</div>
-</div>
-<a id="a2db9e88687a2c13a61fa4eea55793e8e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2db9e88687a2c13a61fa4eea55793e8e">&sect;&nbsp;</a></span>request_id</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">unsigned _rtm_pdu::request_id</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Identifier to match server replies to the client requests. </p>
-
-</div>
-</div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<div class="textblock"><p>Structure containing information about the received PDU. </p>
+<p>Extra fields availability: </p><pre class="fragment">  Action              | Fields
+  ------------------- | -------------
+  UNKNOWN             | body
+  AUTHENTICATE_ERROR  | error, reason
+  GENERAL_ERROR       | error, reason
+  DELETE_ERROR        | error, reason
+  HANDSHAKE_ERROR     | error, reason
+  PUBLISH_ERROR       | error, reason
+  READ_ERROR          | error, reason
+  WRITE_ERROR         | error, reason
+  SEARCH_ERROR        | error, reason
+  SUBSCRIBE_ERROR     | error, reason
+  UNSUBSCRIBE_ERROR   | error, reason
+  SUBSCRIPTION_ERROR  | subscription_id, error, reason
+  SUBSCRIPTION_INFO   | subscription_id, info, reason
+  SUBSCRIPTION_DATA   | subscription_id, message_iterator, position
+  SUBSCRIBE_OK        | subscription_id, position
+  UNSUBSCRIBE_OK      | subscription_id, position
+  AUTHENTICATE_OK     | ---
+  HANDSHAKE_OK        | nonce
+  PUBLISH_OK          | position
+  DELETE_OK           | position
+  WRITE_OK            | position
+  READ_OK             | message, position
+  SEARCH_DATA         | channel_iterator
+  SEARCH_OK           | channel_iterator</pre> </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="rtm_8h_source.html">rtm.h</a></li>
 </ul>
 </div><!-- contents -->

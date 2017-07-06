@@ -6,7 +6,7 @@
       <Path>index.html</Path>
       <Subnodes>
        <Node>
-        <Name>C SDK for Satori Platform</Name>
+        <Name>C SDK for Satori RTM</Name>
         <Path>index.html</Path>
        </Node>
        <Node>
@@ -22,23 +22,79 @@
             <Path>rtm_8h.html</Path>
             <Subnodes>
              <Node>
+              <Name>rtm_list_iterator_t</Name>
+              <Path>structrtm__list__iterator__t.html</Path>
+              <Subnodes>
+               <Node>
+                <Name>position</Name>
+                <Path>structrtm__list__iterator__t.html</Path>
+                <Anchor>a716c71b863be3d6eb39a08f71590a9b8</Anchor>
+               </Node>
+              </Subnodes>
+             </Node>
+             <Node>
               <Name>_rtm_pdu</Name>
               <Path>struct__rtm__pdu.html</Path>
               <Subnodes>
                <Node>
                 <Name>action</Name>
                 <Path>struct__rtm__pdu.html</Path>
-                <Anchor>a8ba2444bff1ae78259f26e82807637e3</Anchor>
+                <Anchor>ae7992be27420513d448f5c9235bb2618</Anchor>
                </Node>
                <Node>
                 <Name>body</Name>
                 <Path>struct__rtm__pdu.html</Path>
-                <Anchor>a8777abbaba4b6e99b9a885b60df0d758</Anchor>
+                <Anchor>a0d39ffd9f47191bc9473a2a839bdfb09</Anchor>
+               </Node>
+               <Node>
+                <Name>channel_iterator</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>ac9f9edf673006ddff13730677c48b1c3</Anchor>
+               </Node>
+               <Node>
+                <Name>error</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>a72a57c9f0f709c7e7e76bf8c5f55af58</Anchor>
+               </Node>
+               <Node>
+                <Name>info</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>a6510c0c3869b43aeaa95170423602002</Anchor>
+               </Node>
+               <Node>
+                <Name>message</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>acc8feff31a846bc8138e723f143915c1</Anchor>
+               </Node>
+               <Node>
+                <Name>message_iterator</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>a4c4bc0f469b85d401185810da5a1d723</Anchor>
+               </Node>
+               <Node>
+                <Name>nonce</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>a951adbbed931f6d13ba5f2ec6df48781</Anchor>
+               </Node>
+               <Node>
+                <Name>position</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>a793c0f140bc03316a34fca4a730d66f1</Anchor>
+               </Node>
+               <Node>
+                <Name>reason</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>adf1dcea52a58c40a88c8859064cffcd8</Anchor>
                </Node>
                <Node>
                 <Name>request_id</Name>
                 <Path>struct__rtm__pdu.html</Path>
                 <Anchor>a2db9e88687a2c13a61fa4eea55793e8e</Anchor>
+               </Node>
+               <Node>
+                <Name>subscription_id</Name>
+                <Path>struct__rtm__pdu.html</Path>
+                <Anchor>aead994e3c1ff88fc7497ffa398be13dc</Anchor>
                </Node>
               </Subnodes>
              </Node>
@@ -46,11 +102,6 @@
               <Name>RTM_API</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>aa7d90704c30b17913e2d9f7705bd506b</Anchor>
-             </Node>
-             <Node>
-              <Name>rtm_authenticate</Name>
-              <Path>rtm_8h.html</Path>
-              <Anchor>af4548313331cfa1ba7ac3b90e01e927e</Anchor>
              </Node>
              <Node>
               <Name>RTM_AUTHENTICATION_HASH_SIZE</Name>
@@ -113,6 +164,143 @@
               <Anchor>a76e6947b67e9c81dbafe8580611256e7</Anchor>
              </Node>
              <Node>
+              <Name>rtm_raw_pdu_handler_t</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>adfd7e068a7f4dd01a92fa78918b949ae</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_action_t</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>ab9d53f2fd076509f1059196abb331d55</Anchor>
+              <Subnodes>
+               <Node>
+                <Name>RTM_ACTION_UNKNOWN</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55aef7c27e61bc54f23dafae3ed2d65492c</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_AUTHENTICATE_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a77c931c17f380a4e340ea29b54286959</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_AUTHENTICATE_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ad360dd6c0d56ea810ea02ff53dfd8c8b</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_DELETE_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a067039bbfc89e69787f29f1860f748c8</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_DELETE_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55aa87fa4b6bb1281553a36b89a83ef5d3b</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_GENERAL_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ae5374845a7db1f8754396d808291219e</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_HANDSHAKE_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a4bb05dc67e9f8ff0d830f161993c0687</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_HANDSHAKE_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ac27772a1e4fa406efcf23ce37e0c5ba8</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_PUBLISH_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ae785e826a52541b12024e11a5ce734d8</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_PUBLISH_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ac882079b0abc55bea9463f9629c95bd4</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_READ_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55aa81055c8c6b2a88c09c5358d4bd333d3</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_READ_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a0fba02e42805feab2510072fe3814687</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SEARCH_DATA</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ae925e37c541ca8e0fe728f674e2f0ff8</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SEARCH_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ae0cdef0674fd44e6b219075b73982d82</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SEARCH_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a8fb76bfd625ccf511ae28001894a53ec</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SUBSCRIBE_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55af8a5640d4ac911a6ff294fe1c43e98dd</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SUBSCRIBE_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ae4ee6c0b5685a06341c00d85d3a5a6d3</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SUBSCRIPTION_DATA</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a5e021ed7575ad6c4b56670dd95e7d518</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SUBSCRIPTION_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55abd335d48606e4f0521f91b363f1e56f0</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SUBSCRIPTION_INFO</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a0af578e1ee9cca8ee7bb096d36d6033e</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_UNSUBSCRIBE_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a948da721548d00c63b5c39e66131c95d</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_UNSUBSCRIBE_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a9271f0f5792acd1021902133a098a475</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_WRITE_ERROR</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55ade2eccf6bc651c4f772b86a4263d324c</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_WRITE_OK</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a8dca37ad2eb3315d695d024bcdcf6128</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ACTION_SENTINEL</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>ab9d53f2fd076509f1059196abb331d55a57a6ae16a6bca6933572dba6c018b270</Anchor>
+               </Node>
+              </Subnodes>
+             </Node>
+             <Node>
               <Name>rtm_status</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>a14c1c9f22306549de95a3d4117da124b</Anchor>
@@ -168,11 +356,6 @@
                 <Anchor>a14c1c9f22306549de95a3d4117da124bacaa63a70c57efda36aedd256ff16d6e6</Anchor>
                </Node>
                <Node>
-                <Name>RTM_ERR_NO_TLS</Name>
-                <Path>rtm_8h.html</Path>
-                <Anchor>a14c1c9f22306549de95a3d4117da124ba354cb0805d2ccd4fb24f90db2914196f</Anchor>
-               </Node>
-               <Node>
                 <Name>RTM_ERR_TLS</Name>
                 <Path>rtm_8h.html</Path>
                 <Anchor>a14c1c9f22306549de95a3d4117da124ba3d7159cbd3f0cd9716fa3cd38b5bfade</Anchor>
@@ -185,6 +368,11 @@
               </Subnodes>
              </Node>
              <Node>
+              <Name>rtm_authenticate</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>aada09fdfb1664cb2d20236a3eaf70833</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_close</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>a74f63635f0459af16b57f206679da285</Anchor>
@@ -192,7 +380,7 @@
              <Node>
               <Name>rtm_connect</Name>
               <Path>rtm_8h.html</Path>
-              <Anchor>af70683e190e41c1823fd6aa606d59252</Anchor>
+              <Anchor>a7ea7668c0cedee2e5eac4959ac957ee6</Anchor>
              </Node>
              <Node>
               <Name>rtm_default_error_logger</Name>
@@ -225,6 +413,11 @@
               <Anchor>aa740dee45ebd4c5a3cf9909a87333555</Anchor>
              </Node>
              <Node>
+              <Name>rtm_error_string</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a7c42c8fcb8788a16b260cf18e9b5d081</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_get_fd</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>acf923d7c41d5c48fb63af00472586f56</Anchor>
@@ -235,19 +428,29 @@
               <Anchor>aad58ac508e442fa34abd41127dd7541c</Anchor>
              </Node>
              <Node>
+              <Name>rtm_get_ws_ping_interval</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a5d31fd8f8535da9e0435a639e101e68a</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_handshake</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>ac0d6fe626d60c1ea9aed8689545335f0</Anchor>
              </Node>
              <Node>
+              <Name>rtm_init</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a749eeb668d1e3b8088a24df19f2dbd31</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_iterate</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a065f39d8529968def798008c928f8353</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_parse_pdu</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>ae1456d9bb9896ddb9e5c9deda258c423</Anchor>
-             </Node>
-             <Node>
-              <Name>rtm_parse_subscription_data</Name>
-              <Path>rtm_8h.html</Path>
-              <Anchor>a841ea96c3cbe777790a85025a8bdc924</Anchor>
              </Node>
              <Node>
               <Name>rtm_poll</Name>
@@ -283,6 +486,26 @@
               <Name>rtm_send_pdu</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>ab480eeddbe24f0a892f200deb9327dfc</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_send_ws_ping</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a15e0ecc89976efe0ce29673cf2593756</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_set_connection_timeout</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a12d06c4f2919491bc857f9f3b4eaf1b1</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_set_raw_pdu_handler</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>ac3edce5acb40aae24dc1b9836fee7592</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_set_ws_ping_interval</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>af8ad81bd31a23ffe170f7ddfc24c206b</Anchor>
              </Node>
              <Node>
               <Name>rtm_subscribe</Name>
@@ -323,11 +546,6 @@
               <Name>rtm_client_size</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>a96be59feb12b3e857102d136646b62d6</Anchor>
-             </Node>
-             <Node>
-              <Name>rtm_connect_timeout</Name>
-              <Path>rtm_8h.html</Path>
-              <Anchor>a15ee7c7ebf92a582649187c8335eeb62</Anchor>
              </Node>
              <Node>
               <Name>rtm_error_logger</Name>

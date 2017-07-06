@@ -3,7 +3,6 @@ var searchData=
   ['rtm_5ferr_5fclosed',['RTM_ERR_CLOSED',['../rtm_8h.html#a14c1c9f22306549de95a3d4117da124baa11146c30350469cc9ba7366ba257fa4',1,'rtm.h']]],
   ['rtm_5ferr_5fconnect',['RTM_ERR_CONNECT',['../rtm_8h.html#a14c1c9f22306549de95a3d4117da124baef57d00dbd4695ec942e20d63f47e731',1,'rtm.h']]],
   ['rtm_5ferr_5fnetwork',['RTM_ERR_NETWORK',['../rtm_8h.html#a14c1c9f22306549de95a3d4117da124baea0a1dae257ef108190f45b12d0f31a2',1,'rtm.h']]],
-  ['rtm_5ferr_5fno_5ftls',['RTM_ERR_NO_TLS',['../rtm_8h.html#a14c1c9f22306549de95a3d4117da124ba354cb0805d2ccd4fb24f90db2914196f',1,'rtm.h']]],
   ['rtm_5ferr_5fparam',['RTM_ERR_PARAM',['../rtm_8h.html#a14c1c9f22306549de95a3d4117da124bafdd0baf481594d0ff844a54dabc0e4e0',1,'rtm.h']]],
   ['rtm_5ferr_5fparam_5finvalid',['RTM_ERR_PARAM_INVALID',['../rtm_8h.html#a14c1c9f22306549de95a3d4117da124bad2c1b5a799946f962d596e8ad037421f',1,'rtm.h']]],
   ['rtm_5ferr_5fprotocol',['RTM_ERR_PROTOCOL',['../rtm_8h.html#a14c1c9f22306549de95a3d4117da124bacaa63a70c57efda36aedd256ff16d6e6',1,'rtm.h']]],
