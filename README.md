@@ -111,9 +111,11 @@ $ xcodebuild -project SatoriRtmSdkWrapper.xcodeproj -scheme SatoriRtmSdkWrapper-
 **Option 2** - *Build in Xcode IDE*
 ```sh
 $ open SatoriRtmSdkWrapper.xcodeproj
-$ # Select SatoriRtmSdkWrapper-Universal target and build.
 ```
-The SatoriRtmSdkWrapper.framework will be built under ios-framework/build directory.
+
+Select SatoriRtmSdkWrapper-Universal target and build.
+
+The SatoriRtmSdkWrapper.framework will be built under ios-wrapper/build directory.
 
 #### Step 2: Add framework to your project
 
