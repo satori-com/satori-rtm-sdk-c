@@ -2,15 +2,16 @@ v2.0.0 (2017-07-17)
 -------------------
 
 * Major API change, see Migrating_to_API_v2.md for details
+* Added parsers for different PDUs
+* Added method to set connection timeout
+* Added method to decode error codes
+* Added WebSocket ping / pong heartbeats
+* Added support for OpenSSL 1.1.0
 * Added a tutorial project and more examples
 * cmake version requirement lowered from 3.4 to 2.8.11
-  (found in some LTS distros)
-* Added support for OpenSSL 1.1.0
-* Fixed WebSocket frame encoding when payload length is 126 bytes
 * Building without a TLS library is no longer supported
-* Added parsers for different PDU types
-* Added WebSocket ping / pong heartbeats
-* Fixed bug in Apple TLS write method
+* Fixed WebSocket frame encoding when payload length is 126 bytes
+* Fixed a bug when SDK could send same data several times when Apple TLS is used
 
 v1.0.1 (2017-04-03)
 -------------------
