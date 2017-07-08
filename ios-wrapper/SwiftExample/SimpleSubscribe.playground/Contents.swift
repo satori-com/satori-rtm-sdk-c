@@ -34,21 +34,22 @@ hostView.addSubview(hostStackView)
 hostView
 //: __Define the PduHandler. This will be called by Satori rtm when there is activity for the subscribe success/error response and subscription data responses.__
 let handler : PduHandler = {(SatoriPdu) -> Void in
-    let action : String = SatoriPdu.action;
-    if action == "rtm/subscription/data" {
-        if (SatoriPdu.body as? NSDictionary != nil) {
-            let body : NSDictionary = SatoriPdu.body as! NSDictionary;
-            let arr = body.object(forKey: "messages") as! NSArray;
-            let msg : NSDictionary = arr.object(at: 0) as! NSDictionary;
-            let title = (msg.object(forKey: "title") as! String);
-            let publishedTs = (msg.object(forKey: "publishedTimestamp") as! String);
-            DispatchQueue.main.async {
-                rssTextView.text = rssTextView.text + "\n -------------------------------------------------------";
-                rssTextView.text = rssTextView.text + "\n Title:" + title + "\n Published On:" + publishedTs + "\n";
-                let range = NSMakeRange(rssTextView.text.characters.count - 1, 1);
-                rssTextView.scrollRangeToVisible(range);
-            }
+    let action : rtm_action_t = SatoriPdu.action;
+    switch action {
+    case RTM_ACTION_SUBSCRIPTION_DATA:
+        let body : NSDictionary = SatoriPdu.body as! NSDictionary;
+        let arr = body.object(forKey: "messages") as! NSArray;
+        let msg : NSDictionary = arr.object(at: 0) as! NSDictionary;
+        let title = (msg.object(forKey: "title") as! String);
+        let publishedTs = (msg.object(forKey: "publishedTimestamp") as! String);
+        DispatchQueue.main.async {
+            rssTextView.text = rssTextView.text + "\n -------------------------------------------------------";
+            rssTextView.text = rssTextView.text + "\n Title:" + title + "\n Published On:" + publishedTs + "\n";
+            let range = NSMakeRange(rssTextView.text.characters.count - 1, 1);
+            rssTextView.scrollRangeToVisible(range);
         }
+    default:
+        break
     }
 }
 //: __Connect to Satori using SatoriRtmConnection. And subscribe to big-rss channel to show title and published on date in real time__

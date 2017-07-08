@@ -31,21 +31,22 @@ let mapView = MKMapView( frame: frame )
 PlaygroundPage.current.liveView = mapView
 //: __Define the PduHandler. This will be called by Satori rtm when there is activity for the subscribe success/error response and subscription data responses.__
 let handler : PduHandler = {(SatoriPdu) -> Void in
-    let action : String = SatoriPdu.action;
-    if action == "rtm/subscription/data" {
-        if (SatoriPdu.body as? NSDictionary != nil) {
-            let body : NSDictionary = SatoriPdu.body as! NSDictionary;
-            let arr = body.object(forKey: "messages") as! NSArray;
-            let msg : NSDictionary = arr.object(at: 0) as! NSDictionary;
-            let city = (msg.object(forKey: "city") as! String);
-            let country = (msg.object(forKey: "country") as! String);
-            let lat : Double = msg.object(forKey: "latitude") as! Double;
-            let long : Double = msg.object(forKey: "longitude") as! Double;
-            DispatchQueue.main.async {
-                let place = MapAnnotation(mapCoordinate: CLLocationCoordinate2D(latitude: lat, longitude: long));
-                mapView.addAnnotation(place);
-            }
+    let action : rtm_action_t = SatoriPdu.action;
+    switch action {
+    case RTM_ACTION_SUBSCRIPTION_DATA:
+        let body : NSDictionary = SatoriPdu.body as! NSDictionary;
+        let arr = body.object(forKey: "messages") as! NSArray;
+        let msg : NSDictionary = arr.object(at: 0) as! NSDictionary;
+        let city = (msg.object(forKey: "city") as! String);
+        let country = (msg.object(forKey: "country") as! String);
+        let lat : Double = msg.object(forKey: "latitude") as! Double;
+        let long : Double = msg.object(forKey: "longitude") as! Double;
+        DispatchQueue.main.async {
+            let place = MapAnnotation(mapCoordinate: CLLocationCoordinate2D(latitude: lat, longitude: long));
+            mapView.addAnnotation(place);
         }
+    default:
+        break
     }
 }
 //: __Connect to Satori using SatoriRtmConnection. And subscribe to Meetup-RSVP channel using a View(formerly Filter) to show locations in the US where meetups are happening in real time__
