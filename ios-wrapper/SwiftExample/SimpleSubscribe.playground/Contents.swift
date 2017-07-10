@@ -37,7 +37,7 @@ let handler : PduHandler = {(SatoriPdu) -> Void in
     let action : rtm_action_t = SatoriPdu.action;
     switch action {
     case RTM_ACTION_SUBSCRIPTION_DATA:
-        let body : NSDictionary = SatoriPdu.body as! NSDictionary;
+        let body : NSDictionary = SatoriPdu.body as NSDictionary;
         let arr = body.object(forKey: "messages") as! NSArray;
         let msg : NSDictionary = arr.object(at: 0) as! NSDictionary;
         let title = (msg.object(forKey: "title") as! String);

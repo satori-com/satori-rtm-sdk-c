@@ -35,13 +35,13 @@ The Swift Playgrounds `SimpleSubscribe` and `FilterSubscibe` included in this re
 **SimpleSubscribe**
 
 
-The SimpleSubscribe Playground subscribes to the [Meetup-RSVP](https://www.satori.com/channels/Meetup-RSVP) open data channel. It parses the subscription data and displays the RSS feed `Title` and `Published On` field values in a auto-scrolling read-only textview in the Xcode Assistant Editor window.
+The SimpleSubscribe Playground subscribes to the [big-rss](https://www.satori.com/channels/big-rss) open data channel. It parses the subscription data and displays the RSS feed `Title` and `Published On` field values in a auto-scrolling read-only textview in the Xcode Assistant Editor window.
 
 [Simple Subscribe Demo](https://satori-a.akamaihd.net/swift-playground/SimpleSubscribe.gif)
 
 **FilterSubscribe**
 
 
-The FilterSubscribe Playground subscribes to the [big-rss](https://www.satori.com/channels/big-rss) open data channel. The playground applies a View(formerly Filter) to the channel to only subscribe for the events that are happening in the USA. It parses the subscription data and displays a location pin for each of the meetups on the US map as they occur in real time.
+The FilterSubscribe Playground subscribes to the [Meetup-RSVP](https://www.satori.com/channels/Meetup-RSVP) open data channel. The playground applies a View(formerly Filter) to the channel to only subscribe for the events that are happening in the USA. It parses the subscription data and displays a location pin for each of the meetups on the US map as they occur in real time.
 
 [Filter Subscribe Demo](https://satori-a.akamaihd.net/swift-playground/FilterSubscribe.gif)
