@@ -2,6 +2,7 @@ Unreleased
 ----------
 
 * Added measures to prevent SIGPIPE in case of a network error
+* Implement anonymous https proxy support
 
 v2.0.0 (2017-07-17)
 -------------------

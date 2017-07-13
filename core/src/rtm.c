@@ -64,9 +64,118 @@ RTM_API rtm_client_t * rtm_init(
   return rtm;
 }
 
-rtm_status rtm_connect(rtm_client_t *rtm,
-                       const char *endpoint,
-                       const char *appkey) {
+static ssize_t safer_snprintf(char *dst, ssize_t max_size, char const *fmt, ...) {
+  if (max_size <= 0) {
+      return 0;
+  }
+
+  va_list args;
+  va_start(args, fmt);
+  int result = vsnprintf(dst, max_size, fmt, args);
+  va_end(args);
+
+  if (result < 0) {
+      return 0;
+  }
+
+  if (result < max_size) {
+      return result;
+  }
+
+  return max_size;
+}
+
+static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostname, char const *port) {
+  int len = safer_snprintf(rtm->output_buffer, _RTM_MAX_BUFFER,"CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
+  int written = _rtm_io_write(rtm, rtm->output_buffer, len);
+  if (written < len) {
+    return RTM_ERR_WRITE;
+  }
+
+  ssize_t buffer_size = _RTM_MAX_BUFFER;
+  char *input_buffer = rtm->input_buffer;
+  while (1) {
+    int input_length = 0;
+    char *end_of_header;
+    if (buffer_size <= 0) {
+      _rtm_io_close(rtm); /* unable to parse http headers */
+      return _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Unable to parse HTTP CONNECT response.");
+    }
+
+    ssize_t read = _rtm_io_read(rtm, input_buffer + input_length, (size_t) buffer_size, YES);
+    if (read < 0) {
+      _rtm_io_close(rtm);
+      return _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
+    }
+
+    input_length += read;
+    buffer_size -= input_length;
+
+    end_of_header = strstr(input_buffer, "\r\n\r\n");
+    if (end_of_header) {
+      if (strncmp(input_buffer, "HTTP/1.1 200", 12) != 0 && strncmp(input_buffer, "HTTP/1.0 200", 12) != 0) {
+        rtm_status rc = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Received unexpected response from server:");
+        _rtm_log_message(RTM_ERR_PROTOCOL, input_buffer);
+        _rtm_io_close(rtm);
+        return rc;
+      }
+
+      return RTM_OK;
+    }
+  }
+
+  return RTM_OK;
+}
+
+static rtm_status _rtm_io_connect(
+    rtm_client_t *rtm,
+    char const *hostname,
+    char const *port,
+    char const *proxy_host,
+    char const *proxy_port,
+    const unsigned use_tls) {
+  ASSERT_NOT_NULL(rtm);
+  ASSERT_NOT_NULL(hostname);
+  ASSERT_NOT_NULL(port);
+
+  rtm->fd = -1;
+  rtm_status rc;
+  if (proxy_host) {
+    rc = _rtm_io_connect_to_host_and_port(rtm, proxy_host, proxy_port);
+    if (rc) {
+      return rc;
+    }
+
+    rc = perform_proxy_handshake(rtm, hostname, port);
+    if (rc) {
+      return rc;
+    }
+  } else {
+    rc = _rtm_io_connect_to_host_and_port(rtm, hostname, port);
+  }
+
+  if (rc) {
+    return rc;
+  }
+
+  rtm->is_secure = NO;
+  if (use_tls) {
+    rc = _rtm_io_open_tls_session(rtm, hostname);
+    if (rc) {
+      _rtm_io_close(rtm);
+      return rc;
+    }
+    rtm->is_secure = YES;
+  }
+  return RTM_OK;
+}
+
+rtm_status rtm_connect_(
+    rtm_client_t *rtm,
+    char const *endpoint,
+    char const *appkey,
+    char const *proxy_host,
+    char const *proxy_port) {
   CHECK_PARAM(rtm);
   CHECK_MAX_SIZE(endpoint, RTM_MAX_ENDPOINT_SIZE);
   CHECK_MAX_SIZE(appkey, RTM_MAX_APPKEY_SIZE);
@@ -93,7 +202,7 @@ rtm_status rtm_connect(rtm_client_t *rtm,
     return rc;
   }
 
-  rc = _rtm_io_connect(rtm, hostname, port, use_tls);
+  rc = _rtm_io_connect(rtm, hostname, port, proxy_host, proxy_port, use_tls);
   if (rc)
     return rc;
 
@@ -111,32 +220,26 @@ rtm_status rtm_connect(rtm_client_t *rtm,
   return RTM_OK;
 }
 
+rtm_status rtm_connect_via_anonymous_https_proxy(
+    rtm_client_t *rtm,
+    char const *endpoint,
+    char const *appkey,
+    char const *proxy_host,
+    char const *proxy_port) {
+  CHECK_PARAM(proxy_host);
+  return rtm_connect_(rtm, endpoint, appkey, proxy_host, proxy_port);
+}
+
+rtm_status rtm_connect(rtm_client_t *rtm, const char *endpoint, const char *appkey) {
+  return rtm_connect_(rtm, endpoint, appkey, NULL, 0);
+}
+
+
 void rtm_close(rtm_client_t *rtm) {
   if (!rtm) {
     return;
   }
   _rtm_io_close(rtm);
-}
-
-static ssize_t safer_snprintf(char *dst, ssize_t max_size, char const *fmt, ...) {
-  if (max_size <= 0) {
-      return 0;
-  }
-
-  va_list args;
-  va_start(args, fmt);
-  int result = vsnprintf(dst, max_size, fmt, args);
-  va_end(args);
-
-  if (result < 0) {
-      return 0;
-  }
-
-  if (result < max_size) {
-      return result;
-  }
-
-  return max_size;
 }
 
 rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack_id) {

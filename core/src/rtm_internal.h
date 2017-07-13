@@ -99,8 +99,7 @@ char *_rtm_json_find_field_name(char* p, char **cursor, ssize_t *length);
 char *_rtm_json_find_element(char* p, char **cursor, ssize_t *length);
 
 // Network IO
-rtm_status _rtm_io_connect(rtm_client_t *rtm, const char* hostname, const char* port,
-    unsigned is_tls);
+rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostname, const char *port);
 rtm_status _rtm_io_close(rtm_client_t *rtm);
 rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeout);
 ssize_t    _rtm_io_write(rtm_client_t *rtm, const char *buf, size_t len);

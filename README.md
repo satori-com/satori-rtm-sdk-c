@@ -302,6 +302,19 @@ or by setting DEBUG_SATORI_SDK environment variable prior to running your applic
   ./my_program
 ```
 
+Using https proxy
+=================
+
+The SDK supports working through an https (not http) proxy.
+
+Instead of calling `rtm_connect` use `rtm_connect_via_anonymous_https_proxy`
+that additionally takes `proxy_host` and `proxy_port` like this:
+
+```
+rtm_client_t *client = rtm_init(memory, &pdu_handler, &my_state);
+rtm_connect_via_anonymous_https_proxy(client, "YOUR_ENDPOINT", "YOUR_APPKEY", "127.0.0.1", "7711");
+```
+
 Migrating from C Core SDK v1
 ============================
 

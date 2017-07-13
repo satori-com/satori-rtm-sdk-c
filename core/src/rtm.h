@@ -353,7 +353,7 @@ RTM_API rtm_client_t *rtm_init(
   void *user_context);
 
 /**
- * @brief Initialize an instance of rtm_client_t and connects to RTM.
+ * @brief Connects to RTM
  *
  * @param[in] rtm instance of the client
  * @param[in] endpoint endpoint for the RTM Service.
@@ -373,6 +373,33 @@ RTM_API rtm_client_t *rtm_init(
 RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
                        const char *endpoint,
                        const char *appkey);
+
+/**
+ * @brief Connects to RTM via an anonymous https proxy
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] endpoint endpoint for the RTM Service.
+ * @param[in] appkey application key to the RTM Service.
+ * @param[in] proxy_host
+ * @param[in] proxy_port
+ *
+ * @note The @p endpoint must be a well formed URL
+ *      <tt>"wss://xxx.api.satori.com/"</tt>
+ *
+ *
+ * @return the status of the operation
+ * @retval RTM_OK if the connection is established
+ * @retval RTM_ERR_* if the connection failed.
+ *
+ * @see ::rtm_close
+ * @see ::rtm_get_user_context
+ */
+RTM_API rtm_status rtm_connect_via_anonymous_https_proxy(
+    rtm_client_t *rtm,
+    char const *endpoint,
+    char const *appkey,
+    char const *proxy_host,
+    char const *proxy_port);
 
 /**
  * @brief Set the handler for not yet parsed PDUs

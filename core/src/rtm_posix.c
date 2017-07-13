@@ -94,8 +94,7 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
           strerror(errno));
 }
 
-
-static rtm_status connect_to_host_and_port(rtm_client_t *rtm, const char *hostname, const char *port) {
+rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostname, const char *port) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(hostname);
   ASSERT_NOT_NULL(port);
@@ -226,30 +225,6 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
       return READ_FAILURE;
     }
   }
-}
-
-rtm_status _rtm_io_connect(rtm_client_t *rtm, const char *hostname, const char *port, unsigned use_tls) {
-  ASSERT_NOT_NULL(rtm);
-  ASSERT_NOT_NULL(hostname);
-  ASSERT_NOT_NULL(port);
-
-  rtm->fd = -1;
-
-  rtm_status rc = connect_to_host_and_port(rtm, hostname, port);
-  if (rc) {
-    return rc;
-  }
-
-  rtm->is_secure = NO;
-  if (use_tls) {
-    rc = _rtm_io_open_tls_session(rtm, hostname);
-    if (rc) {
-      _rtm_io_close(rtm);
-      return rc;
-    }
-    rtm->is_secure = YES;
-  }
-  return RTM_OK;
 }
 
 rtm_status _rtm_io_close(rtm_client_t *rtm) {
