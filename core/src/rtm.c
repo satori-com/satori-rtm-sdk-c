@@ -142,26 +142,26 @@ static rtm_status _rtm_io_connect(
   rtm_status rc;
   if (proxy_host) {
     rc = _rtm_io_connect_to_host_and_port(rtm, proxy_host, proxy_port);
-    if (rc) {
+    if (RTM_OK != rc) {
       return rc;
     }
 
     rc = perform_proxy_handshake(rtm, hostname, port);
-    if (rc) {
+    if (RTM_OK != rc) {
       return rc;
     }
   } else {
     rc = _rtm_io_connect_to_host_and_port(rtm, hostname, port);
   }
 
-  if (rc) {
+  if (RTM_OK != rc) {
     return rc;
   }
 
   rtm->is_secure = NO;
   if (use_tls) {
     rc = _rtm_io_open_tls_session(rtm, hostname);
-    if (rc) {
+    if (RTM_OK != rc) {
       _rtm_io_close(rtm);
       return rc;
     }
@@ -194,27 +194,27 @@ rtm_status rtm_connect_(
   rtm_status rc;
 
   rc = parse_endpoint(rtm, endpoint, hostname, port, path, &use_tls);
-  if (rc)
+  if (RTM_OK != rc)
     return rc;
 
   rc = prepare_path(rtm, path, appkey);
-  if (rc) {
+  if (RTM_OK != rc) {
     return rc;
   }
 
   rc = _rtm_io_connect(rtm, hostname, port, proxy_host, proxy_port, use_tls);
-  if (rc)
+  if (RTM_OK != rc)
     return rc;
 
   // Connection established. Set current time as the last ping time.
   rtm->last_ping_ts = time(NULL);
 
   rc = send_http_upgrade_request(rtm, hostname, path);
-  if (rc)
+  if (RTM_OK != rc)
     return rc;
 
   rc = check_http_upgrade_response(rtm);
-  if (rc)
+  if (RTM_OK != rc)
     return rc;
 
   return RTM_OK;
@@ -551,7 +551,7 @@ rtm_status rtm_wait(rtm_client_t *rtm) {
       return rc;
     }
     rc = _rtm_io_wait(rtm, YES, NO, -1);
-    if (rc)
+    if (RTM_OK != rc)
       return rc;
   };
 }
@@ -571,7 +571,7 @@ rtm_status rtm_wait_timeout(rtm_client_t *rtm, int timeout_in_seconds) {
     }
     int poll_timeout = 1000 * (timeout_in_seconds - (int)(now - start));
     rc = _rtm_io_wait(rtm, YES, NO, poll_timeout);
-    if (rc)
+    if (RTM_OK != rc)
       return rc;
   };
 }

@@ -111,7 +111,7 @@ rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostn
   int getaddrinfo_result = getaddrinfo(hostname, port, &hints, &res);
   if (getaddrinfo_result) {
     return _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot find hostname=%s – reason=%s", hostname,
-                         gai_strerror(getaddrinfo_result));
+      gai_strerror(getaddrinfo_result));
   }
 
   // iterate through the records to find a working peer

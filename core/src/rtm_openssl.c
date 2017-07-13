@@ -206,7 +206,7 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
 
   if (!is_openssl_initialized) {
     rc = openssl_initialize(rtm);
-    if (rc)
+    if (RTM_OK != rc)
       return rc;
     is_openssl_initialized = YES;
   }

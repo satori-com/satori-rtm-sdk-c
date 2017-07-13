@@ -96,17 +96,17 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
   rtm_status rc;
   if (!is_gnutls_initialized) {
     rc = gtls_initialize(rtm);
-    if (rc)
+    if (RTM_OK != rc)
       return rc;
     is_gnutls_initialized = YES;
   }
 
   rc = gtls_create_session(rtm, hostname);
-  if (rc)
+  if (RTM_OK != rc)
     return rc;
 
   rc = gtls_handshake(rtm);
-  if (rc)
+  if (RTM_OK != rc)
     return rc;
 
   return gtls_handshake(rtm);
