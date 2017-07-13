@@ -217,7 +217,7 @@ rtm_status rtm_connect_via_https_proxy(
 }
 
 rtm_status rtm_connect(rtm_client_t *rtm, const char *endpoint, const char *appkey) {
-  return _rtm_io_connect(rtm, endpoint, appkey, NULL, 0);
+  return _rtm_io_connect(rtm, endpoint, appkey, NULL, NULL);
 }
 
 
