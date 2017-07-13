@@ -129,49 +129,6 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
 
 static rtm_status _rtm_io_connect(
     rtm_client_t *rtm,
-    char const *hostname,
-    char const *port,
-    char const *proxy_host,
-    char const *proxy_port,
-    const unsigned use_tls) {
-  ASSERT_NOT_NULL(rtm);
-  ASSERT_NOT_NULL(hostname);
-  ASSERT_NOT_NULL(port);
-
-  rtm->fd = -1;
-  rtm_status rc;
-  if (proxy_host) {
-    rc = _rtm_io_connect_to_host_and_port(rtm, proxy_host, proxy_port);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-
-    rc = perform_proxy_handshake(rtm, hostname, port);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-  } else {
-    rc = _rtm_io_connect_to_host_and_port(rtm, hostname, port);
-  }
-
-  if (RTM_OK != rc) {
-    return rc;
-  }
-
-  rtm->is_secure = NO;
-  if (use_tls) {
-    rc = _rtm_io_open_tls_session(rtm, hostname);
-    if (RTM_OK != rc) {
-      _rtm_io_close(rtm);
-      return rc;
-    }
-    rtm->is_secure = YES;
-  }
-  return RTM_OK;
-}
-
-rtm_status rtm_connect_(
-    rtm_client_t *rtm,
     char const *endpoint,
     char const *appkey,
     char const *proxy_host,
@@ -202,9 +159,38 @@ rtm_status rtm_connect_(
     return rc;
   }
 
-  rc = _rtm_io_connect(rtm, hostname, port, proxy_host, proxy_port, use_tls);
-  if (RTM_OK != rc)
+  ASSERT_NOT_NULL(rtm);
+  ASSERT_NOT_NULL(hostname);
+  ASSERT_NOT_NULL(port);
+
+  rtm->fd = -1;
+  if (proxy_host) {
+    rc = _rtm_io_connect_to_host_and_port(rtm, proxy_host, proxy_port);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+
+    rc = perform_proxy_handshake(rtm, hostname, port);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+  } else {
+    rc = _rtm_io_connect_to_host_and_port(rtm, hostname, port);
+  }
+
+  if (RTM_OK != rc) {
     return rc;
+  }
+
+  rtm->is_secure = NO;
+  if (use_tls) {
+    rc = _rtm_io_open_tls_session(rtm, hostname);
+    if (RTM_OK != rc) {
+      _rtm_io_close(rtm);
+      return rc;
+    }
+    rtm->is_secure = YES;
+  }
 
   // Connection established. Set current time as the last ping time.
   rtm->last_ping_ts = time(NULL);
@@ -227,11 +213,11 @@ rtm_status rtm_connect_via_anonymous_https_proxy(
     char const *proxy_host,
     char const *proxy_port) {
   CHECK_PARAM(proxy_host);
-  return rtm_connect_(rtm, endpoint, appkey, proxy_host, proxy_port);
+  return _rtm_io_connect(rtm, endpoint, appkey, proxy_host, proxy_port);
 }
 
 rtm_status rtm_connect(rtm_client_t *rtm, const char *endpoint, const char *appkey) {
-  return rtm_connect_(rtm, endpoint, appkey, NULL, 0);
+  return _rtm_io_connect(rtm, endpoint, appkey, NULL, 0);
 }
 
 
