@@ -375,7 +375,7 @@ RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
                        const char *appkey);
 
 /**
- * @brief Connects to RTM via an anonymous https proxy
+ * @brief Connects to RTM via an https proxy
  *
  * @param[in] rtm instance of the client
  * @param[in] endpoint endpoint for the RTM Service.
@@ -394,7 +394,7 @@ RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
  * @see ::rtm_close
  * @see ::rtm_get_user_context
  */
-RTM_API rtm_status rtm_connect_via_anonymous_https_proxy(
+RTM_API rtm_status rtm_connect_via_https_proxy(
     rtm_client_t *rtm,
     char const *endpoint,
     char const *appkey,

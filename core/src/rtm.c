@@ -206,7 +206,7 @@ static rtm_status _rtm_io_connect(
   return RTM_OK;
 }
 
-rtm_status rtm_connect_via_anonymous_https_proxy(
+rtm_status rtm_connect_via_https_proxy(
     rtm_client_t *rtm,
     char const *endpoint,
     char const *appkey,

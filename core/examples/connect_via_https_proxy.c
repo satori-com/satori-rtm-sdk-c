@@ -28,7 +28,7 @@ int main(void) {
   void *memory = malloc(rtm_client_size);
   rtm_client_t *client = rtm_init(memory, &pdu_handler, 0);
   rtm_enable_verbose_logging(client);
-  rtm_status rc = rtm_connect_via_anonymous_https_proxy(client, endpoint, appkey, proxy_host, proxy_port);
+  rtm_status rc = rtm_connect_via_https_proxy(client, endpoint, appkey, proxy_host, proxy_port);
 
   if (rc != RTM_OK) {
     fprintf(stderr, "Failed to connect: %d %s\n", rc, rtm_error_string(rc));
