@@ -6,8 +6,10 @@
 #include <Windows.h>
 #endif
 
+#include <openssl/bio.h>
 #include <openssl/hmac.h>
 #include "rtm_internal.h"
+#include "rtm_openssl_bio.h"
 
 // Disable deprecation warnings on OSX /IOS
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -97,21 +99,6 @@ static rtm_status openssl_load_windows_certificates(rtm_client_t *rtm)
 
 static int openssl_verify_callback(int preverify, X509_STORE_CTX *x509_ctx) {
   return preverify;
-  /*
-  ASSERT_NOT_NULL(x509_ctx);
-  // where did the error occur ?
-  int depth = X509_STORE_CTX_get_error_depth(x509_ctx);
-  int err = X509_STORE_CTX_get_error(x509_ctx);
-  char message[16372];
-
-  ERR_error_string((unsigned long) err, message);
-
-  X509 *cert = X509_STORE_CTX_get_current_cert(x509_ctx);
-  X509_NAME *iname = cert ? X509_get_issuer_name(cert) : NULL;
-  X509_NAME *sname = cert ? X509_get_subject_name(cert) : NULL;
-
-  return preverify;
-  */
 }
 
 static SSL_CTX *openssl_create_context() {
@@ -129,8 +116,13 @@ static SSL *openssl_create_connection(SSL_CTX *ctx, int socket) {
   ASSERT_NOT_NULL(ctx);
   ASSERT(socket > 0);
   SSL *ssl = SSL_new(ctx);
-  if (ssl)
-    SSL_set_fd(ssl, socket);
+  BIO *bio = BIO_new(rtm_openssl_bio());
+  if (!bio) {
+    SSL_free(ssl);
+    return NULL;
+  }
+  BIO_set_fd(bio, socket, BIO_NOCLOSE);
+  SSL_set_bio(ssl, bio, bio);
   return ssl;
 }
 
