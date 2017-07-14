@@ -26,6 +26,8 @@
 
 #include "rtm_openssl_bio.h"
 
+#include <string.h>
+
 #include <errno.h>
 #if ((defined(_WIN32)) || (defined(__MINGW32__)) || (defined(__MINGW64__)))
 # ifndef WIN32_LEAN_AND_MEAN
@@ -52,7 +54,11 @@ static BIO_METHOD rtm_bio_method;
 
 static int rtm_openssl_bio_should_retry(int res) {
   if (res == -1) {
-    int err = rtm_os_socket_error();
+#ifdef _WIN32
+    int err = WSAGetLastError();
+#else
+    int err = errno;
+#endif
     if (
 #ifdef EWOULDBLOCK
         err == EWOULDBLOCK ||

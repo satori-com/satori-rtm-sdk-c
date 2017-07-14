@@ -25,6 +25,20 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
 
   time_t start_time = time(NULL);
 
+#if defined(SO_NOSIGPIPE)
+  {
+    int value = 1;
+    int result = setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&value, sizeof(value));
+    if (result < 0) {
+      _rtm_log_error(rtm, RTM_ERR_CONNECT, "setting SO_NOSIGPIPE returned %d", result);
+    } else {
+      _rtm_log_message(RTM_OK, "Set SO_NOSIGPIPE successfully");
+    }
+  }
+#else
+  _rtm_log_message(RTM_OK, "SO_NOSIGPIPE is not defined for this platform");
+#endif
+
   try_again:
 
   if (connect(fd, address->ai_addr, address->ai_addrlen) != -1) {
