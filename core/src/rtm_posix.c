@@ -32,11 +32,15 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
     if (result < 0) {
       _rtm_log_error(rtm, RTM_ERR_CONNECT, "setting SO_NOSIGPIPE returned %d", result);
     } else {
-      _rtm_log_message(RTM_OK, "Set SO_NOSIGPIPE successfully");
+      if (rtm->is_verbose) {
+        _rtm_log_message(RTM_OK, "Set SO_NOSIGPIPE successfully");
+      }
     }
   }
 #else
-  _rtm_log_message(RTM_OK, "SO_NOSIGPIPE is not defined for this platform");
+  if (rtm->is_verbose) {
+    _rtm_log_message(RTM_OK, "SO_NOSIGPIPE is not defined for this platform");
+  }
 #endif
 
   try_again:
