@@ -1,3 +1,8 @@
+Unreleased
+----------
+
+* Added measures to prevent SIGPIPE in case of a network error
+
 v2.0.0 (2017-07-17)
 -------------------
 
