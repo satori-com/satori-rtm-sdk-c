@@ -18,7 +18,9 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
 void(*rtm_text_frame_handler)(rtm_client_t *rtm, char *message, size_t message_len) = rtm_default_text_frame_handler;
 
 // Network
-static rtm_status parse_endpoint(rtm_client_t *rtm, const char *endpoint,
+static enum rtm_url_scheme_t const websocket_schemes = SCHEME_WS | SCHEME_WSS;
+static enum rtm_url_scheme_t const proxy_schemes = SCHEME_HTTP;
+static rtm_status parse_endpoint(rtm_client_t *rtm, const char *endpoint, enum rtm_url_scheme_t scheme,
     char *hostname_out, char *port_out, char *path_out, unsigned *use_tls_out);
 static rtm_status prepare_path(rtm_client_t *rtm, char *path, const char *appkey);
 static rtm_status send_http_upgrade_request(rtm_client_t *rtm,
@@ -131,8 +133,7 @@ static rtm_status _rtm_io_connect(
     rtm_client_t *rtm,
     char const *endpoint,
     char const *appkey,
-    char const *proxy_host,
-    char const *proxy_port) {
+    char const *proxy_endpoint) {
   CHECK_PARAM(rtm);
   CHECK_MAX_SIZE(endpoint, RTM_MAX_ENDPOINT_SIZE);
   CHECK_MAX_SIZE(appkey, RTM_MAX_APPKEY_SIZE);
@@ -150,7 +151,7 @@ static rtm_status _rtm_io_connect(
 
   rtm_status rc;
 
-  rc = parse_endpoint(rtm, endpoint, hostname, port, path, &use_tls);
+  rc = parse_endpoint(rtm, endpoint, websocket_schemes, hostname, port, path, &use_tls);
   if (RTM_OK != rc)
     return rc;
 
@@ -164,7 +165,16 @@ static rtm_status _rtm_io_connect(
   ASSERT_NOT_NULL(port);
 
   rtm->fd = -1;
-  if (proxy_host) {
+  if (proxy_endpoint) {
+    char proxy_host[_RTM_MAX_HOSTNAME_SIZE + 1] = { 0 };
+    char proxy_port[_RTM_MAX_PORT_SIZE + 1] = { 0 };
+    char proxy_path[_RTM_MAX_PATH_SIZE + 1] = { 0 };
+    unsigned proxy_tls = 0;
+    rc = parse_endpoint(rtm, proxy_endpoint, proxy_schemes, proxy_host, proxy_port, proxy_path, &proxy_tls);
+    if (RTM_OK != rc) {
+      return rc;
+    }
+
     rc = _rtm_io_connect_to_host_and_port(rtm, proxy_host, proxy_port);
     if (RTM_OK != rc) {
       return rc;
@@ -210,14 +220,13 @@ rtm_status rtm_connect_via_https_proxy(
     rtm_client_t *rtm,
     char const *endpoint,
     char const *appkey,
-    char const *proxy_host,
-    char const *proxy_port) {
-  CHECK_PARAM(proxy_host);
-  return _rtm_io_connect(rtm, endpoint, appkey, proxy_host, proxy_port);
+    char const *proxy_endpoint) {
+  CHECK_PARAM(proxy_endpoint);
+  return _rtm_io_connect(rtm, endpoint, appkey, proxy_endpoint);
 }
 
 rtm_status rtm_connect(rtm_client_t *rtm, const char *endpoint, const char *appkey) {
-  return _rtm_io_connect(rtm, endpoint, appkey, NULL, NULL);
+  return _rtm_io_connect(rtm, endpoint, appkey, NULL);
 }
 
 
@@ -716,10 +725,9 @@ static rtm_status send_http_upgrade_request(rtm_client_t *rtm, const char *hostn
   return RTM_OK;
 }
 
-
-
 #define WS_PREFIX "ws://"
 #define WSS_PREFIX "wss://"
+#define HTTP_PREFIX "http://"
 
 static rtm_status check_hostname_length(rtm_client_t *rtm, size_t length) {
   if (length < _RTM_MAX_HOSTNAME_SIZE) {
@@ -750,7 +758,8 @@ static rtm_status prepare_path(rtm_client_t *rtm, char *path, const char *appkey
   return RTM_OK;
 }
 
-static rtm_status parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *hostname_out,
+static rtm_status parse_endpoint(
+    rtm_client_t *rtm, const char *endpoint, enum rtm_url_scheme_t schemes, char *hostname_out,
     char *port_out, char *path_out, unsigned *use_tls_out) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(endpoint);
@@ -766,16 +775,20 @@ static rtm_status parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *
   const char *auto_port = NULL;
   const char *hostname_start = NULL;
 
-  if (strncmp(endpoint, WS_PREFIX, sizeof(WS_PREFIX) - 1) == 0) {
+  if ((schemes & SCHEME_WS) && (strncmp(endpoint, WS_PREFIX, sizeof(WS_PREFIX) - 1) == 0)) {
     auto_port = port80;
     hostname_start = endpoint + sizeof(WS_PREFIX) - 1;
     *use_tls_out = NO;
-  } else if (strncmp(endpoint, WSS_PREFIX, sizeof(WSS_PREFIX) - 1) == 0) {
+  } else if ((schemes & SCHEME_WSS) && strncmp(endpoint, WSS_PREFIX, sizeof(WSS_PREFIX) - 1) == 0) {
     auto_port = port443;
     hostname_start = endpoint + sizeof(WSS_PREFIX) - 1;
     *use_tls_out = YES;
+  } else if ((schemes & SCHEME_HTTP) && strncmp(endpoint, HTTP_PREFIX, sizeof(HTTP_PREFIX) - 1) == 0) {
+    auto_port = port80;
+    hostname_start = endpoint + sizeof(HTTP_PREFIX) - 1;
+    *use_tls_out = NO;
   } else {
-    _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Unsupported protocol endpoint=%s", endpoint);
+    _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Unsupported scheme in endpoint=%s", endpoint);
     return RTM_ERR_PROTOCOL;
   }
 
@@ -1417,9 +1430,10 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 }
 
 #if defined(RTM_TEST_ENV)
-rtm_status _rtm_test_parse_endpoint(rtm_client_t *rtm, const char *endpoint, char *hostname_out,
+rtm_status _rtm_test_parse_endpoint(
+    rtm_client_t *rtm, const char *endpoint, enum rtm_url_scheme_t schemes, char *hostname_out,
     char *port_out, char *path_out, unsigned *use_tls_out) {
-  return parse_endpoint(rtm, endpoint, hostname_out, port_out, path_out, use_tls_out);
+  return parse_endpoint(rtm, endpoint, schemes, hostname_out, port_out, path_out, use_tls_out);
 }
 
 rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const char *appkey) {

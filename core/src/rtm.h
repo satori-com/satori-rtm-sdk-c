@@ -380,8 +380,7 @@ RTM_API rtm_status rtm_connect(rtm_client_t *rtm,
  * @param[in] rtm instance of the client
  * @param[in] endpoint endpoint for the RTM Service.
  * @param[in] appkey application key to the RTM Service.
- * @param[in] proxy_host
- * @param[in] proxy_port
+ * @param[in] proxy_endpoint
  *
  * @note The @p endpoint must be a well formed URL
  *      <tt>"wss://xxx.api.satori.com/"</tt>
@@ -398,8 +397,7 @@ RTM_API rtm_status rtm_connect_via_https_proxy(
     rtm_client_t *rtm,
     char const *endpoint,
     char const *appkey,
-    char const *proxy_host,
-    char const *proxy_port);
+    char const *proxy_endpoint);
 
 /**
  * @brief Set the handler for not yet parsed PDUs

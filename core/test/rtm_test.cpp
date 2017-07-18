@@ -692,7 +692,8 @@ TEST(rtm_test, parse_endpoint_test) {
   memset(hostname, 0, sizeof(hostname));
   memset(port, 0, sizeof(port));
   memset(path, 0, sizeof(path));
-  rc = _rtm_test_parse_endpoint(rtm, "wss://example.com/", hostname, port, path, &use_tls);
+  rc = _rtm_test_parse_endpoint(
+      rtm, "wss://example.com/", (enum rtm_url_scheme_t)(SCHEME_WSS | SCHEME_WS), hostname, port, path, &use_tls);
   ASSERT_EQ("example.com", std::string(hostname));
   ASSERT_EQ("443", std::string(port));
   ASSERT_EQ("/", std::string(path));
@@ -702,7 +703,8 @@ TEST(rtm_test, parse_endpoint_test) {
   memset(hostname, 0, sizeof(hostname));
   memset(port, 0, sizeof(port));
   memset(path, 0, sizeof(path));
-  rc = _rtm_test_parse_endpoint(rtm, "ws://example.com/", hostname, port, path, &use_tls);
+  rc = _rtm_test_parse_endpoint(
+      rtm, "ws://example.com/", (enum rtm_url_scheme_t)(SCHEME_WS | SCHEME_WSS), hostname, port, path, &use_tls);
   ASSERT_EQ("example.com", std::string(hostname));
   ASSERT_EQ("80", std::string(port));
   ASSERT_EQ("/", std::string(path));
@@ -712,7 +714,7 @@ TEST(rtm_test, parse_endpoint_test) {
   memset(hostname, 0, sizeof(hostname));
   memset(port, 0, sizeof(port));
   memset(path, 0, sizeof(path));
-  rc = _rtm_test_parse_endpoint(rtm, "ws://example.com", hostname, port, path, &use_tls);
+  rc = _rtm_test_parse_endpoint(rtm, "ws://example.com", SCHEME_WS, hostname, port, path, &use_tls);
   ASSERT_EQ("example.com", std::string(hostname));
   ASSERT_EQ("80", std::string(port));
   ASSERT_EQ("/", std::string(path));
@@ -722,7 +724,8 @@ TEST(rtm_test, parse_endpoint_test) {
   memset(hostname, 0, sizeof(hostname));
   memset(port, 0, sizeof(port));
   memset(path, 0, sizeof(path));
-  rc = _rtm_test_parse_endpoint(rtm, "ws://example.com/v3", hostname, port, path, &use_tls);
+  rc = _rtm_test_parse_endpoint(
+      rtm, "ws://example.com/v3", SCHEME_WS, hostname, port, path, &use_tls);
   ASSERT_EQ("example.com", std::string(hostname));
   ASSERT_EQ("80", std::string(port));
   ASSERT_EQ("/v3", std::string(path));
@@ -732,7 +735,8 @@ TEST(rtm_test, parse_endpoint_test) {
   memset(hostname, 0, sizeof(hostname));
   memset(port, 0, sizeof(port));
   memset(path, 0, sizeof(path));
-  rc = _rtm_test_parse_endpoint(rtm, "ws://example.com:8080/v3", hostname, port, path, &use_tls);
+  rc = _rtm_test_parse_endpoint(
+      rtm, "ws://example.com:8080/v3", SCHEME_WS, hostname, port, path, &use_tls);
   ASSERT_EQ("example.com", std::string(hostname));
   ASSERT_EQ("8080", std::string(port));
   ASSERT_EQ("/v3", std::string(path));
@@ -742,7 +746,8 @@ TEST(rtm_test, parse_endpoint_test) {
   memset(hostname, 0, sizeof(hostname));
   memset(port, 0, sizeof(port));
   memset(path, 0, sizeof(path));
-  rc = _rtm_test_parse_endpoint(rtm, "wss://example.com:8080/foo/bar/", hostname, port, path, &use_tls);
+  rc = _rtm_test_parse_endpoint(
+      rtm, "wss://example.com:8080/foo/bar/", SCHEME_WSS, hostname, port, path, &use_tls);
   ASSERT_EQ("example.com", std::string(hostname));
   ASSERT_EQ("8080", std::string(port));
   ASSERT_EQ("/foo/bar/", std::string(path));
@@ -752,12 +757,52 @@ TEST(rtm_test, parse_endpoint_test) {
   memset(hostname, 0, sizeof(hostname));
   memset(port, 0, sizeof(port));
   memset(path, 0, sizeof(path));
-  rc = _rtm_test_parse_endpoint(rtm, "wss://example.com:8080/foo/bar", hostname, port, path, &use_tls);
+  rc = _rtm_test_parse_endpoint(
+      rtm, "wss://example.com:8080/foo/bar", SCHEME_WSS, hostname, port, path, &use_tls);
   ASSERT_EQ("example.com", std::string(hostname));
   ASSERT_EQ("8080", std::string(port));
   ASSERT_EQ("/foo/bar", std::string(path));
   ASSERT_EQ(1u, use_tls);
   ASSERT_EQ(RTM_OK, rc);
+
+  memset(hostname, 0, sizeof(hostname));
+  memset(port, 0, sizeof(port));
+  memset(path, 0, sizeof(path));
+  rc = _rtm_test_parse_endpoint(
+      rtm, "http://proxy.proxy:7711", SCHEME_HTTP, hostname, port, path, &use_tls);
+  ASSERT_EQ("proxy.proxy", std::string(hostname));
+  ASSERT_EQ("7711", std::string(port));
+  ASSERT_EQ(0u, use_tls);
+  ASSERT_EQ(RTM_OK, rc);
+
+  memset(hostname, 0, sizeof(hostname));
+  memset(port, 0, sizeof(port));
+  memset(path, 0, sizeof(path));
+  rc = _rtm_test_parse_endpoint(
+      rtm, "http://proxy.proxy", SCHEME_HTTP, hostname, port, path, &use_tls);
+  ASSERT_EQ("proxy.proxy", std::string(hostname));
+  ASSERT_EQ("80", std::string(port));
+  ASSERT_EQ(0u, use_tls);
+  ASSERT_EQ(RTM_OK, rc);
+
+  memset(hostname, 0, sizeof(hostname));
+  memset(port, 0, sizeof(port));
+  memset(path, 0, sizeof(path));
+  rc = _rtm_test_parse_endpoint(
+      rtm, "wss://example.com:8080/foo/bar", SCHEME_HTTP, hostname, port, path, &use_tls);
+  ASSERT_EQ(RTM_ERR_PROTOCOL, rc);
+
+  rc = _rtm_test_parse_endpoint(
+      rtm, "http://example.com:8080/foo/bar", (enum rtm_url_scheme_t)(SCHEME_WS | SCHEME_WSS), hostname, port, path, &use_tls);
+  ASSERT_EQ(RTM_ERR_PROTOCOL, rc);
+
+  rc = _rtm_test_parse_endpoint(
+      rtm, "ws://example.com:8080/foo/bar", SCHEME_HTTP, hostname, port, path, &use_tls);
+  ASSERT_EQ(RTM_ERR_PROTOCOL, rc);
+
+  rc = _rtm_test_parse_endpoint(
+      rtm, "https://example.com:8080/foo/bar", SCHEME_HTTP, hostname, port, path, &use_tls);
+  ASSERT_EQ(RTM_ERR_PROTOCOL, rc);
 }
 
 TEST(rtm_test, prepare_path_test) {
