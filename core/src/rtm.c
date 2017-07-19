@@ -105,7 +105,7 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
     }
 
     ssize_t read = _rtm_io_read(rtm, input_buffer + input_length, (size_t) buffer_size, YES);
-    if (read < 0) {
+    if (read <= 0) {
       _rtm_io_close(rtm);
       return _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
     }
