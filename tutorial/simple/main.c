@@ -111,7 +111,7 @@ rtm_status handshake_and_authenticate(rtm_client_t *rtm) {
 }
 
 int main(void) {
-  struct tutorial_state_t tutorial_state = {0};
+  struct tutorial_state_t tutorial_state = {0, 0, 0, {0}, 0};
 
   // C SDK does not allocate memory on its own so you're required to give it a
   // buffer to work with beforehand.
