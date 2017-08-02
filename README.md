@@ -66,7 +66,7 @@ As an external project
 
 If your project is also built using CMake, you can take advantage of its
 ExternalProject feature. This way downloading and building the SDK is automated
-by CMake itself. See tutorial/CMakeLists.txt for an example.
+by CMake itself. See tutorial/simple/CMakeLists.txt for an example.
 
 TLS support
 -----------

@@ -10,7 +10,7 @@ def main():
         creds = json.load(f)
 
     shutil.rmtree('build.quickstart', ignore_errors=True)
-    shutil.copytree('tutorial', 'build.quickstart')
+    shutil.copytree('tutorial/simple', 'build.quickstart')
 
     with open('build.quickstart/main.c') as fi:
         with open('build.quickstart/main.c.tmp', 'w') as fo:
