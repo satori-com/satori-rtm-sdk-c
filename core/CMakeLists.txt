@@ -3,7 +3,7 @@ project(RTM_CORE_SDK)
 
 if (NOT CMAKE_VERSION VERSION_LESS 3.4)
     cmake_policy(SET CMP0054 NEW)
-    cmake_policy(SET CMP0021 OLD)
+    cmake_policy(SET CMP0021 NEW)
     cmake_policy(SET CMP0042 NEW)
 endif ()
 
