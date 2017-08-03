@@ -139,7 +139,7 @@ elseif(USE_OPENSSL)
 elseif(USE_APPLE_SSL)
   message(STATUS "Selected Apple Security framework")
 
-  target_link_libraries(rtm-core-sdk PUBLIC "-framework foundation" "-framework security")
+  target_link_libraries(rtm-core-sdk "-framework foundation" "-framework security")
   add_definitions(-DUSE_APPLE_SSL)
 
   set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
