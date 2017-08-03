@@ -40,10 +40,12 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   switch (pdu->action) {
     case RTM_ACTION_SUBSCRIBE_OK:
       printf("Subscribed to the channel: %s\n", pdu->subscription_id);
+      fflush(stdout);
       tutorial_state->subscribe_ok = 1;
       break;
     case RTM_ACTION_PUBLISH_OK:
       printf("Animal with ID %u is published\n", pdu->request_id);
+      fflush(stdout);
       tutorial_state->publish_ok = 1;
       break;
     case RTM_ACTION_SUBSCRIPTION_DATA: {
@@ -53,6 +55,7 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
         // messages into objects, because C has neither appropriate data
         // structures nor JSON parsing functionality in the standard library.
         printf("Animal is received: %s\n", message);
+        fflush(stdout);
       }
       tutorial_state->got_message = 1;
       break;
@@ -71,6 +74,7 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     case RTM_ACTION_SUBSCRIPTION_ERROR:
     case RTM_ACTION_SUBSCRIPTION_INFO:
       fprintf(stderr, "error: %s, reason: %s\n", pdu->error, pdu->reason);
+      fflush(stderr);
       break;
     default:
       rtm_default_pdu_handler(rtm, pdu);
@@ -85,6 +89,7 @@ rtm_status handshake_and_authenticate(rtm_client_t *rtm) {
   rtm_status status = rtm_handshake(rtm, role, &request_id);
   if (RTM_OK != status) {
     fprintf(stderr, "Failed to send handshake request: %s\n", rtm_error_string(status));
+    fflush(stderr);
     return status;
   }
 
