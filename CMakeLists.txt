@@ -9,9 +9,15 @@ option(test "Build all test." OFF)
 option(bench "Build all benchmarks." OFF)
 option(examples "Build all examples." OFF)
 
-set(INSTALL_PKGCONFIG_DIR "lib/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
-set(INSTALL_INC_DIR "include" CACHE PATH "Installation directory for header files")
-set(INSTALL_LIB_DIR "lib" CACHE PATH "Installation directory for library files")
+if(LINUX)
+	find_package(GNUInstallDirs)
+endif(LINUX)
+if(NOT GNUInstallDirs_FOUND)
+	# Following GNUInstallDirs naming conventions
+	set(CMAKE_INSTALL_INCLUDEDIR "include" CACHE PATH "Installation directory for header files")
+	set(CMAKE_INSTALL_LIBDIR "lib" CACHE PATH "Installation directory for library files")
+endif(NOT GNUInstallDirs_FOUND)
+set(CMAKE_INSTALL_PKGCONFIGDIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
 set(VERSION 0.1)
 
 if(test)

@@ -187,10 +187,10 @@ if(OSX)
 endif()
 
 install(FILES src/rtm.h
-        DESTINATION "${INSTALL_INC_DIR}"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
        )
 install(TARGETS rtm-core-sdk
-        DESTINATION "${INSTALL_LIB_DIR}"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
        )
 
 if(examples)
@@ -215,5 +215,5 @@ if(UNIX)
                 ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
                 @ONLY)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
-    DESTINATION "${INSTALL_PKGCONFIG_DIR}")
+    DESTINATION "${CMAKE_INSTALL_PKGCONFIGDIR}")
 endif()
