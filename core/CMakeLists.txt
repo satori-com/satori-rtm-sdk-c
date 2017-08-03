@@ -117,6 +117,7 @@ if(USE_GNUTLS)
   target_link_libraries(rtm-core-sdk ${GNUTLS_LIBRARIES})
   add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
 
+  set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
 elseif(USE_OPENSSL)
 
   add_definitions(-DUSE_OPENSSL)
@@ -131,6 +132,8 @@ elseif(USE_OPENSSL)
       message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
       include_directories(${OPENSSL_INCLUDE_DIR})
       target_link_libraries(rtm-core-sdk ${OPENSSL_LIBRARIES})
+
+      set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
   endif(MSVC)
 
 elseif(USE_APPLE_SSL)
@@ -139,6 +142,7 @@ elseif(USE_APPLE_SSL)
   target_link_libraries(rtm-core-sdk PUBLIC "-framework foundation" "-framework security")
   add_definitions(-DUSE_APPLE_SSL)
 
+  set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
 else()
   message(STATUS "No TLS backend selected.")
 
@@ -204,4 +208,12 @@ endif()
 
 if(perf)
   add_subdirectory(perf)
+endif()
+
+if(UNIX)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/satori-rtm.pc.in
+                ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
+                @ONLY)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
+    DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 endif()
