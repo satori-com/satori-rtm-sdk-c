@@ -180,24 +180,14 @@ if(OSX)
               RENAME Core.h
               )
   endif()
-  
 endif()
 
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    install(FILES src/rtm.h
-            DESTINATION /opt/local/rtm/include
-           )
-    install(TARGETS rtm-core-sdk
-            DESTINATION /opt/local/rtm/lib
-           )
-ELSEIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    install(FILES src/rtm.h
-            DESTINATION /opt/local/rtm/include
-           )
-    install(TARGETS rtm-core-sdk
-            DESTINATION lib
-           )
-ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+install(FILES src/rtm.h
+        DESTINATION "${INSTALL_INC_DIR}"
+       )
+install(TARGETS rtm-core-sdk
+        DESTINATION "${INSTALL_LIB_DIR}"
+       )
 
 if(examples)
   add_subdirectory(examples)

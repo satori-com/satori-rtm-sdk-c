@@ -9,6 +9,11 @@ option(test "Build all test." OFF)
 option(bench "Build all benchmarks." OFF)
 option(examples "Build all examples." OFF)
 
+set(INSTALL_PKGCONFIG_DIR "lib/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
+set(INSTALL_INC_DIR "include" CACHE PATH "Installation directory for header files")
+set(INSTALL_LIB_DIR "lib" CACHE PATH "Installation directory for library files")
+set(VERSION 0.1)
+
 if(test)
   ExternalProject_Add(googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
