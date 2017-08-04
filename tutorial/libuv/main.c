@@ -198,7 +198,7 @@ int main(void) {
   uv_poll_t poll_req;
   poll_req.data = rtm;
   uv_poll_init(loop, &poll_req, rtm_get_fd(rtm));
-  uv_poll_start(&poll_req, UV_READABLE | UV_DISCONNECT, handle_reads);
+  uv_poll_start(&poll_req, UV_READABLE, handle_reads);
 
   uv_timer_t ping_timer_req;
   ping_timer_req.data = rtm;
@@ -230,11 +230,6 @@ void handle_reads(uv_poll_t* handle, int uv_status, int events) {
       fprintf(stderr, "Failed to poll for messages / keep connection alive: %s\n", rtm_error_string(status));
       uv_loop_close(uv_default_loop());
     }
-  }
-  if(events & UV_DISCONNECT) {
-    // Normally, you would put code to reestablish a connection here.
-    fprintf(stderr, "RTM connection lost.\n");
-    uv_loop_close(uv_default_loop());
   }
 }
 void handle_ping_timer_event(uv_timer_t* handle) {
