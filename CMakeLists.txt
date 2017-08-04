@@ -18,7 +18,7 @@ if(NOT GNUInstallDirs_FOUND)
 	set(CMAKE_INSTALL_LIBDIR "lib" CACHE PATH "Installation directory for library files")
 endif(NOT GNUInstallDirs_FOUND)
 set(CMAKE_INSTALL_PKGCONFIGDIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
-set(VERSION 0.1)
+set(VERSION 2.0)
 
 if(test)
   ExternalProject_Add(googletest
