@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+# encoding: utf-8
 
 import json
+import os
 import re
 import signal
 import shutil
@@ -40,10 +42,13 @@ def test(tutorial_name, test_strings):
     shutil.rmtree('build.quickstart', ignore_errors=True)
     shutil.copytree('tutorial/%s' % (tutorial_name,), 'build.quickstart')
 
-    with open('build.quickstart/main.c') as fi:
-        with open('build.quickstart/main.c.tmp', 'w') as fo:
-            fo.writelines(inject_credentials(creds, l) for l in fi.readlines())
-    shutil.move('build.quickstart/main.c.tmp', 'build.quickstart/main.c')
+    for file_name in os.listdir("build.quickstart"):
+        if "main" in file_name:
+            file_name = os.path.join("build.quickstart", file_name)
+            with open(file_name) as fi:
+                with open("%s.tmp" % file_name, 'w') as fo:
+                    fo.writelines(inject_credentials(creds, l) for l in fi.readlines())
+            shutil.move("%s.tmp" % file_name, file_name)
 
     subprocess.check_call(['cmake', '.'], cwd='build.quickstart')
     subprocess.check_call(['cmake', '--build', '.'], cwd='build.quickstart')
