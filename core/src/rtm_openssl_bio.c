@@ -39,12 +39,6 @@
 # include <sys/socket.h>
 #endif
 
-#ifdef MSG_NOSIGNAL
-# define RTM_USE_RTM_BIO
-#endif
-
-#ifdef RTM_USE_RTM_BIO
-
 #ifdef ENABLE_THREAD_SAFETY
 static pthread_once_t bio_init_once = PTHREAD_ONCE_INIT;
 #endif
@@ -119,18 +113,20 @@ static int rtm_openssl_bio_write(BIO* b, const char *in, int inl) {
 static int rtm_openssl_bio_read(BIO* b, char* out, int outl) {
   int flags = 0;
   int fd;
-  int res;
+  int res = 0;
 
+  if(out != NULL) {
 #ifdef MSG_NOSIGNAL
-  flags |= MSG_NOSIGNAL;
+    flags |= MSG_NOSIGNAL;
 #endif
 
-  BIO_get_fd(b, &fd);
-  res = recv(fd, out, outl, flags);
+    BIO_get_fd(b, &fd);
+    res = recv(fd, out, outl, flags);
 
-  BIO_clear_retry_flags(b);
-  if (res <= 0 && rtm_openssl_bio_should_retry(res)) {
-    BIO_set_retry_read(b);
+    BIO_clear_retry_flags(b);
+    if (res <= 0 && rtm_openssl_bio_should_retry(res)) {
+      BIO_set_retry_read(b);
+    }
   }
 
   return res;
@@ -173,10 +169,7 @@ static void rtm_openssl_bio_init(void) {
   bio_initialized = 1;
 }
 
-#endif  /* RTM_USE_RTM_BIO */
-
 BIO_METHOD* rtm_openssl_bio(void) {
-#ifdef RTM_USE_RTM_BIO
   if (!bio_initialized) {
 #ifdef ENABLE_THREAD_SAFETY
     pthread_once(&bio_init_once, rtm_openssl_bio_init);
@@ -186,7 +179,4 @@ BIO_METHOD* rtm_openssl_bio(void) {
   }
 
   return rtm_bio_method;
-#else
-  return BIO_s_socket();
-#endif
 }
