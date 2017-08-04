@@ -21,4 +21,5 @@ int main(void) {
 
   rtm_close(client);
   free(client);
+  return 0;
 }
