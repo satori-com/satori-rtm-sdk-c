@@ -152,7 +152,9 @@ static int BIO_meth_set_read(BIO_METHOD *biom,
 
 static void rtm_openssl_bio_init(void) {
   #if OPENSSL_VERSION_NUMBER >= 10100000
-    rtm_bio_method = BIO_meth_new(BIO_TYPE_DESCRIPTOR, "");
+    // OpenSSL 1.1.0 made the BIO_METHOD structure opaque, so we cannot just
+    // memcpy() here.
+    rtm_bio_method = BIO_meth_new(BIO_TYPE_SOCKET, "");
     // TODO BIO_s_socket returns constant, but _get_.. requires non-const.
     //      Remove the non-const cast once possible in a future OpenSSL
     //      version.
