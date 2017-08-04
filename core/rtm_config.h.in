@@ -1,0 +1,15 @@
+/**
+ * This file is part of the RTM CORE SDK, and was generated during compilation.
+ */
+
+#ifndef CORE_RTM_CONFIG_H__INCLUDED
+#define CORE_RTM_CONFIG_H__INCLUDED
+
+#define RTM_ENCODE_VERSION(major, minor)              ((major) << 16 | (minor) << 8)
+#define RTM_ENCODE_PATCH_VERSION(major, minor, patch) (RTM_ENCODE_VERSION(major, minor) | patch)
+
+#define RTM_API_VERSION RTM_ENCODE_PATCH_VERSION(@MAJOR_VERSION@, @MINOR_VERSION@, @PATCH_VERSION@)
+
+#define RTM_CHECK_VERSION(major, minor, patch) (RTM_ENCODE_PATCH_VERSION(major, minor, patch) >= RTM_API_VERSION)
+
+#endif // CORE_RTM_CONFIG_H__INCLUDED

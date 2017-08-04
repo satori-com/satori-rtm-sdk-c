@@ -71,6 +71,14 @@ endif()
 include_directories(.)
 include_directories(system ../vendor)
 
+# Create configuration header
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
+  @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
 # Construct sources list
 
 set(SOURCES src/rtm.c src/rtm_json.c)
