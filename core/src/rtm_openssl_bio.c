@@ -39,18 +39,17 @@
 # include <sys/socket.h>
 #endif
 
-#ifdef MSG_NOSIGNAL
-# define RTM_USE_RTM_BIO
-#endif
-
-#ifdef RTM_USE_RTM_BIO
-
 #ifdef ENABLE_THREAD_SAFETY
 static pthread_once_t bio_init_once = PTHREAD_ONCE_INIT;
 #endif
 
 static int bio_initialized = 0;
-static BIO_METHOD rtm_bio_method;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static BIO_METHOD *rtm_bio_method;
+#else
+static BIO_METHOD _rtm_bio_method;
+static BIO_METHOD *rtm_bio_method = &_rtm_bio_method;
+#endif
 
 static int rtm_openssl_bio_should_retry(int res) {
   if (res == -1) {
@@ -114,18 +113,20 @@ static int rtm_openssl_bio_write(BIO* b, const char *in, int inl) {
 static int rtm_openssl_bio_read(BIO* b, char* out, int outl) {
   int flags = 0;
   int fd;
-  int res;
+  int res = 0;
 
+  if(out != NULL) {
 #ifdef MSG_NOSIGNAL
-  flags |= MSG_NOSIGNAL;
+    flags |= MSG_NOSIGNAL;
 #endif
 
-  BIO_get_fd(b, &fd);
-  res = recv(fd, out, outl, flags);
+    BIO_get_fd(b, &fd);
+    res = recv(fd, out, outl, flags);
 
-  BIO_clear_retry_flags(b);
-  if (res <= 0 && rtm_openssl_bio_should_retry(res)) {
-    BIO_set_retry_read(b);
+    BIO_clear_retry_flags(b);
+    if (res <= 0 && rtm_openssl_bio_should_retry(res)) {
+      BIO_set_retry_read(b);
+    }
   }
 
   return res;
@@ -146,17 +147,28 @@ static int BIO_meth_set_read(BIO_METHOD *biom,
 #endif
 
 static void rtm_openssl_bio_init(void) {
-  memcpy(&rtm_bio_method, BIO_s_socket(), sizeof(rtm_bio_method));
-  BIO_meth_set_write(&rtm_bio_method, rtm_openssl_bio_write);
-  BIO_meth_set_read(&rtm_bio_method, rtm_openssl_bio_read);
+  #if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    // OpenSSL 1.1.0 made the BIO_METHOD structure opaque, so we cannot just
+    // memcpy() here.
+    rtm_bio_method = BIO_meth_new(BIO_TYPE_SOCKET, "");
+    // BIO_s_socket() returns a const pointer, but BIO_meth_get_*() requires a
+    // non-const pointer. It never changes the BIO_METHOD instance though.
+    BIO_METHOD *sock_method = (BIO_METHOD *)BIO_s_socket();
+    BIO_meth_set_puts(rtm_bio_method, BIO_meth_get_puts(sock_method));
+    BIO_meth_set_gets(rtm_bio_method, BIO_meth_get_gets(sock_method));
+    BIO_meth_set_ctrl(rtm_bio_method, BIO_meth_get_ctrl(sock_method));
+    BIO_meth_set_create(rtm_bio_method, BIO_meth_get_create(sock_method));
+    BIO_meth_set_callback_ctrl(rtm_bio_method, BIO_meth_get_callback_ctrl(sock_method));
+  #else
+    memcpy(rtm_bio_method, BIO_s_socket(), sizeof(*rtm_bio_method));
+  #endif
+  BIO_meth_set_write(rtm_bio_method, rtm_openssl_bio_write);
+  BIO_meth_set_read(rtm_bio_method, rtm_openssl_bio_read);
 
   bio_initialized = 1;
 }
 
-#endif  /* RTM_USE_RTM_BIO */
-
 BIO_METHOD* rtm_openssl_bio(void) {
-#ifdef RTM_USE_RTM_BIO
   if (!bio_initialized) {
 #ifdef ENABLE_THREAD_SAFETY
     pthread_once(&bio_init_once, rtm_openssl_bio_init);
@@ -165,8 +177,5 @@ BIO_METHOD* rtm_openssl_bio(void) {
 #endif /* ifndef ENABLE_THREAD_SAFETY */
   }
 
-  return &rtm_bio_method;
-#else
-  return BIO_s_socket();
-#endif
+  return rtm_bio_method;
 }
