@@ -74,6 +74,7 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     case RTM_ACTION_SUBSCRIPTION_ERROR:
     case RTM_ACTION_SUBSCRIPTION_INFO:
       fprintf(stderr, "error: %s, reason: %s\n", pdu->error, pdu->reason);
+      fflush(stderr);
       break;
     default:
       rtm_default_pdu_handler(rtm, pdu);
@@ -88,6 +89,7 @@ rtm_status handshake_and_authenticate(rtm_client_t *rtm) {
   rtm_status status = rtm_handshake(rtm, role, &request_id);
   if (RTM_OK != status) {
     fprintf(stderr, "Failed to send handshake request: %s\n", rtm_error_string(status));
+    fflush(stderr);
     return status;
   }
 

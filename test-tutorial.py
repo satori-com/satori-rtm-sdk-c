@@ -16,6 +16,7 @@ TUTORIALS = {
     # each match against the command's output
     "simple": {"Animal is received", "Animal is published"},
     "libuv":  {"Animal is received", "Animal with ID [0-9]+ is published"},
+    "boost_asio": {"Sent out an animal", "Received animal"},
 }
 
 
