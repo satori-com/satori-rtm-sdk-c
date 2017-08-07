@@ -40,10 +40,12 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   switch (pdu->action) {
     case RTM_ACTION_SUBSCRIBE_OK:
       printf("Subscribed to the channel: %s\n", pdu->subscription_id);
+      fflush(stdout);
       tutorial_state->subscribe_ok = 1;
       break;
     case RTM_ACTION_PUBLISH_OK:
       printf("Animal with ID %u is published\n", pdu->request_id);
+      fflush(stdout);
       tutorial_state->publish_ok = 1;
       break;
     case RTM_ACTION_SUBSCRIPTION_DATA: {
@@ -53,6 +55,7 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
         // messages into objects, because C has neither appropriate data
         // structures nor JSON parsing functionality in the standard library.
         printf("Animal is received: %s\n", message);
+        fflush(stdout);
       }
       tutorial_state->got_message = 1;
       break;
@@ -193,7 +196,7 @@ int main(void) {
   uv_poll_t poll_req;
   poll_req.data = rtm;
   uv_poll_init(loop, &poll_req, rtm_get_fd(rtm));
-  uv_poll_start(&poll_req, UV_READABLE | UV_DISCONNECT, handle_reads);
+  uv_poll_start(&poll_req, UV_READABLE, handle_reads);
 
   uv_timer_t ping_timer_req;
   ping_timer_req.data = rtm;
@@ -225,11 +228,6 @@ void handle_reads(uv_poll_t* handle, int uv_status, int events) {
       fprintf(stderr, "Failed to poll for messages / keep connection alive: %s\n", rtm_error_string(status));
       uv_loop_close(uv_default_loop());
     }
-  }
-  if(events & UV_DISCONNECT) {
-    // Normally, you would put code to reestablish a connection here.
-    fprintf(stderr, "RTM connection lost.\n");
-    uv_loop_close(uv_default_loop());
   }
 }
 void handle_ping_timer_event(uv_timer_t* handle) {
