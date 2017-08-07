@@ -34,6 +34,8 @@
 extern "C" {
 #endif
 
+#include <rtm_config.h>
+
 #if defined(rtm_core_sdk_EXPORTS) && defined(_WIN32)
 #define RTM_API __declspec(dllexport)
 #elif defined(_WIN32)

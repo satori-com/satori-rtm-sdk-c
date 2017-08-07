@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+sharedlibdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCDIR@
+
+Name: satori-rtm
+Description: C SDK for Satori RTM
+Version: @MAJOR_VERSION@.@MINOR_VERSION@.@PATCH_VERSION@
+
+Requires: @PKG_CONFIG_REQUIRES@
+Libs: -L${libdir} -L${sharedlibdir} -lrtm-core-sdk @PKG_CONFIG_LIBS@
+Cflags: -I${includedir}

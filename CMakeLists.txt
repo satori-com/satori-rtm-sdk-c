@@ -9,6 +9,20 @@ option(test "Build all test." OFF)
 option(bench "Build all benchmarks." OFF)
 option(examples "Build all examples." OFF)
 
+if(LINUX)
+	find_package(GNUInstallDirs)
+endif(LINUX)
+if(NOT GNUInstallDirs_FOUND)
+	# Following GNUInstallDirs naming conventions
+	set(CMAKE_INSTALL_INCLUDEDIR "include" CACHE PATH "Installation directory for header files")
+	set(CMAKE_INSTALL_LIBDIR "lib" CACHE PATH "Installation directory for library files")
+endif(NOT GNUInstallDirs_FOUND)
+set(CMAKE_INSTALL_PKGCONFIGDIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
+
+set(MAJOR_VERSION 2)
+set(MINOR_VERSION 0)
+set(PATCH_VERSION 0)
+
 if(test)
   ExternalProject_Add(googletest
     GIT_REPOSITORY https://github.com/google/googletest.git

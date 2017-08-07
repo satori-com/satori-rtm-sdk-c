@@ -3,7 +3,7 @@ project(RTM_CORE_SDK)
 
 if (NOT CMAKE_VERSION VERSION_LESS 3.4)
     cmake_policy(SET CMP0054 NEW)
-    cmake_policy(SET CMP0021 OLD)
+    cmake_policy(SET CMP0021 NEW)
     cmake_policy(SET CMP0042 NEW)
 endif ()
 
@@ -71,6 +71,14 @@ endif()
 include_directories(.)
 include_directories(system ../vendor)
 
+# Create configuration header
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
+  @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
 # Construct sources list
 
 set(SOURCES src/rtm.c src/rtm_json.c)
@@ -117,6 +125,7 @@ if(USE_GNUTLS)
   target_link_libraries(rtm-core-sdk ${GNUTLS_LIBRARIES})
   add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
 
+  set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
 elseif(USE_OPENSSL)
 
   add_definitions(-DUSE_OPENSSL)
@@ -131,14 +140,17 @@ elseif(USE_OPENSSL)
       message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
       include_directories(${OPENSSL_INCLUDE_DIR})
       target_link_libraries(rtm-core-sdk ${OPENSSL_LIBRARIES})
+
+      set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
   endif(MSVC)
 
 elseif(USE_APPLE_SSL)
   message(STATUS "Selected Apple Security framework")
 
-  target_link_libraries(rtm-core-sdk PUBLIC "-framework foundation" "-framework security")
+  target_link_libraries(rtm-core-sdk "-framework foundation" "-framework security")
   add_definitions(-DUSE_APPLE_SSL)
 
+  set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
 else()
   message(STATUS "No TLS backend selected.")
 
@@ -180,24 +192,14 @@ if(OSX)
               RENAME Core.h
               )
   endif()
-  
 endif()
 
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    install(FILES src/rtm.h
-            DESTINATION /opt/local/rtm/include
-           )
-    install(TARGETS rtm-core-sdk
-            DESTINATION /opt/local/rtm/lib
-           )
-ELSEIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    install(FILES src/rtm.h
-            DESTINATION /opt/local/rtm/include
-           )
-    install(TARGETS rtm-core-sdk
-            DESTINATION lib
-           )
-ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+install(FILES src/rtm.h
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+       )
+install(TARGETS rtm-core-sdk
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+       )
 
 if(examples)
   add_subdirectory(examples)
@@ -214,4 +216,12 @@ endif()
 
 if(perf)
   add_subdirectory(perf)
+endif()
+
+if(UNIX)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/satori-rtm.pc.in
+                ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
+                @ONLY)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
+    DESTINATION "${CMAKE_INSTALL_PKGCONFIGDIR}")
 endif()
