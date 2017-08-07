@@ -69,18 +69,18 @@ class Rtm {
 		 *                 authentication.
 		 * \param secret   The secret associated with the role. Only used if a
 		 *                 role is supplied as well.
-		 * \return         false if connecting failed, true if connecting
-		 *                 succeeded.  Note that this does not mean that
-		 *                 authentication is complete yet.
+		 * \param connected_callback User callback invoked once a connection
+		 *                 has been established and authentication was
+		 *                 successful, or upon error.
 		 */
-		bool connect(const char *endpoint, const char *appkey,
+		void connect(const char *endpoint, const char *appkey,
 				const char *role, const char *secret,
 				const callback_type &connected_callback) {
 			// Establish a connection to Satori
 			if(rtm_connect(m_rtm_ptr, endpoint, appkey) != RTM_OK) {
 				if(connected_callback)
 					connected_callback(false, "Connecting to endpoint with appkey failed.");
-				return false;
+				return;
 			}
 
 			// Since we are now connected, we will have to send "ping"s in
@@ -104,7 +104,7 @@ class Rtm {
 				m_online = true;
 				if(connected_callback)
 					connected_callback(true, nullptr);
-				return true;
+				return;
 			}
 
 			// Perform the handshake. We store the request id and will process the
@@ -112,15 +112,13 @@ class Rtm {
 			if(rtm_handshake(m_rtm_ptr, role, &m_internal_request_id) != RTM_OK) {
 				if(connected_callback)
 					connected_callback(false, "Handshake request failed.");
-				return false;
+				return;
 			}
 
 			// The next steps require us to wait for an answer from the server.
 			// Return now, and store the callback and secret.
 			m_connected_callback = connected_callback;
 			m_secret = secret;
-
-			return true;
 		}
 
 		/**
