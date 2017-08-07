@@ -44,7 +44,7 @@ static pthread_once_t bio_init_once = PTHREAD_ONCE_INIT;
 #endif
 
 static int bio_initialized = 0;
-#if OPENSSL_VERSION_NUMBER >= 10100000
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 static BIO_METHOD *rtm_bio_method;
 #else
 static BIO_METHOD _rtm_bio_method;
@@ -147,7 +147,7 @@ static int BIO_meth_set_read(BIO_METHOD *biom,
 #endif
 
 static void rtm_openssl_bio_init(void) {
-  #if OPENSSL_VERSION_NUMBER >= 10100000
+  #if OPENSSL_VERSION_NUMBER >= 0x10100000L
     // OpenSSL 1.1.0 made the BIO_METHOD structure opaque, so we cannot just
     // memcpy() here.
     rtm_bio_method = BIO_meth_new(BIO_TYPE_SOCKET, "");
@@ -161,7 +161,7 @@ static void rtm_openssl_bio_init(void) {
     BIO_meth_set_create(rtm_bio_method, BIO_meth_get_create(sock_method));
     BIO_meth_set_callback_ctrl(rtm_bio_method, BIO_meth_get_callback_ctrl(sock_method));
   #else
-    memcpy(rtm_bio_method, BIO_s_socket(), sizeof(rtm_bio_method));
+    memcpy(rtm_bio_method, BIO_s_socket(), sizeof(*rtm_bio_method));
   #endif
   BIO_meth_set_write(rtm_bio_method, rtm_openssl_bio_write);
   BIO_meth_set_read(rtm_bio_method, rtm_openssl_bio_read);
