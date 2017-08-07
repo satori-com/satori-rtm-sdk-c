@@ -151,9 +151,8 @@ static void rtm_openssl_bio_init(void) {
     // OpenSSL 1.1.0 made the BIO_METHOD structure opaque, so we cannot just
     // memcpy() here.
     rtm_bio_method = BIO_meth_new(BIO_TYPE_SOCKET, "");
-    // TODO BIO_s_socket returns constant, but _get_.. requires non-const.
-    //      Remove the non-const cast once possible in a future OpenSSL
-    //      version.
+    // BIO_s_socket() returns a const pointer, but BIO_meth_get_*() requires a
+    // non-const pointer. It never changes the BIO_METHOD instance though.
     BIO_METHOD *sock_method = (BIO_METHOD *)BIO_s_socket();
     BIO_meth_set_puts(rtm_bio_method, BIO_meth_get_puts(sock_method));
     BIO_meth_set_gets(rtm_bio_method, BIO_meth_get_gets(sock_method));
