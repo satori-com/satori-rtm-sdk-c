@@ -28,9 +28,10 @@ class Rtm {
 		 * Functor type for status callbacks
 		 *
 		 * We will use it below to allow the user to react to the successful
-		 * completion of authentication and subscription.
+		 * completion of authentication and subscription. Passed a success
+		 * state and an optional error message.
 		 */
-		using callback_type = std::function<void(bool)>;
+		using callback_type = std::function<void(bool, const char *)>;
 
 		/**
 		 * Functor type for messages
@@ -78,7 +79,7 @@ class Rtm {
 			// Establish a connection to Satori
 			if(rtm_connect(m_rtm_ptr, endpoint, appkey) != RTM_OK) {
 				if(connected_callback)
-					connected_callback(false);
+					connected_callback(false, "Connecting to endpoint with appkey failed.");
 				return false;
 			}
 
@@ -102,7 +103,7 @@ class Rtm {
 			if(!role) {
 				m_online = true;
 				if(connected_callback)
-					connected_callback(true);
+					connected_callback(true, nullptr);
 				return true;
 			}
 
@@ -110,7 +111,7 @@ class Rtm {
 			// answer below.
 			if(rtm_handshake(m_rtm_ptr, role, &m_internal_request_id) != RTM_OK) {
 				if(connected_callback)
-					connected_callback(false);
+					connected_callback(false, "Handshake request failed.");
 				return false;
 			}
 
@@ -139,14 +140,14 @@ class Rtm {
 				const message_handler_type &message_callback) {
 			if(!m_online) {
 				if(subscription_callback)
-					subscription_callback(false);
+					subscription_callback(false, "Must be online to make a request.");
 				return;
 			}
 
 			unsigned request_id;
 			if(rtm_subscribe(m_rtm_ptr, channel, &request_id) != RTM_OK) {
 				if(subscription_callback)
-					subscription_callback(false);
+					subscription_callback(false, "Subscription request failed");
 				return;
 			}
 
@@ -172,14 +173,14 @@ class Rtm {
 				const callback_type &callback) {
 			if(!m_online) {
 				if(callback)
-					callback(false);
+					callback(false, "Must be online to make a request.");
 				return;
 			}
 
 			unsigned request_id;
 			if(rtm_publish_json(m_rtm_ptr, channel, json, &request_id) != RTM_OK) {
 				if(callback)
-					callback(false);
+					callback(false, "Publish request failed.");
 				return;
 			}
 
@@ -213,7 +214,7 @@ class Rtm {
 						// Authentication succeeded. Now we are online!
 						m_online = true;
 						if(m_connected_callback)
-							m_connected_callback(true);
+							m_connected_callback(true, nullptr);
 						return;
 				}
 			}
@@ -223,7 +224,7 @@ class Rtm {
 			auto callback_it = m_active_requests.find(pdu->request_id);
 			if(callback_it != m_active_requests.end()) {
 				bool success = pdu->action == RTM_ACTION_PUBLISH_OK || pdu->action == RTM_ACTION_SUBSCRIBE_OK;
-				callback_it->second(success);
+				callback_it->second(success, success ? nullptr : pdu->error);
 				m_active_requests.erase(callback_it);
 				return;
 			}
@@ -329,19 +330,19 @@ int main() {
 
 	// Connect to RTM. The callback is invoked once the connection succeeded
 	// and authentication is done, or once one of the two fails.
-	rtm.connect(endpoint, appkey, role, role_secret, [&](bool state) {
+	rtm.connect(endpoint, appkey, role, role_secret, [&](bool state, const char *error_message) {
 			if(!state) {
-				std::cout << "Failed to connect!\n";
+				std::cout << "Failed to connect:" << error_message << std::endl;
 				return;
 			}
 
 			// Subscribe to the "animals" channel.
-			rtm.subscribe("animals", [](bool state) {
+			rtm.subscribe("animals", [](bool state, const char *error_message) {
 					// Called once the subscription was acknowledged.
 					if(state)
 						std::cout << "Subscribed to animals.\n";
 					else
-						std::cout << "Failed to subscribe to animals.\n";
+						std::cout << "Failed to subscribe to animals:" << error_message << std::endl;
 				}, [](const char *message) {
 					// Called when messages arrive on the channel.
 					std::cout << "Received animal: " << message << std::endl;
@@ -356,11 +357,11 @@ int main() {
 						message << "\"I am the " << ++counter << ". animal!\"";
 						auto message_string = message.str();
 
-						rtm.publish("animals", message_string.c_str(), [](bool state) {
+						rtm.publish("animals", message_string.c_str(), [](bool state, const char *error_message) {
 								if(state)
 									std::cout << "Sent out an animal.\n";
 								else {
-									std::cout << "Failed to send out an animal.\n";
+									std::cout << "Failed to send out an animal:" << error_message << std::endl;
 									return;
 								}
 							});
