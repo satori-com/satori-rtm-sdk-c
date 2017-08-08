@@ -56,10 +56,6 @@ extern "C" {
 
 #define _RTM_MAX_CONTROL_FRAME_SIZE (125)
 
-// value returned by c_{tls_,}{read,write}
-#define READ_FAILURE (-1)
-#define WRITE_FAILURE (-1)
-
 struct _rtm_client {
     void *user;
     int fd;
@@ -93,7 +89,7 @@ struct _rtm_client {
 };
 
 // json methods
-RTM_API ssize_t _rtm_json_escape(char *dest, ssize_t n, const char *str);
+char *_rtm_json_escape(char *dest, ssize_t n, const char *str);
 char *_rtm_json_find_begin_obj(char *p);
 char *_rtm_json_find_field_name(char* p, char **cursor, ssize_t *length);
 char *_rtm_json_find_element(char* p, char **cursor, ssize_t *length);

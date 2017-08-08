@@ -20,19 +20,44 @@ void(*rtm_text_frame_handler)(rtm_client_t *rtm, char *message, size_t message_l
 // Network
 static enum rtm_url_scheme_t const websocket_schemes = SCHEME_WS | SCHEME_WSS;
 static enum rtm_url_scheme_t const proxy_schemes = SCHEME_HTTP;
-static rtm_status parse_endpoint(rtm_client_t *rtm, const char *endpoint, enum rtm_url_scheme_t scheme,
+static rtm_status _rtm_parse_endpoint(rtm_client_t *rtm, const char *endpoint, enum rtm_url_scheme_t scheme,
     char *hostname_out, char *port_out, char *path_out, unsigned *use_tls_out);
-static rtm_status prepare_path(rtm_client_t *rtm, char *path, const char *appkey);
-static rtm_status send_http_upgrade_request(rtm_client_t *rtm,
+static rtm_status _rtm_prepare_path(rtm_client_t *rtm, char *path, const char *appkey);
+static rtm_status _rtm_send_http_upgrade_request(rtm_client_t *rtm,
     const char *hostname, const char *path);
-static rtm_status check_http_upgrade_response(rtm_client_t *rtm);
-static ssize_t ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len);
+static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm);
+static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len);
 
 // PDU formatting
-static ssize_t prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
+static char *_rtm_prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, const char *body, unsigned *ack_id_out);
-static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
+static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out);
+
+/**
+ * Try to snprintf to dst
+ *
+ * @return A pointer pointing to the end of dst or NULL in case of insufficient
+ *         memory.
+ */
+static char *_rtm_snprintf(char *dst, ssize_t max_size, char const *fmt, ...) {
+  if (max_size <= 0 || dst == NULL) {
+    return NULL;
+  }
+
+  va_list args;
+  va_start(args, fmt);
+  int result = vsnprintf(dst, max_size, fmt, args);
+  va_end(args);
+
+  if (result < 0 || result >= max_size) {
+    return NULL;
+  }
+
+  dst += result;
+
+  return dst;
+}
 
 RTM_API rtm_client_t * rtm_init(
   void *memory,
@@ -66,53 +91,40 @@ RTM_API rtm_client_t * rtm_init(
   return rtm;
 }
 
-static ssize_t safer_snprintf(char *dst, ssize_t max_size, char const *fmt, ...) {
-  if (max_size <= 0) {
-      return 0;
-  }
-
-  va_list args;
-  va_start(args, fmt);
-  int result = vsnprintf(dst, max_size, fmt, args);
-  va_end(args);
-
-  if (result < 0) {
-      return 0;
-  }
-
-  if (result < max_size) {
-      return result;
-  }
-
-  return max_size;
-}
-
+/**
+ * Perform handshake with an HTTP proxy using CONNECT. Blocks until the server
+ * confirms.
+ *
+ * @return RTM_OK if the handshake was successfull, or an error.
+ */
 static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostname, char const *port) {
-  int len = safer_snprintf(rtm->output_buffer, _RTM_MAX_BUFFER,"CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
+  int len = snprintf(rtm->output_buffer, _RTM_MAX_BUFFER, "CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
+  if(len < 0 || len >= _RTM_MAX_BUFFER) {
+    return RTM_ERR_OOM;
+  }
   int written = _rtm_io_write(rtm, rtm->output_buffer, len);
   if (written < len) {
     return RTM_ERR_WRITE;
   }
 
-  ssize_t buffer_size = _RTM_MAX_BUFFER;
+  const size_t buffer_size = _RTM_MAX_BUFFER;
   char *input_buffer = rtm->input_buffer;
+  size_t input_length = 0;
   while (1) {
-    int input_length = 0;
     char *end_of_header;
-    if (buffer_size <= 0) {
-      _rtm_io_close(rtm); /* unable to parse http headers */
-      return _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Unable to parse HTTP CONNECT response.");
+    if (buffer_size <= input_length) {
+      _rtm_io_close(rtm);
+      return _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to store HTTP CONNECT response.");
     }
 
-    ssize_t read = _rtm_io_read(rtm, input_buffer + input_length, (size_t) buffer_size, YES);
+    ssize_t read = _rtm_io_read(rtm, input_buffer + input_length, buffer_size - input_length, YES);
     if (read <= 0) {
       _rtm_io_close(rtm);
       return _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
     }
-
     input_length += read;
-    buffer_size -= input_length;
 
+    input_buffer[input_length] = 0;
     end_of_header = strstr(input_buffer, "\r\n\r\n");
     if (end_of_header) {
       if (strncmp(input_buffer, "HTTP/1.1 200", 12) != 0 && strncmp(input_buffer, "HTTP/1.0 200", 12) != 0) {
@@ -129,6 +141,11 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
   return RTM_OK;
 }
 
+/**
+ * Establish a RTM connection
+ *
+ * @return RTM_OK, or an error
+ */
 static rtm_status _rtm_io_connect(
     rtm_client_t *rtm,
     char const *endpoint,
@@ -151,11 +168,11 @@ static rtm_status _rtm_io_connect(
 
   rtm_status rc;
 
-  rc = parse_endpoint(rtm, endpoint, websocket_schemes, hostname, port, path, &use_tls);
+  rc = _rtm_parse_endpoint(rtm, endpoint, websocket_schemes, hostname, port, path, &use_tls);
   if (RTM_OK != rc)
     return rc;
 
-  rc = prepare_path(rtm, path, appkey);
+  rc = _rtm_prepare_path(rtm, path, appkey);
   if (RTM_OK != rc) {
     return rc;
   }
@@ -170,7 +187,7 @@ static rtm_status _rtm_io_connect(
     char proxy_port[_RTM_MAX_PORT_SIZE + 1] = { 0 };
     char proxy_path[_RTM_MAX_PATH_SIZE + 1] = { 0 };
     unsigned proxy_tls = 0;
-    rc = parse_endpoint(rtm, proxy_endpoint, proxy_schemes, proxy_host, proxy_port, proxy_path, &proxy_tls);
+    rc = _rtm_parse_endpoint(rtm, proxy_endpoint, proxy_schemes, proxy_host, proxy_port, proxy_path, &proxy_tls);
     if (RTM_OK != rc) {
       return rc;
     }
@@ -205,11 +222,11 @@ static rtm_status _rtm_io_connect(
   // Connection established. Set current time as the last ping time.
   rtm->last_ping_ts = time(NULL);
 
-  rc = send_http_upgrade_request(rtm, hostname, path);
+  rc = _rtm_send_http_upgrade_request(rtm, hostname, path);
   if (RTM_OK != rc)
     return rc;
 
-  rc = check_http_upgrade_response(rtm);
+  rc = _rtm_check_http_upgrade_response(rtm);
   if (RTM_OK != rc)
     return rc;
 
@@ -242,15 +259,19 @@ rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack
   CHECK_MAX_SIZE(role_name, RTM_MAX_ROLE_NAME_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const size_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "auth/handshake", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"method\":\"role_secret\",\"data\":{\"role\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), role_name);
-  p += safer_snprintf(p, size - (p - buf), "\"}}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "auth/handshake", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"method\":\"role_secret\",\"data\":{\"role\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), role_name);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -264,12 +285,16 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "auth/authenticate", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"method\":\"role_secret\",\"credentials\":{\"hash\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), hash);
-  p += safer_snprintf(p, size - (p - buf), "\"}}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "auth/authenticate", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"method\":\"role_secret\",\"credentials\":{\"hash\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), hash);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -290,14 +315,18 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), channel);
-  p += safer_snprintf(p, size - (p - buf), "\",\"message\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), string);
-  p += safer_snprintf(p, size - (p - buf), "\"}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), channel);
+  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), string);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -318,12 +347,16 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), channel);
-  p += safer_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), channel);
+  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -335,12 +368,16 @@ rtm_status rtm_subscribe(rtm_client_t *rtm, const char *channel, unsigned *ack_i
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/subscribe", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), channel);
-  p += safer_snprintf(p, size - (p - buf), "\"}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/subscribe", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), channel);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -348,10 +385,13 @@ rtm_status rtm_subscribe_with_body(rtm_client_t *rtm, const char *body, unsigned
   CHECK_PARAM(rtm);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  ssize_t len = prepare_pdu(rtm, buf, _RTM_MAX_BUFFER,
-      "rtm/subscribe", body, ack_id);
+  char *p = _rtm_prepare_pdu(rtm, buf, _RTM_MAX_BUFFER, "rtm/subscribe", body, ack_id);
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, len);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -363,12 +403,16 @@ rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *subscription_id, unsig
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/unsubscribe", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"subscription_id\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), subscription_id);
-  p += safer_snprintf(p, size - (p - buf), "\"}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/unsubscribe", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"subscription_id\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), subscription_id);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -401,12 +445,16 @@ rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/read", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), channel);
-  p += safer_snprintf(p, size - (p - buf), "\"}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/read", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), channel);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -414,10 +462,13 @@ rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack
   CHECK_PARAM(rtm);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  ssize_t len = prepare_pdu(rtm, buf, _RTM_MAX_BUFFER,
-      "rtm/read", body, ack_id);
+  char *p = _rtm_prepare_pdu(rtm, buf, _RTM_MAX_BUFFER, "rtm/read", body, ack_id);
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, len);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -438,14 +489,18 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), channel);
-  p += safer_snprintf(p, size - (p - buf), "\",\"message\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), string);
-  p += safer_snprintf(p, size - (p - buf), "\"}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), channel);
+  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), string);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -466,12 +521,16 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), channel);
-  p += safer_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), channel);
+  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -482,12 +541,16 @@ rtm_status rtm_delete(rtm_client_t *rtm, const char *channel, unsigned *ack_id) 
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/delete", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), channel);
-  p += safer_snprintf(p, size - (p - buf), "\"}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/delete", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), channel);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -498,12 +561,16 @@ rtm_status rtm_search(rtm_client_t *rtm, const char *prefix, unsigned *ack_id) {
   const ssize_t size = _RTM_MAX_BUFFER;
   char *p = buf;
 
-  p += prepare_pdu_without_body(rtm, p, size, "rtm/search", ack_id);
-  p += safer_snprintf(p, size - (p - buf), "{\"prefix\":\"");
-  p += _rtm_json_escape(p, size - (p - buf), prefix);
-  p += safer_snprintf(p, size - (p - buf), "\"}}");
+  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/search", ack_id);
+  p = _rtm_snprintf(p, size - (p - buf), "{\"prefix\":\"");
+  p = _rtm_json_escape(p, size - (p - buf), prefix);
+  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, p - buf);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -512,9 +579,13 @@ rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json) {
   CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  strncpy(buf, json, _RTM_MAX_BUFFER);
+  char *p = _rtm_snprintf(buf, _RTM_MAX_BUFFER, "%s", json);
 
-  ssize_t written = ws_write(rtm, WS_TEXT, buf, strlen(buf));
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -522,13 +593,11 @@ rtm_status rtm_send_ws_ping(rtm_client_t *rtm) {
   CHECK_PARAM(rtm);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
 
   // the contents of the body are arbitrary, but we "ping" to make a request obvious
-  p += safer_snprintf(p, size - (p - buf), "ping");
+  strcpy(buf, "ping");
 
-  ssize_t written = ws_write(rtm, WS_PING, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_PING, buf, 5);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -662,27 +731,26 @@ const char *rtm_error_string(rtm_status status) {
 
 // Internal code
 
-static rtm_status check_http_upgrade_response(rtm_client_t *rtm) {
-  ssize_t buffer_size = _RTM_MAX_BUFFER;
+static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
+  const ssize_t buffer_size = _RTM_MAX_BUFFER;
   char *input_buffer = rtm->input_buffer;
   // read HTTP response header
-  memset(input_buffer, 0, _RTM_MAX_BUFFER); // FIXME why? the data will be overwritten
+  size_t input_length = 0;
   while (TRUE) {
-    int input_length = 0;
     const char *end_of_header;
-    if (buffer_size <= 0) {
-      _rtm_io_close(rtm); /* unable to parse http headers */
-      return _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Unable to parse HTTP response.");
+    if (buffer_size <= input_length) {
+      _rtm_io_close(rtm);
+      return _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to store HTTP response.");
     }
 
-    ssize_t read = _rtm_io_read(rtm, input_buffer + input_length, (size_t) buffer_size, YES);
-    if (read < 0) {
+    ssize_t bytes_read = _rtm_io_read(rtm, input_buffer + input_length, buffer_size - input_length, YES);
+    if (bytes_read < 0) {
       _rtm_io_close(rtm);
       return _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
     }
 
-    input_length += read;
-    buffer_size -= input_length;
+    input_length += bytes_read;
+    input_buffer[input_length] = 0;
 
     end_of_header = strstr(input_buffer, "\r\n\r\n");
     if (end_of_header) {
@@ -701,12 +769,12 @@ static rtm_status check_http_upgrade_response(rtm_client_t *rtm) {
   return RTM_OK;
 }
 
-static rtm_status send_http_upgrade_request(rtm_client_t *rtm, const char *hostname, const char *path) {
+static rtm_status _rtm_send_http_upgrade_request(rtm_client_t *rtm, const char *hostname, const char *path) {
   static const char sec_key[] = "cnRtLXNlY3VyaXR5LWtleQ==";
 
   char *request = rtm->output_buffer;
 
-  ssize_t len = safer_snprintf(request, _RTM_MAX_BUFFER,
+  char *p = _rtm_snprintf(request, _RTM_MAX_BUFFER,
       "GET %s HTTP/1.1\r\n"
       "Host: %s\r\n"
       "Upgrade: websocket\r\n"
@@ -715,9 +783,11 @@ static rtm_status send_http_upgrade_request(rtm_client_t *rtm, const char *hostn
       "Sec-WebSocket-Version: 13\r\n\r\n",
       path, hostname, sec_key);
 
-  ASSERT(len <= _RTM_MAX_BUFFER);
+  if (!p) {
+    return RTM_ERR_OOM;
+  }
 
-  if (_rtm_io_write(rtm, request, len) < 0) {
+  if (_rtm_io_write(rtm, request, p - request) < 0) {
     rtm_status rc = _rtm_log_error(rtm, RTM_ERR_WRITE, "Error writing to network during connection handshake");
     _rtm_io_close(rtm);
     return rc;
@@ -729,7 +799,7 @@ static rtm_status send_http_upgrade_request(rtm_client_t *rtm, const char *hostn
 #define WSS_PREFIX "wss://"
 #define HTTP_PREFIX "http://"
 
-static rtm_status check_hostname_length(rtm_client_t *rtm, size_t length) {
+static rtm_status _rtm_check_hostname_length(rtm_client_t *rtm, size_t length) {
   if (length < _RTM_MAX_HOSTNAME_SIZE) {
     return RTM_OK;
   } else {
@@ -738,27 +808,42 @@ static rtm_status check_hostname_length(rtm_client_t *rtm, size_t length) {
   }
 }
 
-static rtm_status prepare_path(rtm_client_t *rtm, char *path, const char *appkey) {
+/**
+ * Append API path and appkey to a path
+ *
+ * This function observes a maximal length of the path argument of
+ * _RTM_MAX_PATH_SIZE.
+ *
+ * @return RTM_OK or an error
+ */
+static rtm_status _rtm_prepare_path(rtm_client_t *rtm, char *path, const char *appkey) {
   CHECK_MAX_SIZE(path, _RTM_MAX_PATH_SIZE);
-  if (strlen(path) == 0) {
+  if (!*path) {
     return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: path has incorrect format");
   }
 
+  // Strip a tailing slash
   char *end_of_path = path + strlen(path) - 1;
   if (*end_of_path != '/') {
     ++end_of_path;
   }
 
-  ssize_t size = _RTM_MAX_PATH_SIZE - (end_of_path - path);
-  ssize_t w = safer_snprintf(end_of_path, size, "%s?appkey=%s", RTM_PATH, appkey);
-  if (w == 0 || _RTM_MAX_PATH_SIZE <= w) {
-    return _rtm_log_error(rtm, RTM_ERR_PARAM_INVALID, "appkey malformed - can't build path.");
+  size_t size = _RTM_MAX_PATH_SIZE - (end_of_path - path);
+
+  int w = snprintf(end_of_path, size, "%s?appkey=%s", RTM_PATH, appkey);
+  if (w == 0 || w >= size) {
+    return _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to build path - appkey malformed?");
   }
 
   return RTM_OK;
 }
 
-static rtm_status parse_endpoint(
+/**
+ * Parse an endpoint in URL form into hostname, port and path.
+ *
+ * @return RTM_OK or an error
+ */
+static rtm_status _rtm_parse_endpoint(
     rtm_client_t *rtm, const char *endpoint, enum rtm_url_scheme_t schemes, char *hostname_out,
     char *port_out, char *path_out, unsigned *use_tls_out) {
   ASSERT_NOT_NULL(rtm);
@@ -792,7 +877,7 @@ static rtm_status parse_endpoint(
     return RTM_ERR_PROTOCOL;
   }
 
-  if (strlen(hostname_start) == 0) {
+  if (!*hostname_start) {
     return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: hostname should have non-zero length");
   }
 
@@ -805,7 +890,11 @@ static rtm_status parse_endpoint(
     hostname_end = (endpoint + strlen(endpoint));
     path = "/";
   }
-  safer_snprintf(path_out, _RTM_MAX_PATH_SIZE, "%s", path);
+
+  int path_len = snprintf(path_out, _RTM_MAX_PATH_SIZE, "%s", path);
+  if (path_len < 0 || path_len >= _RTM_MAX_PATH_SIZE) {
+    return RTM_ERR_OOM;
+  }
 
   // look for the port
   const char *port_delimiter = strchr(hostname_start, ':');
@@ -823,27 +912,35 @@ static rtm_status parse_endpoint(
       }
       port_p++;
     }
-    ssize_t port_length = port_p - port_delimiter - 1;
-    safer_snprintf(port_out, _RTM_MAX_PORT_SIZE, "%.*s", port_length, port_delimiter + 1);
+    int port_length = port_p - port_delimiter - 1;
+    if(port_length >= _RTM_MAX_PORT_SIZE - 1) {
+      return RTM_ERR_OOM;
+    }
+    sprintf(port_out, "%.*s", port_length, port_delimiter + 1);
     hostname_end = port_delimiter;
   } else {
-    safer_snprintf(port_out, _RTM_MAX_PORT_SIZE, "%s", auto_port);
+    strcpy(port_out, auto_port);
   }
 
   // check the hostname length
-  size_t hostname_length = hostname_end - hostname_start;
-  rtm_status rc = check_hostname_length(rtm, hostname_length);
+  int hostname_length = hostname_end - hostname_start;
+  rtm_status rc = _rtm_check_hostname_length(rtm, hostname_length);
   if (RTM_OK != rc) {
     return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: hostname has incorrect length");
   }
-  safer_snprintf(hostname_out, _RTM_MAX_HOSTNAME_SIZE, "%.*s", hostname_length, hostname_start);
+  // _rtm_check_hostname_length verifies that hostname_length is smaller than
+  // the hostname buffer.
+  sprintf(hostname_out, "%.*s", hostname_length, hostname_start);
 
   return RTM_OK;
 }
 
 // WebSocket IO functions and utilities
 
-static void ws_mask(char *buf, size_t len, uint32_t mask) {
+/**
+ * Apply mask to buf following the WebSocket specification.
+ */
+static void _rtm_ws_mask(char *buf, size_t len, uint32_t mask) {
   ASSERT_NOT_NULL(buf);
   size_t i;
   for (i = 0; i < len; i++) {
@@ -852,8 +949,16 @@ static void ws_mask(char *buf, size_t len, uint32_t mask) {
   }
 }
 
-// WARNING: the buffer must have at least 14 bytes padding before the start for web socket framing!
-static ssize_t ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len) {
+/**
+ * Send a buffer as a WebSocket packet.
+ *
+ * @param op A WebSocket opcode
+ * @param io_buffer The buffer to be written. This buffer MUST be preceded by
+ *                  14 bytes writeable padding, which WILL be overwritten.
+ * @param len The length of the data to be written
+ * @return The number of bytes actually written
+ */
+static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(io_buffer);
   ASSERT(op <= WS_OPCODE_LAST);
@@ -867,10 +972,11 @@ static ssize_t ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t l
     fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
   }
 
+  // FIXME pberndt: This mask MUST be randomly generated with every frame in an unpredictable fashion as per WS spec
   static const uint32_t mask = 0xb0a21974;
 
   /* we send single frame, text */
-  ws_mask(io_buffer, len, mask);
+  _rtm_ws_mask(io_buffer, len, mask);
   if (len < 126) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_SMALL;
     io_buffer[0] = (char) (0x80 | op);
@@ -893,38 +999,54 @@ static ssize_t ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t l
     *(uint64_t *) (&io_buffer[2]) = htobe64(len);
     *(uint32_t *) (&io_buffer[10]) = mask;
     len += _RTM_OUTBOUND_HEADER_SIZE_LARGE;
-
   }
   return _rtm_io_write(rtm, io_buffer, len);
 }
 
-static ssize_t prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
+/**
+ * Fill buf with a JSON PDU frame, including body and closing parenthesis
+ *
+ * @return A pointer to the end of buf, or NULL in case of insufficient memory.
+ */
+static char *_rtm_prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, const char *body, unsigned *ack_id_out) {
+  if(!buf) {
+    return NULL;
+  }
+
   ASSERT_NOT_NULL(rtm);
-  ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(action);
   ASSERT_NOT_NULL(body);
 
-  char *p = buf;
-  p += prepare_pdu_without_body(rtm, p, size - (p - buf), action, ack_id_out);
-  p += safer_snprintf(p, size - (p - buf), "%s}", body);
-  return p - buf;
+  char *p = _rtm_prepare_pdu_without_body(rtm, buf, size, action, ack_id_out);
+  p = _rtm_snprintf(p, size - (p - buf), "%s}", body);
+  return p;
 }
 
-static ssize_t prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
+/**
+ * Fill buf with a JSON PDU frame, excluding body and closing parenthesis "}".
+ *
+ * @return The number of bytes written, or -1 if OOM.
+ */
+static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out) {
+  if(!buf) {
+    return NULL;
+  }
+
   ASSERT_NOT_NULL(rtm);
-  ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(action);
 
-  char *p = buf;
-  p += safer_snprintf(p, size, "{\"action\":\"%s\",", action);
+  char *p = _rtm_snprintf(buf, size, "{\"action\":\"%s\",", action);
+
   if (ack_id_out) {
     *ack_id_out = ++rtm->last_request_id;
-    p += safer_snprintf(p, size - (p - buf), "\"id\":%u,", *ack_id_out);
+    p = _rtm_snprintf(p, size - (p - buf), "\"id\":%u,", *ack_id_out);
   }
-  p += safer_snprintf(p, size - (p - buf), "\"body\":");
-  return p - buf;
+
+  p = _rtm_snprintf(p, size - (p - buf), "\"body\":");
+
+  return p;
 }
 
 enum rtm_field_type_t {
@@ -975,8 +1097,8 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     } else if (!strncmp("\"id\"", el, el_len)) {
       p = _rtm_json_find_element(p, &el, &el_len);
       char *id_end;
-      pdu->request_id = (unsigned) strtol(el, &id_end, 10); // unsafe
-      if (id_end - el != el_len) {
+      pdu->request_id = strtoul(el, &id_end, 10); // unsafe
+      if (id_end == NULL || id_end - el != el_len) {
         pdu->request_id = 0;
       }
     } else if (!strncmp("\"body\"", el, el_len)) {
@@ -1214,11 +1336,16 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
   if (!rtm_error_logger)
     return error;
 
-  ssize_t prefix = safer_snprintf(rtm->scratch_buffer, _RTM_SCRATCH_BUFFER_SIZE,
+  char *p = _rtm_snprintf(rtm->scratch_buffer, _RTM_SCRATCH_BUFFER_SIZE,
                         "%p (%d):", (void*) rtm, error);
-  int written = vsnprintf(rtm->scratch_buffer + prefix, _RTM_SCRATCH_BUFFER_SIZE - prefix, message, args);
 
-  if (written > _RTM_SCRATCH_BUFFER_SIZE) {
+  if(!p) {
+    rtm_error_logger("message too long to print");
+    return error;
+  }
+
+  int written = vsnprintf(p, _RTM_SCRATCH_BUFFER_SIZE - (p - rtm->scratch_buffer), message, args);
+  if (written >= _RTM_SCRATCH_BUFFER_SIZE - (p - rtm->scratch_buffer)) {
     rtm_error_logger("message too long to print");
   } else {
     rtm_error_logger(rtm->scratch_buffer);
@@ -1333,7 +1460,6 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     if (frame_payload_length < 126) {
       payload_length = frame_payload_length;
       header_length = _RTM_INBOUND_HEADER_SIZE_SMALL;
-
     } else if (frame_payload_length == 126) { // 126 -> 16 bit size
       if (input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL)
         return RTM_WOULD_BLOCK;
@@ -1350,6 +1476,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     if (payload_length >= RTM_MAX_MESSAGE_SIZE) {
       // if the frame is bigger than the internal buffer, it will never be decoded.
       return_code = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "message size beyond RTM limit – size=%d", payload_length);
+      // FIXME pberndt: skip this many bytes, do not drop connection
       goto ws_error;
     }
 
@@ -1375,6 +1502,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         _rtm_io_close(rtm);
         return RTM_ERR_CLOSED;
       } else if (WS_PING == frame_opcode || WS_PONG == frame_opcode) {
+        // FIXME pberndt: Reply to PING
         const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
         if (rtm->is_verbose) {
           fprintf(stderr, "RECV: %s\n", frame_type);
@@ -1383,6 +1511,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode) { /* data frame */
       if (!frame_fin) {
         // TODO: add split frame support?
+        // FIXME pberndt: Or least simply skip fragmented frames instead of failing hard
         return_code = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unhandled split frame.");
         goto ws_error;
       }
@@ -1390,7 +1519,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
       return_code = RTM_OK;
 
       char save = ws_frame[payload_length];
-      ws_frame[payload_length] = 0;  // be nice, null terminate
+      ws_frame[payload_length] = 0; // be nice, null terminate
 
       if (rtm->is_verbose) {
         fprintf(stderr, "RECV: %.*s\n", (int)payload_length, ws_frame);
@@ -1433,10 +1562,10 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 rtm_status _rtm_test_parse_endpoint(
     rtm_client_t *rtm, const char *endpoint, enum rtm_url_scheme_t schemes, char *hostname_out,
     char *port_out, char *path_out, unsigned *use_tls_out) {
-  return parse_endpoint(rtm, endpoint, schemes, hostname_out, port_out, path_out, use_tls_out);
+  return _rtm_parse_endpoint(rtm, endpoint, schemes, hostname_out, port_out, path_out, use_tls_out);
 }
 
 rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const char *appkey) {
-  return prepare_path(rtm, path, appkey);
+  return _rtm_prepare_path(rtm, path, appkey);
 }
 #endif

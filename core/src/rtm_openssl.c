@@ -291,7 +291,7 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
       rc = RTM_ERR_TLS;
     }
     if (rc != RTM_OK) {
-      return READ_FAILURE;
+      return -1;
     }
   }
 }
@@ -317,7 +317,7 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
       rc = RTM_ERR_TLS;
     }
     if (rc != RTM_OK) {
-      return WRITE_FAILURE;
+      return -1;
     }
   }
   return sent;

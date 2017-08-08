@@ -20,6 +20,8 @@ static OSStatus read_from_socket(SSLConnectionRef connection, void *data, size_t
   if (status > 0) {
     *len = (size_t) status;
     if (requested_sz > *len)
+      // sic! Apple SSL requires to return an error if fewer bytes have been
+      // read than requested.
       return errSSLWouldBlock;
     else
       return noErr;
@@ -51,10 +53,12 @@ static OSStatus write_to_socket(SSLConnectionRef connection, const void *data, s
   ASSERT_NOT_NULL(len);
 
   size_t to_write_sz = *len;
-  ssize_t status = write(fd, data, to_write_sz);
+  int status = write(fd, data, to_write_sz);
 
   if (status > 0) {
     *len = (size_t) status;
+    // sic! Apple SSL requires to return an error if fewer bytes have been
+    // written than requested.
     if (to_write_sz > *len)
       return errSSLWouldBlock;
     else
