@@ -972,8 +972,17 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
   }
 
-  // FIXME pberndt: This mask MUST be randomly generated with every frame in an unpredictable fashion as per WS spec
-  static const uint32_t mask = 0xb0a21974;
+  // RFC 6455 asks for this mask to come from a strong entropy source, but we
+  // cannot afford to block here. Since the application is to increase
+  // unpredictability rather than crpytography, it should suffice to trust the
+  // libc to have a sufficiently decent implementation. On IoT devices, there are
+  // no good sources of entropy anyway.
+  uint32_t mask = rand();
+  #if RAND_MAX < UINT32_MAX
+  if(mask == RAND_MAX) {
+    mask += rand() * (UINT32_MAX - RAND_MAX) / RAND_MAX;
+  }
+  #endif
 
   /* we send single frame, text */
   _rtm_ws_mask(io_buffer, len, mask);
