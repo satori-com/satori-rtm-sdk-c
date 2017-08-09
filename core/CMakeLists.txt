@@ -27,7 +27,7 @@ if(COVERAGE)
       COMMAND lcov -c -d CMakeFiles/rtm-core-sdk.dir/src -o CMakeFiles/coverage.info
       COMMAND genhtml CMakeFiles/coverage.info -o CMakeFiles/coverage_report
       COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "Check the ${CMAKE_CURRENT_BINARY_DIR}/CMakeFile/coverage_report to get more information"
-      DEPENDS CMakeFiles/rtm-core-sdk.dir/src/*.gcda
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/rtm-core-sdk.dir/src/*.gcda
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Generating coverage information"
       VERBATIM
