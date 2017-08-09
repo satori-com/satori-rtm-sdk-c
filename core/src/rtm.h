@@ -44,6 +44,12 @@ extern "C" {
 #define RTM_API
 #endif
 
+#if RTM_TEST_ENV
+#define RTM_TEST_API RTM_API
+#else
+#define RTM_TEST_API
+#endif
+
 /**
  * @brief Maximum size of a channel name.
  */

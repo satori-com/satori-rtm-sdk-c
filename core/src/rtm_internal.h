@@ -89,7 +89,7 @@ struct _rtm_client {
 };
 
 // json methods
-char *_rtm_json_escape(char *dest, ssize_t n, const char *str);
+RTM_TEST_API char *_rtm_json_escape(char *dest, ssize_t n, const char *str);
 char *_rtm_json_find_begin_obj(char *p);
 char *_rtm_json_find_field_name(char* p, char **cursor, ssize_t *length);
 char *_rtm_json_find_element(char* p, char **cursor, ssize_t *length);
