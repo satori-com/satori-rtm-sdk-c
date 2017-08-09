@@ -3,13 +3,14 @@
 #include <string.h>
 #include <time.h>
 #include <rtm.h>
+#include "../test_credentials.h"
 
 #define NONCE_SIZE 32
 
-static char const *endpoint = "YOUR_ENDPOINT";
-static char const *appkey = "YOUR_APPKEY";
-static char const *role = "YOUR_ROLE";
-static char const *role_secret = "YOUR_SECRET";
+static char const *endpoint = YOUR_ENDPOINT;
+static char const *appkey = YOUR_APPKEY;
+static char const *role = YOUR_ROLE;
+static char const *role_secret = YOUR_ROLE_SECRET;
 
 typedef struct {
     int authenticated;

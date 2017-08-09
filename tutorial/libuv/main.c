@@ -7,11 +7,11 @@
 
 // Replace these values with your project's credentials
 // from DevPortal (https://developer.satori.com/)
-static char const *endpoint = "YOUR_ENDPOINT";
-static char const *appkey = "YOUR_APPKEY";
+static char const *endpoint = YOUR_ENDPOINT;
+static char const *appkey = YOUR_APPKEY;
 // Role and secret are optional: replace only if you need to authenticate.
-static char const *role = "YOUR_ROLE";
-static char const *role_secret = "YOUR_SECRET";
+static char const *role = YOUR_ROLE;
+static char const *role_secret = YOUR_ROLE_SECRET;
 
 static char const *channel = "animals";
 static char const *message_as_json = "{\"who\": \"zebra\", \"where\":[34.134358, -118.321506]}";
@@ -134,7 +134,7 @@ int main(void) {
   puts("RTM client config:");
   printf("\tendpoint = %s\n", endpoint);
   printf("\tappkey = %s\n", appkey);
-  int should_authenticate = (0 != strcmp(role, "YOUR_ROLE"));
+  int should_authenticate = !!*role;
   if (should_authenticate) {
     printf("\tauthenticate? = True (as %s)\n", role);
   } else {

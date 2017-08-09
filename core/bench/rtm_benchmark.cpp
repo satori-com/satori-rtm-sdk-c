@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <src/rtm_internal.h>
+#include <rtm_internal.h>
 
 #pragma comment(lib, "shlwapi.lib")
 

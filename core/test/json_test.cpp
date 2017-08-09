@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <cstdint>
-#include <src/rtm_internal.h>
+#include <rtm_internal.h>
 #include <cstdlib> // alloca
 #include <queue>
 

@@ -3,11 +3,26 @@ cmake_minimum_required(VERSION 2.8)
 project(satori-sdk-c)
 include(ExternalProject)
 
-include_directories(.)
+option(TESTS "Build all tests." OFF)
+option(BENCH "Build all benchmarks." OFF)
+option(EXAMPLES "Build all examples." OFF)
+option(TUTORIALS "Build tutorials." OFF)
 
-option(test "Build all test." OFF)
-option(bench "Build all benchmarks." OFF)
-option(examples "Build all examples." OFF)
+set(YOUR_ENDPOINT "" CACHE STRING "Endpoint to use in example/test applications")
+set(YOUR_APPKEY "" CACHE STRING "Appkey to use in example/test applications")
+set(YOUR_ROLE "" CACHE STRING "Role to use in example/test applications")
+set(YOUR_ROLE_SECRET "" CACHE STRING "Secret to use in example/test applications")
+set(YOUR_CHANNEL "animals" CACHE STRING "Channel to use in example/test applications")
+set(YOUR_PROXY "" CACHE STRING "Proxy to use in example/test applications")
+
+if(NOT YOUR_ENDPOINT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/credentials.cmake")
+  message(STATUS "Reading credentials.cmake")
+  include("${CMAKE_CURRENT_SOURCE_DIR}/credentials.cmake")
+endif()
+
+add_definitions(-DYOUR_ENDPOINT="${YOUR_ENDPOINT}" -DYOUR_APPKEY="${YOUR_APPKEY}")
+add_definitions(-DYOUR_ROLE="${YOUR_ROLE}" -DYOUR_ROLE_SECRET="${YOUR_ROLE_SECRET}")
+add_definitions(-DYOUR_CHANNEL="${YOUR_CHANNEL}" -DYOUR_PROXY="${YOUR_PROXY}")
 
 if(LINUX)
 	find_package(GNUInstallDirs)
@@ -23,7 +38,7 @@ set(MAJOR_VERSION 2)
 set(MINOR_VERSION 0)
 set(PATCH_VERSION 0)
 
-if(test)
+if(TESTS)
   ExternalProject_Add(googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG "release-1.7.0"
@@ -42,7 +57,7 @@ if(test)
   set(GTEST_LIBRARIES gtest gtest_main)
 endif()
 
-if(bench)
+if(BENCH)
   ExternalProject_Add(googlebench
     GIT_REPOSITORY https://github.com/google/benchmark.git
     GIT_TAG "v1.0.0"
@@ -61,4 +76,11 @@ if(bench)
   set(GBENCH_LIBRARY benchmark)
 endif()
 
+include_directories(core/src/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/core)
+
 add_subdirectory(core)
+
+if(TUTORIALS)
+  add_subdirectory(tutorial)
+endif()

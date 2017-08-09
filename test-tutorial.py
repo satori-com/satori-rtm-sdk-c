@@ -7,6 +7,7 @@ import re
 import signal
 import shutil
 import subprocess
+import tempfile
 import threading
 import time
 
@@ -20,9 +21,37 @@ TUTORIALS = {
 }
 
 
+class TemporaryDirectory(object):
+    def __init__(self):
+        self._d = tempfile.mkdtemp()
+
+    def remove(self):
+        try:
+            shutil.rmtree(self._d)
+        except OSError:
+            pass
+
+    def __del__(self):
+        self.remove()
+
+    def __enter__(self):
+        return self._d
+
+    def __exit__(self, type, value, tb):
+        self.remove()
+
+
 def main():
-    for tutorial in TUTORIALS.items():
-        test(*tutorial)
+    start_dir = os.getcwd()
+    with TemporaryDirectory() as build_dir:
+        os.chdir(build_dir)
+        print "Building in", build_dir
+        subprocess.check_call(["cmake", "-DTUTORIALS=1", start_dir])
+        subprocess.check_call(["cmake", "--build", "."])
+        print
+
+        for tutorial in TUTORIALS.items():
+            test(*tutorial)
 
 def kill_after(process, seconds=10):
     time.sleep(seconds)
@@ -33,31 +62,16 @@ def kill_after(process, seconds=10):
         pass
 
 def test(tutorial_name, test_strings):
-    print
     print "Testing if tutorial %s works" % tutorial_name
-    print
 
-    with open('credentials.json') as f:
-        creds = json.load(f)
+    binary_name = './tutorial/%(n)s/%(n)s_tutorial' % {"n": tutorial_name}
 
-    shutil.rmtree('build.quickstart', ignore_errors=True)
-    shutil.copytree('tutorial/%s' % (tutorial_name,), 'build.quickstart')
+    if not os.path.isfile(binary_name):
+        print " Executable not found. Skipping tutorial."
+        print
+        return
 
-    for file_name in os.listdir("build.quickstart"):
-        if "main" in file_name:
-            file_name = os.path.join("build.quickstart", file_name)
-            with open(file_name) as fi:
-                with open("%s.tmp" % file_name, 'w') as fo:
-                    fo.writelines(inject_credentials(creds, l) for l in fi.readlines())
-            shutil.move("%s.tmp" % file_name, file_name)
-
-    subprocess.check_call(['cmake', '.'], cwd='build.quickstart')
-    subprocess.check_call(['cmake', '--build', '.'], cwd='build.quickstart')
-
-    print
-
-    p = subprocess.Popen(['./tutorial'],
-        cwd='build.quickstart',
+    p = subprocess.Popen([binary_name],
         stdout=subprocess.PIPE,
         bufsize=1)
 
@@ -76,16 +90,8 @@ def test(tutorial_name, test_strings):
             print "Test string '%s' did not match against output:\n%s" % (test_string, out)
             raise AssertionError()
 
-    print
     print "Tutorial %s seems to be working fine" % tutorial_name
-
-
-def inject_credentials(creds, s):
-    return s\
-        .replace('YOUR_ENDPOINT', creds['endpoint'])\
-        .replace('YOUR_APPKEY', creds['appkey'])\
-        .replace('YOUR_ROLE', creds['auth_role_name'])\
-        .replace('YOUR_SECRET', creds['auth_role_secret_key'])
+    print
 
 if __name__ == '__main__':
     main()

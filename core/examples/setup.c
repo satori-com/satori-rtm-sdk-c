@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <rtm.h>
+#include "../test_credentials.h"
 
-static char const *endpoint = "YOUR_ENDPOINT";
-static char const *appkey = "YOUR_APPKEY";
+static char const *endpoint = YOUR_ENDPOINT;
+static char const *appkey = YOUR_APPKEY;
 
 int main(void) {
   void *memory = malloc(rtm_client_size);

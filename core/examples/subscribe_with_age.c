@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <rtm.h>
+#include "../test_credentials.h"
 
-static char const *endpoint = "YOUR_ENDPOINT";
-static char const *appkey = "YOUR_APPKEY";
+static char const *endpoint = YOUR_ENDPOINT;
+static char const *appkey = YOUR_APPKEY;
 
 void pdu_handler(rtm_client_t *client, rtm_pdu_t const *pdu) {
   switch (pdu->action) {

@@ -68,14 +68,14 @@ if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
   endif()
 endif()
 
-include_directories(.)
+set(RTM_SDK_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${RTM_SDK_DIRECTORY})
 include_directories(system ../vendor)
 
 # Create configuration header
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
   @ONLY)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
@@ -201,20 +201,20 @@ install(TARGETS rtm-core-sdk
         DESTINATION "${CMAKE_INSTALL_LIBDIR}"
        )
 
-if(examples)
+if(EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-if(test)
+if(TESTS)
   add_definitions(-DRTM_TEST_ENV)
   add_subdirectory(test)
 endif()
 
-if(bench)
+if(BENCH)
   add_subdirectory(bench)
 endif()
 
-if(perf)
+if(PERF)
   add_subdirectory(perf)
 endif()
 
