@@ -65,17 +65,17 @@ def main():
 
     cmake_defines = [
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
-        '-Dexamples=ON',
-        '-Dperf=ON',
-        '-Dtest=ON',
-        '-Dbench=ON',
+        '-DEXAMPLES=ON',
+        '-DPERF=ON',
+        '-DTESTS=ON',
+        '-DBENCH=ON',
         '-DCMAKE_BUILD_TYPE=Release']
     cmake_defines += [a for a in sys.argv if a.startswith('-D')]
     check_spec = ',-'.join(['*'] + disabled_checks)
     subprocess.check_call(
         ['cmake',
-		 "-DCMAKE_C_CLANG_TIDY:STRING=clang-tidy;-checks=" + check_spec,
-		 "-DCMAKE_CXX_CLANG_TIDY:STRING=clang-tidy;-checks=" + check_spec]
+         "-DCMAKE_C_CLANG_TIDY:STRING=clang-tidy;-checks=" + check_spec,
+         "-DCMAKE_CXX_CLANG_TIDY:STRING=clang-tidy;-checks=" + check_spec]
         + cmake_defines
         + ['..'])
 
