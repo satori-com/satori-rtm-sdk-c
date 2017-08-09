@@ -192,7 +192,7 @@ TEST(rtm_test, overflow) {
 
   std::string big_body(16 * 1024 * 1024, 'a');
   rc = rtm_subscribe_with_body(rtm, big_body.c_str(), nullptr);
-  ASSERT_EQ(RTM_ERR_WRITE, rc)<< "Expected rtm_subscribe_with_body to fail";
+  ASSERT_EQ(RTM_ERR_OOM, rc)<< "Expected rtm_subscribe_with_body to fail";
 
   rtm_close(rtm);
 }

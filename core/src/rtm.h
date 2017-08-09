@@ -44,6 +44,12 @@ extern "C" {
 #define RTM_API
 #endif
 
+#if RTM_TEST_ENV
+#define RTM_TEST_API RTM_API
+#else
+#define RTM_TEST_API
+#endif
+
 /**
  * @brief Maximum size of a channel name.
  */
@@ -251,6 +257,7 @@ typedef enum {
     RTM_OK = 0,                   /*!< No error.                                     */
     RTM_WOULD_BLOCK,              /*!< The operation would be a blocking IO
                                        operation                                     */
+    RTM_ERR_OOM = -100,           /*!< Insufficient memory for this operation        */
     RTM_ERR_PARAM = -99,          /*!< One of the parameters passed to the function
                                        is incorrect                                  */
     RTM_ERR_PARAM_INVALID = -98,  /*!< A parameter of the function is invalid        */

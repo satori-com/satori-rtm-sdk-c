@@ -188,10 +188,10 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
       continue;
     } else if (EAGAIN == errno) {
       if (_rtm_io_wait(rtm, NO, YES, -1) != RTM_OK)
-        return WRITE_FAILURE;
+        return -1;
     } else {
       _rtm_log_error(rtm, RTM_ERR_WRITE, "Error writing to the socket – errno=%d message=%s", errno, strerror(errno));
-      return WRITE_FAILURE;
+      return -1;
     }
   }
   return written;
@@ -217,12 +217,12 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
       continue;
     } else if (EAGAIN == errno) {
       if (wait && _rtm_io_wait(rtm, YES, NO, -1) != RTM_OK)
-        return READ_FAILURE;
+        return -1;
       if (!wait)
         return 0;
     } else {
       _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from the socket – errno=%d message=%s", errno, strerror(errno));
-      return READ_FAILURE;
+      return -1;
     }
   }
 }

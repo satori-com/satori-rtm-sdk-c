@@ -92,58 +92,56 @@ TEST(rtm_json, find_element) {
 
 TEST(rtm_json, escape) {
   char buf[128] = { 0 };
-  int ret = 0;
+  char *ret = nullptr;
 
   //simple string
   const char simple[] = "foo bar";
   ret = _rtm_json_escape(buf, 128, simple);
-  ASSERT_EQ(strlen(simple), (unsigned)ret);
+  ASSERT_EQ(strlen(simple), ret - buf);
   ASSERT_TRUE(0 == strcmp(buf, simple));
 
   // special characters
   ret = _rtm_json_escape(buf, 128, "\t \r \n \f \b \\ \" \x1c");
   ASSERT_TRUE(0 == strcmp(buf, "\\t \\r \\n \\f \\b \\\\ \\\" \\u001C"));
-  ASSERT_EQ(27, ret);
+  ASSERT_EQ(27, ret - buf);
 
-  // unicode string 
+  // unicode string
   const char unicode_1[] = "Ǆ foo";
   ret = _rtm_json_escape(buf, 128, unicode_1);
   ASSERT_TRUE(0 == strcmp(buf, unicode_1));
-  ASSERT_EQ(strlen(unicode_1), (unsigned)ret);
+  ASSERT_EQ(strlen(unicode_1), ret - buf);
 
   const char unicode_2[] = "௵ foo";
   ret = _rtm_json_escape(buf, 128, unicode_2);
   ASSERT_TRUE(0 == strcmp(buf, unicode_2));
-  ASSERT_EQ(strlen(unicode_2), (unsigned)ret);
+  ASSERT_EQ(strlen(unicode_2), ret - buf);
 
   const char unicode_3[] = "😮 foo";
   ret = _rtm_json_escape(buf, 128, unicode_3);
   ASSERT_TRUE(0 == strcmp(buf, unicode_3));
-  ASSERT_EQ(strlen(unicode_3), (unsigned)ret);
+  ASSERT_EQ(strlen(unicode_3), ret - buf);
 
   ret = _rtm_json_escape(buf, -1, "foo bar");
-  ASSERT_EQ(0, ret);
+  ASSERT_EQ(nullptr, ret);
 
   ret = _rtm_json_escape(buf, 0, "foo bar");
-  ASSERT_EQ(0, ret);
+  ASSERT_EQ(nullptr, ret);
 
-  // should write 'fo\0'
+  // should abort
   ret = _rtm_json_escape(buf, 3, "foo bar");
-  ASSERT_TRUE(0 == strcmp(buf, "fo"));
-  ASSERT_EQ(3, ret);
+  ASSERT_EQ(nullptr, ret);
 
   // should write 'foo\0'
   ret = _rtm_json_escape(buf, 4, "foo");
   ASSERT_TRUE(0 == strcmp(buf, "foo"));
-  ASSERT_EQ(3, ret);
+  ASSERT_EQ(3, ret - buf);
 
   // should write 'foo\0'
   ret = _rtm_json_escape(buf, 5, "foo");
   ASSERT_TRUE(0 == strcmp(buf, "foo"));
-  ASSERT_EQ(3, ret);
+  ASSERT_EQ(3, ret - buf);
 
-  // should write 'foo \0' because \u001C is our of buffer but return the max buffer size
+  // should abort because \u001C is our of buffer but return the max buffer size
   ret = _rtm_json_escape(buf, 6, "foo \x1c");
-  ASSERT_TRUE(0 == strcmp(buf, "foo "));
-  ASSERT_EQ(6, ret);
+  ASSERT_EQ(nullptr, ret);
 }

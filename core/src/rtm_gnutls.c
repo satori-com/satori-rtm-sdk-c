@@ -80,7 +80,7 @@ static rtm_status gtls_handshake(rtm_client_t *rtm) {
   return RTM_OK;
 }
 
-static rtm_status gtls_wait_for_socket(rtm_client_t *rtm, rtm_status error_status, int error, int readable, int writable) {
+static rtm_status _rtm_gtls_wait_for_socket(rtm_client_t *rtm, rtm_status error_status, int error, int readable, int writable) {
   ASSERT_NOT_NULL(rtm);
   if (GNUTLS_E_INTERRUPTED == error) {
     return RTM_OK;
@@ -135,8 +135,8 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
       return read_result; // FIXME: handle 0 correctly
     } else if (!wait && read_result == GNUTLS_E_AGAIN) {
       return 0;
-    } else if (gtls_wait_for_socket(rtm, RTM_ERR_READ, (int) read_result, wait, NO) != RTM_OK) {
-      return READ_FAILURE;
+    } else if (_rtm_gtls_wait_for_socket(rtm, RTM_ERR_READ, (int) read_result, wait, NO) != RTM_OK) {
+      return -1;
     }
   }
 }
@@ -152,8 +152,8 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
     if (write_result >= 0) {
       written += write_result;
       nbyte -= write_result;
-    } else if (gtls_wait_for_socket(rtm, RTM_ERR_WRITE, (int) write_result, NO, YES) != RTM_OK) {
-      return WRITE_FAILURE;
+    } else if (_rtm_gtls_wait_for_socket(rtm, RTM_ERR_WRITE, (int) write_result, NO, YES) != RTM_OK) {
+      return -1;
     }
   }
   return written;
