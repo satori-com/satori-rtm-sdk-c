@@ -60,9 +60,15 @@ struct _rtm_client {
     void *user;
     int fd;
     ssize_t input_length;
+    char *fragment_end;
+
+    size_t huge_packet_bytes;
+
     unsigned is_closed: 1;
     unsigned is_used: 1;
     unsigned is_verbose: 1;
+    unsigned is_in_huge_packet_skip: 1;
+
     unsigned last_request_id;
     unsigned last_ping_ts;
     time_t ws_ping_interval;
