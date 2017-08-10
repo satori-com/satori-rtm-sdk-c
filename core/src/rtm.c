@@ -12,8 +12,6 @@
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
 const size_t rtm_client_size = RTM_CLIENT_SIZE;
 
-void(*rtm_error_logger)(const char *message) = rtm_default_error_logger;
-
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len);
 void(*rtm_text_frame_handler)(rtm_client_t *rtm, char *message, size_t message_len) = rtm_default_text_frame_handler;
 
@@ -65,7 +63,6 @@ RTM_API rtm_client_t * rtm_init(
   void *user_context) {
 
   if (memory == NULL) {
-    _rtm_log_message(RTM_ERR_PARAM, "param memory is required");
     return NULL;
   }
 
@@ -83,6 +80,7 @@ RTM_API rtm_client_t * rtm_init(
   rtm->is_secure = NO;
   rtm->ws_ping_interval = 45;
   rtm->connect_timeout = 5;
+  rtm->error_logger = rtm_default_error_logger;
 
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
@@ -129,7 +127,7 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
     if (end_of_header) {
       if (strncmp(input_buffer, "HTTP/1.1 200", 12) != 0 && strncmp(input_buffer, "HTTP/1.0 200", 12) != 0) {
         rtm_status rc = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Received unexpected response from server:");
-        _rtm_log_message(RTM_ERR_PROTOCOL, input_buffer);
+        _rtm_log_message(rtm, RTM_ERR_PROTOCOL, input_buffer);
         _rtm_io_close(rtm);
         return rc;
       }
@@ -733,7 +731,7 @@ static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
       size_t header_len = end_of_header - input_buffer + 4; // include the blank line we just matched
       if (strncmp(input_buffer, "HTTP/1.1 101", 12) != 0) {
         rtm_status rc = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Received unexpected response from server:");
-        _rtm_log_message(RTM_ERR_PROTOCOL, input_buffer);
+        _rtm_log_message(rtm, RTM_ERR_PROTOCOL, input_buffer);
         _rtm_io_close(rtm);
         return rc;
       }
@@ -1291,6 +1289,10 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
   rtm->is_used = NO;
 }
 
+void rtm_set_error_logger(rtm_client_t *rtm, rtm_error_logger_t *error_logger) {
+  rtm->error_logger = error_logger;
+}
+
 void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler) {
     rtm->handle_raw_pdu = handler;
 }
@@ -1298,7 +1300,7 @@ void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler) 
 rtm_status _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
-  if (!rtm_error_logger)
+  if (!rtm->error_logger)
     return error;
   va_list vl;
   va_start(vl, message);
@@ -1311,22 +1313,22 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
 
-  if (!rtm_error_logger)
+  if (!rtm->error_logger)
     return error;
 
   char *p = _rtm_snprintf(rtm->scratch_buffer, _RTM_SCRATCH_BUFFER_SIZE,
                         "%p (%d):", (void*) rtm, error);
 
   if(!p) {
-    rtm_error_logger("message too long to print");
+    rtm->error_logger("message too long to print");
     return error;
   }
 
   int written = vsnprintf(p, _RTM_SCRATCH_BUFFER_SIZE - (p - rtm->scratch_buffer), message, args);
   if (written >= _RTM_SCRATCH_BUFFER_SIZE - (p - rtm->scratch_buffer)) {
-    rtm_error_logger("message too long to print");
+    rtm->error_logger("message too long to print");
   } else {
-    rtm_error_logger(rtm->scratch_buffer);
+    rtm->error_logger(rtm->scratch_buffer);
   }
   return error;
 }
@@ -1345,10 +1347,10 @@ rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   return rc;
 }
 
-rtm_status _rtm_log_message(rtm_status status, const char *message) {
+rtm_status _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message) {
   ASSERT_NOT_NULL(message);
-  if (rtm_error_logger)
-    rtm_error_logger(message);
+  if (rtm->error_logger)
+    rtm->error_logger(message);
   return status;
 }
 

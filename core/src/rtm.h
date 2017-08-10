@@ -237,9 +237,9 @@ typedef void(rtm_pdu_handler_t)(rtm_client_t *rtm, const rtm_pdu_t *pdu);
 typedef void(rtm_raw_pdu_handler_t)(rtm_client_t *rtm, char const *raw_pdu);
 
 /**
- * @brief Global error logging function.
+ * @brief Error logging function.
  */
-typedef void(*rtm_error_logger_t)(const char *message);
+typedef void(rtm_error_logger_t)(const char *message);
 
 /**
  * @brief Type used internally to report errors.
@@ -272,10 +272,10 @@ typedef enum {
 RTM_API extern const size_t rtm_client_size;
 
 /**
- * @brief Global pointer to the rtm_error_logger() function. The default value
+ * @brief Set the error logger used by the RTM structure. The default value
  * is @c ::rtm_default_error_logger.
  */
-extern void(*rtm_error_logger)(const char *message);
+RTM_API void rtm_set_error_logger(rtm_client_t *rtm, rtm_error_logger_t *error_logger);
 
 /**
  * @brief Default error handler.

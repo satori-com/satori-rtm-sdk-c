@@ -36,7 +36,7 @@ static rtm_status gtls_initialize(rtm_client_t *rtm) {
     }
   }
 #else
-  _rtm_log_message(RTM_OK, "GNUTLS version < 3 no system root certificates defined");
+  _rtm_log_message(rtm, RTM_OK, "GNUTLS version < 3 no system root certificates defined");
 #endif
   return RTM_OK;
 }

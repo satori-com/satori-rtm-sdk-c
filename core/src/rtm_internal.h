@@ -81,6 +81,8 @@ struct _rtm_client {
     rtm_pdu_handler_t *handle_pdu;
     rtm_raw_pdu_handler_t *handle_raw_pdu;
 
+    rtm_error_logger_t *error_logger;
+
     // The buffers are padded so we are always guaranteed to have
     // enough bytes to pre pad any buffer with websocket framing
     char input_buffer[_RTM_WS_PRE_BUFFER + _RTM_MAX_BUFFER + 1]; // add 1 to ALWAYS have a zero terminated buffer
@@ -113,7 +115,7 @@ void _rtm_b64encode_16bytes(char const *input, char *output);
 // Logging
 rtm_status _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...);
 rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list vl);
-RTM_API rtm_status _rtm_log_message(rtm_status status, const char *message);
+RTM_API rtm_status _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message);
 
 #define TRUE 1
 #define YES 1
@@ -147,17 +149,17 @@ RTM_API rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const c
 
 #define CHECK_PARAM(param) \
   if (param == NULL) \
-    return _rtm_log_message(RTM_ERR_PARAM, "param '"#param "' is required")
+    return _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is required")
 
 #define CHECK_MAX_SIZE(param, length)\
   CHECK_PARAM(param); \
   if (strlen(param) > (length) ) \
-    return _rtm_log_message(RTM_ERR_PARAM, "param '"#param "' is too long. max=" #length)
+    return _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is too long. max=" #length)
 
 #define CHECK_EXACT_SIZE(param, length)\
   CHECK_PARAM(param); \
   if (strlen(param) != (length) ) \
-    return _rtm_log_message(RTM_ERR_PARAM, "param '"#param "' is not of expected length " #length)
+    return _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is not of expected length " #length)
 
 enum WebSocketOpCode {
     WS_CONTINUATION = 0x00,
