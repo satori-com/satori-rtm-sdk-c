@@ -127,7 +127,7 @@ RTM_TEST_API void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const c
 #define FALSE 0
 #define NO 0
 
-#define _RTM_MINIMAL_PDU_SIZE    150 /* Enough to store any non-message PDUs */
+#define _RTM_MINIMAL_PDU_SIZE    256 /* Enough to store any non-message PDUs */
 #define _RTM_CLIENT_MIN_SIZE     (sizeof(struct _rtm_client) + _RTM_WS_PRE_BUFFER + 2*(_RTM_MINIMAL_PDU_SIZE + 1))
 #define _RTM_CLIENT_DESIRED_SIZE (sizeof(struct _rtm_client) + _RTM_WS_PRE_BUFFER + 2*(_RTM_MAX_BUFFER + 1))
 
