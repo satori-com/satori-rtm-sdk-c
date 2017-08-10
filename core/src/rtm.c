@@ -269,7 +269,7 @@ rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -292,7 +292,7 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -324,7 +324,7 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -354,7 +354,7 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -375,7 +375,7 @@ rtm_status rtm_subscribe(rtm_client_t *rtm, const char *channel, unsigned *ack_i
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -389,7 +389,7 @@ rtm_status rtm_subscribe_with_body(rtm_client_t *rtm, const char *body, unsigned
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -410,7 +410,7 @@ rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *subscription_id, unsig
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -452,7 +452,7 @@ rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -466,7 +466,7 @@ rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -498,7 +498,7 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -528,7 +528,7 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -548,7 +548,7 @@ rtm_status rtm_delete(rtm_client_t *rtm, const char *channel, unsigned *ack_id) 
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -575,7 +575,7 @@ rtm_status rtm_send_ws_ping(rtm_client_t *rtm) {
   // the contents of the body are arbitrary, but we "ping" to make a request obvious
   strcpy(buf, "ping");
 
-  ssize_t written = _rtm_ws_write(rtm, WS_PING, buf, 5);
+  ssize_t written = _rtm_ws_write(rtm, WS_PING, rtm->output_buffer, 5);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -926,21 +926,30 @@ static void _rtm_ws_mask(char *buf, size_t len, uint32_t mask) {
 /**
  * Send a buffer as a WebSocket packet.
  *
- * @param op A WebSocket opcode
- * @param io_buffer The buffer to be written. This buffer MUST be preceded by
- *                  14 bytes writeable padding, which WILL be overwritten.
- * @param len The length of the data to be written
- * @return The number of bytes actually written
+ * @param op        A WebSocket opcode
+ * @param io_buffer The buffer to be written. The data you want to write
+ *                  must start _RTM_WS_PRE_BUFFER offset into this buffer.
+ * @param len       The length of the data to be written, excluding the
+ *                  padding at the start.
+ * @return          The number of bytes actually written, including the padding
+ *                  at the start.
+ *
+ * Developer note: The rationale for passing a pointer where the data starts
+ * padded instead of passing a pointer to the start of the data is that this
+ * way around, errors will be visible right away (wrong data will arrive at the
+ * server) and no out-of-bounds writes will be performed in case of errorneous
+ * use.
  */
 static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(io_buffer);
   ASSERT(op <= WS_OPCODE_LAST);
 
-  if (len >= _RTM_MAX_BUFFER) {
+  if (len >= _RTM_MAX_BUFFER - _RTM_WS_PRE_BUFFER) {
       _rtm_log_error(rtm, RTM_ERR_PARAM, "Write overflow");
       return -1;
   }
+  io_buffer += _RTM_WS_PRE_BUFFER;
 
   if (rtm->is_verbose) {
     fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
