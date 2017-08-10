@@ -205,7 +205,6 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
 ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, int wait) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(input_buffer);
-  ASSERT(input_size <= _RTM_MAX_BUFFER);
   if (input_size == 0)
     return 0;
 

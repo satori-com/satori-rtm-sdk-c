@@ -10,7 +10,8 @@
 #include "rtm_internal.h"
 
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
-const size_t rtm_client_size = RTM_CLIENT_SIZE;
+const size_t rtm_client_size = _RTM_CLIENT_DESIRED_SIZE;
+const size_t rtm_client_min_size = _RTM_CLIENT_MIN_SIZE;
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len);
 void(*rtm_text_frame_handler)(rtm_client_t *rtm, char *message, size_t message_len) = rtm_default_text_frame_handler;
@@ -62,11 +63,18 @@ RTM_API rtm_client_t * rtm_init(
   rtm_pdu_handler_t *pdu_handler,
   void *user_context) {
 
+  // FIXME The size of *memory should be passed by the client
+  const size_t memory_size = _RTM_CLIENT_DESIRED_SIZE;
+
+  if(memory_size < _RTM_CLIENT_MIN_SIZE) {
+    return NULL;
+  }
+
   if (memory == NULL) {
     return NULL;
   }
 
-  memset(memory, 0, RTM_CLIENT_SIZE);
+  memset(memory, 0, memory_size);
 
   rtm_client_t *rtm = (rtm_client_t *)memory;
   rtm->fd = -1;
@@ -82,6 +90,14 @@ RTM_API rtm_client_t * rtm_init(
   rtm->connect_timeout = 5;
   rtm->error_logger = rtm_default_error_logger;
 
+  size_t available_memory_for_buffers = memory_size - sizeof(rtm_client_t) - _RTM_WS_PRE_BUFFER;
+  size_t buffer_size = available_memory_for_buffers / 2;
+
+  rtm->input_buffer  = memory + sizeof(rtm_client_t);
+  rtm->input_buffer_size = buffer_size;
+  rtm->output_buffer = rtm->input_buffer + buffer_size;
+  rtm->output_buffer_size = buffer_size + _RTM_WS_PRE_BUFFER;
+
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
   }
@@ -96,8 +112,8 @@ RTM_API rtm_client_t * rtm_init(
  * @return RTM_OK if the handshake was successfull, or an error.
  */
 static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostname, char const *port) {
-  int len = snprintf(rtm->output_buffer, _RTM_MAX_BUFFER, "CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
-  if(len < 0 || len >= _RTM_MAX_BUFFER) {
+  int len = snprintf(rtm->output_buffer, rtm->output_buffer_size, "CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
+  if(len < 0 || len >= rtm->output_buffer_size) {
     return RTM_ERR_OOM;
   }
   int written = _rtm_io_write(rtm, rtm->output_buffer, len);
@@ -105,7 +121,7 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
     return RTM_ERR_WRITE;
   }
 
-  const size_t buffer_size = _RTM_MAX_BUFFER;
+  const size_t buffer_size = rtm->input_buffer_size;
   char *input_buffer = rtm->input_buffer;
   size_t input_length = 0;
   while (1) {
@@ -260,7 +276,7 @@ rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack
   CHECK_MAX_SIZE(role_name, RTM_MAX_ROLE_NAME_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const size_t size = _RTM_MAX_BUFFER;
+  const size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "auth/handshake", ack_id);
@@ -283,7 +299,7 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
   _rtm_calculate_auth_hash(role_secret, nonce, hash);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "auth/authenticate", ack_id);
@@ -313,7 +329,7 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
@@ -345,7 +361,7 @@ rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
@@ -366,7 +382,7 @@ rtm_status rtm_subscribe(rtm_client_t *rtm, const char *channel, unsigned *ack_i
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/subscribe", ack_id);
@@ -386,7 +402,7 @@ rtm_status rtm_subscribe_with_body(rtm_client_t *rtm, const char *body, unsigned
   CHECK_PARAM(rtm);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_prepare_pdu(rtm, buf, _RTM_MAX_BUFFER, "rtm/subscribe", body, ack_id);
+  char *p = _rtm_prepare_pdu(rtm, buf, rtm->output_buffer_size - _RTM_WS_PRE_BUFFER, "rtm/subscribe", body, ack_id);
 
   if (!p) {
     return RTM_ERR_OOM;
@@ -401,7 +417,7 @@ rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *subscription_id, unsig
   CHECK_MAX_SIZE(subscription_id, RTM_MAX_CHANNEL_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/unsubscribe", ack_id);
@@ -443,7 +459,7 @@ rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
   CHECK_PARAM(ack_id);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/read", ack_id);
@@ -463,7 +479,7 @@ rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack
   CHECK_PARAM(rtm);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_prepare_pdu(rtm, buf, _RTM_MAX_BUFFER, "rtm/read", body, ack_id);
+  char *p = _rtm_prepare_pdu(rtm, buf, rtm->output_buffer_size - _RTM_WS_PRE_BUFFER, "rtm/read", body, ack_id);
 
   if (!p) {
     return RTM_ERR_OOM;
@@ -487,7 +503,7 @@ rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
@@ -519,7 +535,7 @@ rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *js
   }
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
@@ -539,7 +555,7 @@ rtm_status rtm_delete(rtm_client_t *rtm, const char *channel, unsigned *ack_id) 
   CHECK_PARAM(rtm);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/delete", ack_id);
@@ -560,13 +576,13 @@ rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json) {
   CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_snprintf(buf, _RTM_MAX_BUFFER, "%s", json);
+  char *p = _rtm_snprintf(buf, rtm->output_buffer_size - _RTM_WS_PRE_BUFFER, "%s", json);
 
   if (!p) {
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -711,7 +727,7 @@ const char *rtm_error_string(rtm_status status) {
 // Internal code
 
 static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
-  const ssize_t buffer_size = _RTM_MAX_BUFFER;
+  const ssize_t buffer_size = rtm->input_buffer_size;
   char *input_buffer = rtm->input_buffer;
   // read HTTP response header
   size_t input_length = 0;
@@ -755,7 +771,7 @@ static rtm_status _rtm_send_http_upgrade_request(rtm_client_t *rtm, const char *
 
   char *request = rtm->output_buffer;
 
-  char *p = _rtm_snprintf(request, _RTM_MAX_BUFFER,
+  char *p = _rtm_snprintf(request, rtm->output_buffer_size,
       "GET %s HTTP/1.1\r\n"
       "Host: %s\r\n"
       "Upgrade: websocket\r\n"
@@ -1412,14 +1428,10 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     return return_code;
   }
 
-  // will need space for a header if we want to respond to a ping
-  // for instance, the header size will differ...
-  char *const input_buffer = _RTM_BUFFER_TO_IO(rtm->input_buffer);
-
   // Fill the buffer with data available in the socket
-  ssize_t to_read = _RTM_MAX_BUFFER - rtm->input_length;
+  ssize_t to_read = rtm->input_buffer_size - rtm->input_length;
   if (to_read > 0) {
-    ssize_t bytes_read = _rtm_io_read(rtm, input_buffer + rtm->input_length, (size_t) to_read, NO);
+    ssize_t bytes_read = _rtm_io_read(rtm, rtm->input_buffer + rtm->input_length, (size_t) to_read, NO);
     if (bytes_read < 0)
       return RTM_ERR_READ;
 
@@ -1434,7 +1446,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
   // At this point we may have any number of full frames plus maybe one partial frame
 
   // Decode the WS frame.
-  char *ws_frame = input_buffer;
+  char *ws_frame = rtm->input_buffer;
   ssize_t input_length = rtm->input_length;
 
   // RTM_OK is returned if any data frame presents and no protocol errors
@@ -1551,9 +1563,9 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
    * it will always be at the beginning of the buffer next time around, so we are guaranteed to have
    * memory space for a full frame
    */
-  rtm->input_length -= ws_frame - input_buffer;
+  rtm->input_length -= ws_frame - rtm->input_buffer;
   if (rtm->input_length > 0) {
-    memmove(input_buffer, ws_frame, rtm->input_length);
+    memmove(rtm->input_buffer, ws_frame, rtm->input_length);
   }
   return return_code;
 

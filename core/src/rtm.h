@@ -266,9 +266,14 @@ typedef enum {
 } rtm_status;
 
 /**
- * @brief Size of ::rtm_client_t in bytes.
+ * @brief Default size of ::rtm_client_t in bytes.
  */
 RTM_API extern const size_t rtm_client_size;
+
+/**
+ * @brief Minimal supported size of ::rtm_client_t in bytes.
+ */
+RTM_API extern const size_t rtm_client_min_size;
 
 /**
  * @brief Set the error logger used by the RTM structure. The default value
