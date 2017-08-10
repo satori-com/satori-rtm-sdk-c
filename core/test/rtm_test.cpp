@@ -117,6 +117,7 @@ TEST(rtm_test, subscribe) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -129,6 +130,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -161,6 +163,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
 TEST(rtm_test, connect_ssl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_close(rtm);
@@ -170,6 +173,7 @@ TEST(rtm_test, publish) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -183,6 +187,7 @@ TEST(rtm_test, overflow) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_null_malloc, rtm_null_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -199,6 +204,7 @@ TEST(rtm_test, publish_json_and_read) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -228,6 +234,7 @@ TEST(rtm_test, read_write_delete) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -283,6 +290,7 @@ TEST(rtm_test, handshake_and_authenticate) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -308,6 +316,7 @@ TEST(rtm_test, publish_and_receive) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -335,6 +344,7 @@ TEST(rtm_test, publish_and_receive) {
 TEST(rtm_test, publish_ws_frame_with_126_bytes_payload) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -355,6 +365,7 @@ TEST(rtm_test, disconnect) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_close(rtm);
@@ -366,6 +377,7 @@ TEST(rtm_test, disconnect) {
 TEST(rtm_test, rtm_poll_does_not_hang_ssl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -378,6 +390,7 @@ TEST(rtm_test, rtm_poll_does_not_hang_ssl) {
 TEST(rtm_test, rtm_poll_does_not_hang_nossl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -389,6 +402,7 @@ TEST(rtm_test, rtm_poll_does_not_hang_nossl) {
 TEST(rtm_test, rtm_wait_timeout) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -406,6 +420,7 @@ TEST(rtm_test, rtm_wait_timeout) {
 TEST(rtm_test, verbose_logging) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   rtm_disable_verbose_logging(rtm);
   ASSERT_EQ(rtm->is_verbose, 0u) << "verbose_logging Unable to disable verbose loggin";
@@ -417,6 +432,7 @@ TEST(rtm_test, verbose_logging) {
 TEST(rtm_test, error_handler) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   rtm_set_error_logger(rtm, error_message_recorder);
   ASSERT_EQ(error_message_queue.size(), 0) << "Error message queue isn't empty to start with";
@@ -434,6 +450,7 @@ TEST(rtm_test, log_message) {
 
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   _rtm_log_message(rtm, RTM_OK, str);
 }
@@ -443,6 +460,7 @@ TEST(rtm_test, unsubscribe) {
 
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -470,6 +488,7 @@ TEST(rtm_test, check_rtm_fd) {
   int fd;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   fd = rtm_get_fd(rtm);
@@ -490,6 +509,7 @@ TEST(rtm_test, get_user_context) {
 
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, &context);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -505,6 +525,7 @@ TEST(rtm_test, raw_pdu_handler) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   rtm_set_raw_pdu_handler(rtm, raw_pdu_recorder);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
@@ -532,6 +553,7 @@ TEST(rtm_test, rtm_default_pdu_handler) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -550,6 +572,7 @@ TEST(rtm_test, read_with_body) {
   std::string const channel = make_channel();
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -593,6 +616,7 @@ TEST(rtm_test, rtm_write_json) {
   std::string const channel = make_channel();
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -620,6 +644,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -662,6 +687,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 TEST(rtm_test, parse_endpoint_test) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   char hostname[255];
   char port[10];
@@ -788,6 +814,7 @@ TEST(rtm_test, parse_endpoint_test) {
 TEST(rtm_test, prepare_path_test) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   char path[255];
   rtm_status rc;
@@ -852,6 +879,7 @@ int main(int argc, char **argv) {
 TEST(rtm_test, wait_ping) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -867,6 +895,7 @@ TEST(rtm_test, wait_ping) {
 TEST(rtm_test, publish_noack_ping) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_set_ws_ping_interval(rtm, 2);

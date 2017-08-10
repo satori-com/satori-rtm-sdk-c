@@ -33,6 +33,9 @@ static char *_rtm_prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
 static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out);
 
+// Stub malloc() doing nothing but printing an error
+static void *_rtm_nop_malloc(rtm_client_t *rtm, size_t size);
+
 /**
  * Try to snprintf to dst
  *
@@ -89,6 +92,7 @@ RTM_API rtm_client_t * rtm_init(
   rtm->ws_ping_interval = 45;
   rtm->connect_timeout = 5;
   rtm->error_logger = rtm_default_error_logger;
+  rtm->malloc_fn = _rtm_nop_malloc;
 
   size_t available_memory_for_buffers = memory_size - sizeof(rtm_client_t) - _RTM_WS_PRE_BUFFER;
   size_t buffer_size = available_memory_for_buffers / 2;
@@ -664,6 +668,29 @@ void rtm_default_error_logger(const char *message) {
   // FIXME USE NSLog on Mac and iOS
   fprintf(stderr, "%s\n", message);
   fflush(stderr);
+}
+
+static void *_rtm_nop_malloc(rtm_client_t *rtm, size_t size) {
+    _rtm_log_error(rtm, RTM_ERR_OOM, "Would have to allocate %lu bytes of memory; configured to fail hard.", size);
+    rtm_close(rtm);
+    return NULL;
+}
+
+void *rtm_system_malloc(rtm_client_t *rtm, size_t size) {
+  return malloc(size);
+}
+
+void rtm_system_free(rtm_client_t *rtm, void *mem) {
+  return free(mem);
+}
+
+void *rtm_null_malloc(rtm_client_t *rtm, size_t size) {
+  return NULL;
+}
+
+void rtm_null_free(rtm_client_t *rtm, void *mem) {
+  // Intentionally empty.
+  (void)1;
 }
 
 void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
@@ -1321,6 +1348,11 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
       rtm->handle_pdu(rtm, &pdu);
   }
   rtm->is_used = NO;
+}
+
+void rtm_set_allocator(rtm_client_t *rtm, rtm_malloc_fn_t *malloc_fn, rtm_free_fn_t *free_fn) {
+  rtm->malloc_fn = malloc_fn;
+  rtm->free_fn = free_fn;
 }
 
 void rtm_set_error_logger(rtm_client_t *rtm, rtm_error_logger_t *error_logger) {

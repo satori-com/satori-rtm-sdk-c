@@ -281,6 +281,81 @@ RTM_API extern const size_t rtm_client_min_size;
  */
 RTM_API void rtm_set_error_logger(rtm_client_t *rtm, rtm_error_logger_t *error_logger);
 
+
+/**
+ * @brief malloc() like function for use with RTM.
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] size amount of memory to be allocated
+ * @return A pointer to the newly allocated memory, or NULL if the allocation
+ *         failed
+ *
+ * @see ::rtm_set_allocator
+ * @see ::rtm_system_malloc
+ * @see ::rtm_null_malloc
+ */
+typedef void *(rtm_malloc_fn_t)(rtm_client_t *rtm, size_t size);
+
+/**
+ * @brief free() like function for use with RTM.
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] ptr pointer to memory to be released
+ *
+ * @see ::rtm_set_allocator
+ * @see ::rtm_system_free
+ * @see ::rtm_null_free
+ */
+typedef void (rtm_free_fn_t)(rtm_client_t *rtm, void *ptr);
+
+/**
+ * @brief malloc() implementation using the system's malloc()
+ */
+void *rtm_system_malloc(rtm_client_t *rtm, size_t size);
+
+/**
+ * @brief free() implementation using the system's free()
+ */
+void rtm_system_free(rtm_client_t *rtm, void *mem);
+
+/**
+ * @brief malloc() implementation that always fails gracefully
+ *
+ * This function always returns NULL. Use it if you would like to skip over
+ * frames that are too large to handle.
+ */
+void *rtm_null_malloc(rtm_client_t *rtm, size_t size);
+
+/**
+ * @brief free() implementation that does nothing
+ */
+void rtm_null_free(rtm_client_t *rtm, void *mem);
+
+/**
+ * @brief Set the allocator used by the RTM structure.
+ *
+ * By default, RTM does not ever allocate any memory and fails hard by closing
+ * the connection if it would need to.
+ *
+ * When the SDK runs out of memory, it invokes the allocator function. If this
+ * function returns non-NULL, it assumes that it was given a pointer to memory
+ * of at least the requested size and uses that memory to perform the requested
+ * action. Once the action is completed, the free() function is called and the
+ * memory is released. If the allocator returns NULL, the SDK tries to
+ * gracefully handle the error condition. It will skip over frames that are too
+ * large to handle, and over fragmented frames that would become too large
+ * after reassembly. To fail hard, close the connection from the malloc()
+ * function.
+ *
+ * The SDK provides default functions for convenience.
+ *
+ * @see ::rtm_system_free
+ * @see ::rtm_null_free
+ * @see ::rtm_system_malloc
+ * @see ::rtm_null_malloc
+ */
+RTM_API void rtm_set_allocator(rtm_client_t *rtm, rtm_malloc_fn_t *malloc_ptr, rtm_free_fn_t *free_ptr);
+
 /**
  * @brief Default error handler.
  *

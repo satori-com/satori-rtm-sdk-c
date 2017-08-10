@@ -88,6 +88,8 @@ struct _rtm_client {
     rtm_raw_pdu_handler_t *handle_raw_pdu;
 
     rtm_error_logger_t *error_logger;
+    rtm_malloc_fn_t *malloc_fn;
+    rtm_free_fn_t *free_fn;
 
     char scratch_buffer[_RTM_SCRATCH_BUFFER_SIZE];
 
