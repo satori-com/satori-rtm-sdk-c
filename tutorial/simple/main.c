@@ -58,8 +58,10 @@ void tutorial_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     case RTM_ACTION_AUTHENTICATE_OK:
       tutorial_state->authenticated = 1;
       break;
-    case RTM_ACTION_GENERAL_ERROR:
     case RTM_ACTION_AUTHENTICATE_ERROR:
+      tutorial_state->authenticated = -1;
+      break;
+    case RTM_ACTION_GENERAL_ERROR:
     case RTM_ACTION_HANDSHAKE_ERROR:
     case RTM_ACTION_PUBLISH_ERROR:
     case RTM_ACTION_SUBSCRIBE_ERROR:
@@ -96,13 +98,15 @@ rtm_status handshake_and_authenticate(rtm_client_t *rtm) {
     return status;
   }
 
-  status = rtm_wait_timeout(rtm, 10 /* seconds */);
-  if (RTM_OK != status) {
-    fprintf(stderr, "Failed to receive authenticate reply: %s\n", rtm_error_string(status));
-    return status;
+  while (!tutorial_state->authenticated) {
+    status = rtm_wait_timeout(rtm, 10 /* seconds */);
+    if (RTM_OK != status) {
+      fprintf(stderr, "Failed to receive authenticate reply: %s\n", rtm_error_string(status));
+      return status;
+    }
   }
 
-  if (!tutorial_state->authenticated) {
+  if (tutorial_state->authenticated < 0) {
     fprintf(stderr, "Authentication failed\n");
     return RTM_ERR_PARAM;
   }
