@@ -17,6 +17,7 @@ option(COVERAGE "Generate coverage statistics" OFF)
 
 if(COVERAGE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 
     find_program(LCOV_PATH lcov)
     if(NOT LCOV_PATH)
