@@ -42,7 +42,7 @@ extern "C" {
 // The scratch buffer can be dangerous when the following rule is not followed: never use the scratch buffer,
 // then call another function and assume it is preserved. It's only valid in the scope, and as soon as you leave
 // the scope it should be considered invalid.
-#define _RTM_SCRATCH_BUFFER_SIZE (8 * 1024)
+#define _RTM_SCRATCH_BUFFER_SIZE (256)
 
 #define _RTM_BUFFER_TO_IO(base) (base + _RTM_WS_PRE_BUFFER)
 
