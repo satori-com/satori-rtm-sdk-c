@@ -554,26 +554,6 @@ rtm_status rtm_delete(rtm_client_t *rtm, const char *channel, unsigned *ack_id) 
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
-rtm_status rtm_search(rtm_client_t *rtm, const char *prefix, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/search", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"prefix\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), prefix);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
-}
-
 rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json) {
   CHECK_PARAM(rtm);
   CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
@@ -652,9 +632,6 @@ static const char *const action_table[] = {
     [RTM_ACTION_PUBLISH_OK] = "rtm/publish/ok",
     [RTM_ACTION_READ_ERROR] = "rtm/read/error",
     [RTM_ACTION_READ_OK] = "rtm/read/ok",
-    [RTM_ACTION_SEARCH_DATA] = "rtm/search/data",
-    [RTM_ACTION_SEARCH_ERROR] = "rtm/search/error",
-    [RTM_ACTION_SEARCH_OK] = "rtm/search/ok",
     [RTM_ACTION_SUBSCRIBE_ERROR] = "rtm/subscribe/error",
     [RTM_ACTION_SUBSCRIBE_OK] = "rtm/subscribe/ok",
     [RTM_ACTION_SUBSCRIPTION_DATA] = "rtm/subscription/data",
@@ -689,7 +666,6 @@ void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     case RTM_ACTION_HANDSHAKE_ERROR:
     case RTM_ACTION_PUBLISH_ERROR:
     case RTM_ACTION_READ_ERROR:
-    case RTM_ACTION_SEARCH_ERROR:
     case RTM_ACTION_SUBSCRIBE_ERROR:
     case RTM_ACTION_UNSUBSCRIBE_ERROR:
     case RTM_ACTION_WRITE_ERROR:
@@ -1136,7 +1112,6 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     case RTM_ACTION_HANDSHAKE_ERROR:
     case RTM_ACTION_PUBLISH_ERROR:
     case RTM_ACTION_READ_ERROR:
-    case RTM_ACTION_SEARCH_ERROR:
     case RTM_ACTION_SUBSCRIBE_ERROR:
     case RTM_ACTION_UNSUBSCRIBE_ERROR:
     case RTM_ACTION_WRITE_ERROR:
@@ -1206,12 +1181,6 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[2].type = FIELD_STRING;
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
-      break;
-    case RTM_ACTION_SEARCH_DATA: // search results are parsed elsewhere
-    case RTM_ACTION_SEARCH_OK:
-      fields[0].type = FIELD_ITERATOR;
-      fields[0].dst = &pdu->channel_iterator;
-      fields[0].name = "channels";
       break;
     case RTM_ACTION_UNKNOWN:
       pdu->body = body;

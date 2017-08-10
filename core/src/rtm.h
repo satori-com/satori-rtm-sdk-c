@@ -102,9 +102,6 @@ enum rtm_action_t {
     RTM_ACTION_PUBLISH_OK,
     RTM_ACTION_READ_ERROR,
     RTM_ACTION_READ_OK,
-    RTM_ACTION_SEARCH_DATA,
-    RTM_ACTION_SEARCH_ERROR,
-    RTM_ACTION_SEARCH_OK,
     RTM_ACTION_SUBSCRIBE_ERROR,
     RTM_ACTION_SUBSCRIBE_OK,
     RTM_ACTION_SUBSCRIPTION_DATA,
@@ -149,7 +146,6 @@ RTM_API char *rtm_iterate(rtm_list_iterator_t const *iterator);
  *        PUBLISH_ERROR       | error, reason
  *        READ_ERROR          | error, reason
  *        WRITE_ERROR         | error, reason
- *        SEARCH_ERROR        | error, reason
  *        SUBSCRIBE_ERROR     | error, reason
  *        UNSUBSCRIBE_ERROR   | error, reason
  *        SUBSCRIPTION_ERROR  | subscription_id, error, reason
@@ -163,8 +159,6 @@ RTM_API char *rtm_iterate(rtm_list_iterator_t const *iterator);
  *        DELETE_OK           | position
  *        WRITE_OK            | position
  *        READ_OK             | message, position
- *        SEARCH_DATA         | channel_iterator
- *        SEARCH_OK           | channel_iterator
  */
 typedef struct _rtm_pdu {
     unsigned request_id;
@@ -710,24 +704,6 @@ RTM_API rtm_status rtm_write_json(rtm_client_t *rtm, const char *key, const char
  * @see ::rtm_status for detailed error codes
  */
 RTM_API rtm_status rtm_delete(rtm_client_t *rtm, const char *key, unsigned *ack_id);
-
-/**
- * @brief Search all channels with a given prefix.
- *
- * RTM replies will have same identifier as value of @p ack_id. RTM could send
- * several search responses with same identifier.
- *
- * @param[in] rtm instance of the client
- * @param[in] prefix of the channels.
- * @param[out] ack_id the id of the message sent.
- *
- * @return the status of the operation
- * @retval RTM_OK operation succeeded
- * @retval RTM_ERR_* an error occurred
- *
- * @see ::rtm_status for detailed error codes
- */
-RTM_API rtm_status rtm_search(rtm_client_t *rtm, const char *prefix, unsigned *ack_id);
 
 /**
  * @brief Send a raw PDU as well-formed JSON string.

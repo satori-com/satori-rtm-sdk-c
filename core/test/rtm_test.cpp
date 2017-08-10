@@ -46,7 +46,6 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     case RTM_ACTION_HANDSHAKE_ERROR:
     case RTM_ACTION_PUBLISH_ERROR:
     case RTM_ACTION_READ_ERROR:
-    case RTM_ACTION_SEARCH_ERROR:
     case RTM_ACTION_SUBSCRIBE_ERROR:
     case RTM_ACTION_UNSUBSCRIBE_ERROR:
     case RTM_ACTION_WRITE_ERROR:
@@ -74,20 +73,6 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
         event_queue.push(data);
       }
       return;
-    }
-    case RTM_ACTION_SEARCH_OK:
-    case RTM_ACTION_SEARCH_DATA: {
-      char *channel;
-      while ((channel = rtm_iterate(&pdu->channel_iterator))) {
-        event_t data = event;
-        data.action = RTM_ACTION_SEARCH_DATA;
-        data.info = std::string(channel);
-        event_queue.push(data);
-      }
-      if (RTM_ACTION_SEARCH_DATA == event.action) {
-        return;
-      }
-      break;
     }
     default:
       event.info = "";
@@ -649,42 +634,6 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
   }
 
   rtm_close(rtm);
-}
-
-TEST(rtm_test, DISABLED_rtm_search_test) {
-  unsigned int request_id;
-  void *memory = alloca(rtm_client_size);
-  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
-  int rc = rtm_connect(rtm, endpoint, appkey);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
-
-  std::string const channel = make_channel();
-  rc = rtm_publish_string(rtm, channel.c_str(), "test", &request_id);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed to send a publish request";
-
-  event_t event;
-  rc = next_event(rtm, &event);
-  ASSERT_EQ(rc, RTM_OK) << "Failed to receive an ack";
-  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
-
-  rc = rtm_search(rtm, channel.c_str(), &request_id);
-  ASSERT_EQ(rc, RTM_OK) << "Failed to send a search request";
-
-  std::vector<std::string> channels;
-
-  do {
-    rc = next_event(rtm, &event);
-    ASSERT_EQ(RTM_OK, rc) << "Failed to receive PDU";
-    ASSERT_TRUE((RTM_ACTION_SEARCH_DATA == event.action) || (RTM_ACTION_SEARCH_OK == event.action));
-    if (RTM_ACTION_SEARCH_DATA == event.action) {
-      std::string name = json::parse(event.info).get<std::string>();
-      channels.push_back(name);
-    }
-  } while (RTM_ACTION_SEARCH_OK != event.action);
-
-
-  bool found = channels.end() != std::find(channels.begin(), channels.end(), channel);
-  ASSERT_EQ(true, found) << "rtm/search failed to find our channel";
 }
 
 TEST(rtm_test, parse_endpoint_test) {
