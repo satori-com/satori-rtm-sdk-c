@@ -3,10 +3,11 @@
 #include <string.h>
 #include <time.h>
 #include <rtm.h>
-#include "../test_credentials.h"
 
 #define NONCE_SIZE 32
 
+// Replace these values with your project's credentials
+// from DevPortal (https://developer.satori.com/)
 static char const *endpoint = YOUR_ENDPOINT;
 static char const *appkey = YOUR_APPKEY;
 static char const *role = YOUR_ROLE;

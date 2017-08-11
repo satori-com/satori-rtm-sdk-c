@@ -16,8 +16,9 @@
 
 #include <rtm.h>
 #include <rtm_internal.h>
-#include "../test_credentials.h"
 
+// Replace these values with your project's credentials
+// from DevPortal (https://developer.satori.com/)
 const char *endpoint = YOUR_ENDPOINT;
 const char *appkey = YOUR_APPKEY;
 const char *role_name = YOUR_ROLE;

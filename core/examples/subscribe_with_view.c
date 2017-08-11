@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <rtm.h>
-#include "../test_credentials.h"
 
+// Replace these values with your project's credentials
+// from DevPortal (https://developer.satori.com/)
 static char const *endpoint = YOUR_ENDPOINT;
 static char const *appkey = YOUR_APPKEY;
 

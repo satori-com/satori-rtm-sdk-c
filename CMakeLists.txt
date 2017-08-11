@@ -8,16 +8,19 @@ option(BENCH "Build all benchmarks." OFF)
 option(EXAMPLES "Build all examples." OFF)
 option(TUTORIALS "Build tutorials." OFF)
 
+# Make credentials configurable
+
 set(YOUR_ENDPOINT "" CACHE STRING "Endpoint to use in example/test applications")
 set(YOUR_APPKEY "" CACHE STRING "Appkey to use in example/test applications")
 set(YOUR_ROLE "" CACHE STRING "Role to use in example/test applications")
 set(YOUR_ROLE_SECRET "" CACHE STRING "Secret to use in example/test applications")
-set(YOUR_CHANNEL "animals" CACHE STRING "Channel to use in example/test applications")
+set(YOUR_CHANNEL "" CACHE STRING "Channel to use in example/test applications")
 set(YOUR_PROXY "" CACHE STRING "Proxy to use in example/test applications")
 
-if(NOT YOUR_ENDPOINT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/credentials.cmake")
-  message(STATUS "Reading credentials.cmake")
-  include("${CMAKE_CURRENT_SOURCE_DIR}/credentials.cmake")
+# Load credentials from credentials.json file for CI
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
+  include("parse_credentials.cmake.txt")
 endif()
 
 add_definitions(-DYOUR_ENDPOINT="${YOUR_ENDPOINT}" -DYOUR_APPKEY="${YOUR_APPKEY}")

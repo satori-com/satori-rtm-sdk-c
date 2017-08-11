@@ -2,11 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <rtm.h>
-#include "../test_credentials.h"
 
-static char const *endpoint = YOUR_OPEN_ENDPOINT;
+// Replace these values with your project's credentials
+// from DevPortal (https://developer.satori.com/)
+static char const *endpoint = "wss://open-data.api.satori.com";
 static char const *appkey = YOUR_APPKEY;
-static char const *channel = YOUR_OPEN_CHANNEL;
+static char const *channel = "OPEN_CHANNEL";
 
 void pdu_handler(rtm_client_t *client, const rtm_pdu_t *pdu) {
   switch (pdu->action) {
