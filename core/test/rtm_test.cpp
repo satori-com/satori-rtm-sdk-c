@@ -35,6 +35,7 @@ struct event_t {
 
 std::queue<event_t> event_queue;
 std::queue<std::string> message_queue;
+std::queue<std::string> error_message_queue;
 
 void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   event_t event;
@@ -85,6 +86,10 @@ void raw_pdu_recorder(rtm_client_t *rtm, char const *raw_pdu) {
   event_t event{};
   event.info = std::string(raw_pdu);
   event_queue.push(event);
+}
+
+void error_message_recorder(const char *error_message) {
+  error_message_queue.push(error_message);
 }
 
 
@@ -407,6 +412,21 @@ TEST(rtm_test, verbose_logging) {
 
   rtm_enable_verbose_logging(rtm);
   ASSERT_EQ(rtm->is_verbose, 1u) << "verbose_logging Unable to enable verbose loggin";
+}
+
+TEST(rtm_test, error_handler) {
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+
+  rtm_set_error_logger(rtm, error_message_recorder);
+  ASSERT_EQ(error_message_queue.size(), 0) << "Error message queue isn't empty to start with";
+
+  rtm_connect(rtm, "thisisaninvalidendpoint", "thisisaninvalidkey");
+
+  ASSERT_GT(error_message_queue.size(), 0) << "Error message queue is empty even though an error occurred";
+  ASSERT_NE(error_message_queue.front().find("Unsupported scheme in endpoint=thisisaninvalidendpoint"), std::string::npos) << "Unexpected error message: " << error_message_queue.front();
+
+  error_message_queue.pop();
 }
 
 TEST(rtm_test, log_message) {
@@ -801,6 +821,9 @@ class RTMEnvironment: public ::testing::Environment {
 
       std::queue<std::string> message_queue_empty;
       std::swap(message_queue, message_queue_empty);
+
+      std::queue<std::string> error_message_queue_empty;
+      std::swap(error_message_queue, error_message_queue_empty);
     }
 };
 
