@@ -29,4 +29,10 @@ include_directories(
   ${GTEST_INCLUDE_DIR}
 )
 
+if(CREDENTIALS_FILE)
+  foreach(FILE IN LISTS TEST_FILES)
+    set_source_files_properties(${FILE} OBJECT_DEPENDS ${CREDENTIALS_FILE})
+  endforeach()
+endif()
+
 target_link_libraries(rtm_unit_tests rtm-core-sdk ${GTEST_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

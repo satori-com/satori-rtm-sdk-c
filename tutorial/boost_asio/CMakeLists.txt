@@ -30,6 +30,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pthread")
 
 add_executable(boost_asio_tutorial "main.cc")
 
+if(CREDENTIALS_FILE)
+  set_source_files_properties(main.cc OBJECT_DEPENDS ${CREDENTIALS_FILE})
+endif()
+
 target_link_libraries(boost_asio_tutorial ${SATORI_LIBRARIES})
 target_link_libraries(boost_asio_tutorial ${Boost_LIBRARIES})
 

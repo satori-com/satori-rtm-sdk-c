@@ -24,6 +24,10 @@ endif()
 
 add_executable(libuv_tutorial "main.c")
 
+if(CREDENTIALS_FILE)
+  set_source_files_properties(main.c OBJECT_DEPENDS ${CREDENTIALS_FILE})
+endif()
+
 target_compile_options(libuv_tutorial PUBLIC ${LIBUV_CFLAGS_OTHER})
 target_include_directories(libuv_tutorial PUBLIC ${LIBUV_INCLUDE_DIRS})
 target_link_libraries(libuv_tutorial ${LIBUV_LIBRARIES})

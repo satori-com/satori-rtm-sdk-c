@@ -12,6 +12,10 @@ endif()
 
 add_executable(simple_tutorial "main.c")
 
+if(CREDENTIALS_FILE)
+  set_source_files_properties(main.cc OBJECT_DEPENDS ${CREDENTIALS_FILE})
+endif()
+
 if(TARGET rtm-core-sdk)
   add_dependencies(simple_tutorial rtm-core-sdk)
   target_link_libraries(simple_tutorial rtm-core-sdk)

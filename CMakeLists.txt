@@ -15,17 +15,21 @@ set(YOUR_APPKEY "" CACHE STRING "Appkey to use in example/test applications")
 set(YOUR_ROLE "" CACHE STRING "Role to use in example/test applications")
 set(YOUR_ROLE_SECRET "" CACHE STRING "Secret to use in example/test applications")
 set(YOUR_CHANNEL "" CACHE STRING "Channel to use in example/test applications")
-set(YOUR_PROXY "" CACHE STRING "Proxy to use in example/test applications")
 
 # Load credentials from credentials.json file for CI
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
+set(CREDENTIALS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
+if(NOT EXISTS "${CREDENTIALS_FILE}")
   include("parse_credentials.cmake.txt")
+endif()
+
+if((TESTS OR EXAMPLES OR TUTORIALS) AND ((NOT YOUR_ENDPOINT) OR (NOT YOUR_APPKEY)))
+  message(FATAL_ERROR "You need to configure an endpoint and appkey to compile examples/tests/tutorials. See README.md.")
 endif()
 
 add_definitions(-DYOUR_ENDPOINT="${YOUR_ENDPOINT}" -DYOUR_APPKEY="${YOUR_APPKEY}")
 add_definitions(-DYOUR_ROLE="${YOUR_ROLE}" -DYOUR_ROLE_SECRET="${YOUR_ROLE_SECRET}")
-add_definitions(-DYOUR_CHANNEL="${YOUR_CHANNEL}" -DYOUR_PROXY="${YOUR_PROXY}")
+add_definitions(-DYOUR_CHANNEL="${YOUR_CHANNEL}")
 
 if(LINUX)
 	find_package(GNUInstallDirs)
