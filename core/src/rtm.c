@@ -1445,7 +1445,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
   ssize_t to_read;
   if(rtm->fragment_end) {
     read_buffer = rtm->fragment_end;
-    to_read = (read_buffer - base_input_buffer) + base_input_buffer_size - rtm->input_length;
+    to_read = base_input_buffer_size - rtm->input_length - (read_buffer - base_input_buffer);
   }
   else {
     read_buffer = base_input_buffer;
