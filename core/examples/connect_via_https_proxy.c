@@ -7,7 +7,7 @@
 // from DevPortal (https://developer.satori.com/)
 static char const *endpoint = YOUR_ENDPOINT;
 static char const *appkey = YOUR_APPKEY;
-static char const *proxy_endpoint = YOUR_PROXY;
+static char const *proxy_endpoint = "http://127.0.0.1:7711";
 static char const *channel = YOUR_CHANNEL;
 
 void pdu_handler(rtm_client_t *client, const rtm_pdu_t *pdu) {
