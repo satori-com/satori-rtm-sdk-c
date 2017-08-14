@@ -16,18 +16,30 @@ set(YOUR_ROLE "" CACHE STRING "Role to use in example/test applications")
 set(YOUR_ROLE_SECRET "" CACHE STRING "Secret to use in example/test applications")
 set(YOUR_CHANNEL "" CACHE STRING "Channel to use in example/test applications")
 
-# Load credentials from credentials.json file for CI
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
-  set(CREDENTIALS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
-  include("parse_credentials.cmake.txt")
+# Load credentials from credentials.json file for CI and testing
+foreach(P IN ITEMS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+  if(EXISTS "${P}/credentials.json")
+    set(CREDENTIALS_FILE "${P}/credentials.json")
+    include("parse_credentials.cmake.txt")
 
-  # This makes sure cmake reruns every time the credentials file is changed, and that
-  # the binaries are rebuilt.
-  configure_file(${CREDENTIALS_FILE} "${CMAKE_CURRENT_BINARY_DIR}/.credentials.json.stub")
-endif()
+    # This makes sure cmake reruns every time the credentials file is changed, and that
+    # the binaries are rebuilt.
+    configure_file(${CREDENTIALS_FILE} "${CMAKE_CURRENT_BINARY_DIR}/.credentials.json.stub")
+  endif()
+endforeach()
 
 if((TESTS OR EXAMPLES OR TUTORIALS) AND ((NOT YOUR_ENDPOINT) OR (NOT YOUR_APPKEY)))
-  message(FATAL_ERROR "You need to configure an endpoint and appkey to compile examples/tests/tutorials. See README.md.")
+  message(FATAL_ERROR "You need to configure an endpoint and appkey to compile examples/tests/tutorials.\n"
+    "If you haven't already, register on https://developer.satori.com/ to obtain your registration data. "
+    "Then create a file named credentials.json, and put\n"
+    "  {\n"
+    "    \"endpoint\": \"wss://<SATORI_HOST>/\",\n"
+    "    \"appkey\": \"my_appkey\",\n"
+    "    \"auth_role_name\": \"ROLE NAME\"\n"
+    "    \"auth_role_secret_key\": \"ROLE SECRET\"\n"
+    "    \"auth_restricted_channel\": \"RESTRICTED CHANNEL\"\n"
+    "  }\n\n"
+    "into it. Alternatively, use cmake variables if you prefer to.")
 endif()
 
 add_definitions(-DYOUR_ENDPOINT="${YOUR_ENDPOINT}" -DYOUR_APPKEY="${YOUR_APPKEY}")
