@@ -101,6 +101,9 @@ struct _rtm_client {
 
     size_t output_buffer_size; // Ideal size: _RTM_WS_PRE_BUFFER + _RTM_MAX_BUFFER + 1
     char *output_buffer;
+
+    size_t huge_buffer_size;
+    char *huge_buffer;
 };
 
 // json methods

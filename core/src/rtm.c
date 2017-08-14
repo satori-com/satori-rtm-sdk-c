@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -1462,9 +1463,18 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
   // Fill the buffer with data available in the socket
 
-  // FIXME Allow to use a user-specified, dynamic larger buffer, too.
-  char *base_input_buffer = rtm->input_buffer;
-  size_t base_input_buffer_size = rtm->input_buffer_size;
+  char *base_input_buffer;
+  size_t base_input_buffer_size;
+  if (rtm->huge_buffer) {
+    // Dynamically allocated buffer for large data bursts
+    base_input_buffer = rtm->huge_buffer;
+    base_input_buffer_size = rtm->huge_buffer_size;
+  }
+  else {
+    // Base buffer used normally
+    base_input_buffer = rtm->input_buffer;
+    base_input_buffer_size = rtm->input_buffer_size;
+  }
 
   /*
    * The memory layout of the input buffer is as follows:
@@ -1498,6 +1508,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
   }
 
   char *ws_frame = read_buffer;
+  int have_incomplete_message = FALSE;
 
   if (rtm->huge_packet_bytes > 0) {
     // We are in the middle of processing a frame that is too large to handle
@@ -1553,10 +1564,15 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
       header_length = _RTM_INBOUND_HEADER_SIZE_LARGE;
     }
 
-    if (payload_length >= ((read_buffer + to_read) - ws_frame)) {
+    // FIXME pberndt Check for payload_length oferflow
+
+    size_t buffer_space_used = (rtm->fragment_end ? (rtm->fragment_end - base_input_buffer) : 0) + rtm->input_length;
+    size_t buffer_space_left = (base_input_buffer_size > buffer_space_used) ? (base_input_buffer_size - buffer_space_used) : 0;
+    size_t payload_already_buffered = rtm->input_length > header_length ? rtm->input_length - header_length : 0;
+    size_t payload_missing = (payload_length > payload_already_buffered) ? (payload_length - payload_already_buffered) : 0;
+
+    if (payload_missing > buffer_space_left) {
       // Insufficient memory to ever read this frame.
-      // FIXME pberndt Allow the user to allocate memory to store the frame away or fail hard,
-      //               only skip the frame if the user chose to.
 
       if (rtm->is_in_huge_packet_skip && frame_opcode == WS_CONTINUATION) {
         // This is a huge packet within a series of huge packets that we want
@@ -1572,21 +1588,69 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         goto ws_error;
       }
 
-      if (!frame_fin) {
-        // This packet is part of a series of fragmented packets. Discard them
-        // all.
-        rtm->is_in_huge_packet_skip = 1;
-        rtm->fragment_end = NULL;
+      size_t amount_to_allocate = header_length + payload_length + 1;
+      if(!frame_fin) {
+        // Fragmented frame. Allocate even more space.
+        amount_to_allocate *= 2;
+      }
+      if(rtm->fragment_end) {
+        // Allocate additional memory for any fragments we already store
+        amount_to_allocate += (rtm->fragment_end - base_input_buffer);
       }
 
-      rtm->huge_packet_bytes = payload_length - (rtm->input_length - header_length);
-      rtm->input_length = 0;
+      char *memory = rtm->malloc_fn(rtm, amount_to_allocate);
+      if (!memory) {
+        // The user decided against allocating more memory.
+        if (rtm->is_closed) {
+          return_code = RTM_ERR_CLOSED;
+          goto ws_error;
+        }
+
+        // If the user did not close the connection in the malloc() function
+        // and malloc failed, skip the packet or series of packets.
+
+        if (!frame_fin) {
+          // This packet is part of a series of fragmented packets. Discard them
+          // all.
+          rtm->is_in_huge_packet_skip = 1;
+          rtm->fragment_end = NULL;
+        }
+
+        rtm->huge_packet_bytes = payload_length - (rtm->input_length - header_length);
+        rtm->input_length = 0;
+      }
+      else {
+        // The user decided to allocate some memory for us.
+
+        // Move the partial frame any any fragmented frames to the newly
+        // allocated memory chunk
+        if(rtm->fragment_end) {
+          memcpy(memory, base_input_buffer, rtm->fragment_end - base_input_buffer);
+          rtm->fragment_end = memory + (rtm->fragment_end - base_input_buffer);
+          memcpy(rtm->fragment_end, ws_frame, rtm->input_length);
+        }
+        else {
+          memcpy(memory, ws_frame, rtm->input_length);
+        }
+
+        if(rtm->huge_buffer) {
+          rtm->free_fn(rtm, rtm->huge_buffer);
+        }
+        rtm->huge_buffer = memory;
+        rtm->huge_buffer_size = amount_to_allocate;
+
+        // Uncomment if the "return" is ever replaced by "break":
+        //have_incomplete_message = TRUE;
+        //base_input_buffer = memory;
+        //base_input_buffer_size = amount_to_allocate;
+      }
 
       return RTM_OK;
     }
 
     if (rtm->input_length < header_length + payload_length) {  // wait for more data to process the payload
       return_code = RTM_WOULD_BLOCK;
+      have_incomplete_message = TRUE;
       break;
     }
 
@@ -1641,6 +1705,8 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
           memmove(fragment_target, ws_frame, payload_length);
           rtm->fragment_end = fragment_target + payload_length;
         }
+
+        have_incomplete_message = TRUE;
       }
       else if (rtm->fragment_end && frame_opcode == WS_CONTINUATION) {
         // Last in a series of fragmented frames.
@@ -1668,6 +1734,8 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
           rtm->fragment_end = NULL;
         }
+
+        have_incomplete_message = FALSE;
       }
       else {
         // Normal, non-fragmented frame.
@@ -1696,6 +1764,21 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     }
     rtm->input_length -= payload_length;
     ws_frame += payload_length;
+  }
+
+  /*
+   * Discard the huge frame buffer if it isn't needed anymore
+   */
+  if (!have_incomplete_message && rtm->huge_buffer) {
+    assert(!rtm->fragment_end);
+
+    if (rtm->input_length > 0) {
+      memcpy(rtm->input_buffer, ws_frame, rtm->input_length);
+    }
+
+    rtm->free_fn(rtm, rtm->huge_buffer);
+    rtm->huge_buffer = NULL;
+    rtm->huge_buffer_size = 0;
   }
 
   /*
