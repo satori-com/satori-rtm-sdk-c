@@ -19,7 +19,7 @@ set(YOUR_CHANNEL "" CACHE STRING "Channel to use in example/test applications")
 # Load credentials from credentials.json file for CI
 
 set(CREDENTIALS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
-if(NOT EXISTS "${CREDENTIALS_FILE}")
+if(EXISTS "${CREDENTIALS_FILE}")
   include("parse_credentials.cmake.txt")
 endif()
 
