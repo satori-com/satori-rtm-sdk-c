@@ -3,8 +3,10 @@
 #include <string.h>
 #include <rtm.h>
 
-static char const *endpoint = "YOUR_ENDPOINT";
-static char const *appkey = "YOUR_APPKEY";
+// Replace these values with your project's credentials
+// from DevPortal (https://developer.satori.com/)
+static char const *endpoint = YOUR_ENDPOINT;
+static char const *appkey = YOUR_APPKEY;
 
 void pdu_handler(rtm_client_t *client, rtm_pdu_t const *pdu) {
   switch (pdu->action) {

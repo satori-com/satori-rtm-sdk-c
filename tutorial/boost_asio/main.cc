@@ -12,11 +12,11 @@
 
 // Replace these values with your project's credentials
 // from DevPortal (https://developer.satori.com/)
-static char const *endpoint = "YOUR_ENDPOINT";
-static char const *appkey = "YOUR_APPKEY";
+static char const *endpoint = YOUR_ENDPOINT;
+static char const *appkey = YOUR_APPKEY;
 // Role and secret are optional: replace only if you need to authenticate.
-static char const *role = "YOUR_ROLE";
-static char const *role_secret = "YOUR_SECRET";
+static char const *role = YOUR_ROLE;
+static char const *role_secret = YOUR_ROLE_SECRET;
 
 /**
  * Rtm class encapsulates the C API. It is a thin wrapper, incorporating

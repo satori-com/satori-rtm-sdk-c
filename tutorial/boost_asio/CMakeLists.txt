@@ -1,25 +1,26 @@
 cmake_minimum_required(VERSION 2.8)
 
-# Download & compile the SDK, and link against it
-include(ExternalProject)
-ExternalProject_Add(satori_sdk
-  GIT_REPOSITORY https://github.com/satori-com/satori-rtm-sdk-c.git
-  GIT_TAG "v2.0.0"
-  PREFIX "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
-  DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
-  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/deps/satori-sdk"
-  CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ${SDK_SSL_OPTION}
-  INSTALL_COMMAND ""
-)
-ExternalProject_Get_Property(satori_sdk source_dir)
-include_directories(${source_dir}/core/src)
-ExternalProject_Get_Property(satori_sdk binary_dir)
-set(SATORI_BIN_DIR "${binary_dir}/core")
-set(SATORI_LIBRARIES rtm-core-sdk)
-link_directories(${SATORI_BIN_DIR})
+# Make the credentials configurable
+if(NOT TARGET rtm-core-sdk)
+  set(YOUR_ENDPOINT "" CACHE STRING "Endpoint to use in example/test applications")
+  set(YOUR_APPKEY "" CACHE STRING "Appkey to use in example/test applications")
+  set(YOUR_ROLE "" CACHE STRING "Role to use in example/test applications")
+  set(YOUR_ROLE_SECRET "" CACHE STRING "Secret to use in example/test applications")
+  add_definitions(-DYOUR_ENDPOINT="${YOUR_ENDPOINT}" -DYOUR_APPKEY="${YOUR_APPKEY}")
+  add_definitions(-DYOUR_ROLE="${YOUR_ROLE}" -DYOUR_ROLE_SECRET="${YOUR_ROLE_SECRET}")
+endif()
 
 # This example requires Boost
-find_package(Boost REQUIRED COMPONENTS system)
+if(TARGET rtm-core-sdk)
+  find_package(Boost COMPONENTS system)
+  if(NOT Boost_FOUND)
+    message(WARNING "Boost libraries not found. Skipping boost::asio tutorial.")
+    return()
+  endif()
+else()
+  find_package(Boost REQUIRED COMPONENTS system)
+endif()
+
 add_library(boost INTERFACE IMPORTED)
 set_property(TARGET boost PROPERTY
     INTERFACE_INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIR})
@@ -27,7 +28,22 @@ set_property(TARGET boost PROPERTY
 # ..and makes use of modern c++
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pthread")
 
-add_executable(tutorial "main.cc")
-add_dependencies(tutorial satori_sdk)
-target_link_libraries(tutorial ${SATORI_LIBRARIES})
-target_link_libraries(tutorial ${Boost_LIBRARIES})
+add_executable(boost_asio_tutorial "main.cc")
+
+if(CREDENTIALS_FILE)
+  set_source_files_properties(main.cc OBJECT_DEPENDS ${CREDENTIALS_FILE})
+endif()
+
+target_link_libraries(boost_asio_tutorial ${SATORI_LIBRARIES})
+target_link_libraries(boost_asio_tutorial ${Boost_LIBRARIES})
+
+# Link against SDK
+if(TARGET rtm-core-sdk)
+  add_dependencies(boost_asio_tutorial rtm-core-sdk)
+  target_link_libraries(boost_asio_tutorial rtm-core-sdk)
+else()
+  find_package(PkgConfig REQUIRED)
+  pkg_search_module(RTM REQUIRED satori-rtm)
+  target_link_libraries(boost_asio_tutorial ${RTM_LIBRARIES})
+  include_directories(${RTM_INCLUDE_DIRS})
+endif()

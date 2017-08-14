@@ -17,6 +17,7 @@ option(COVERAGE "Generate coverage statistics" OFF)
 
 if(COVERAGE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 
     find_program(LCOV_PATH lcov)
     if(NOT LCOV_PATH)
@@ -27,7 +28,7 @@ if(COVERAGE)
       COMMAND lcov -c -d CMakeFiles/rtm-core-sdk.dir/src -o CMakeFiles/coverage.info
       COMMAND genhtml CMakeFiles/coverage.info -o CMakeFiles/coverage_report
       COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "Check the ${CMAKE_CURRENT_BINARY_DIR}/CMakeFile/coverage_report to get more information"
-      DEPENDS CMakeFiles/rtm-core-sdk.dir/src/*.gcda
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/rtm-core-sdk.dir/src/*.gcda
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Generating coverage information"
       VERBATIM
@@ -68,14 +69,14 @@ if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
   endif()
 endif()
 
-include_directories(.)
+set(RTM_SDK_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${RTM_SDK_DIRECTORY})
 include_directories(system ../vendor)
 
 # Create configuration header
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
   @ONLY)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
@@ -201,20 +202,20 @@ install(TARGETS rtm-core-sdk
         DESTINATION "${CMAKE_INSTALL_LIBDIR}"
        )
 
-if(examples)
+if(EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-if(test)
+if(TESTS)
   add_definitions(-DRTM_TEST_ENV)
   add_subdirectory(test)
 endif()
 
-if(bench)
+if(BENCH)
   add_subdirectory(bench)
 endif()
 
-if(perf)
+if(PERF)
   add_subdirectory(perf)
 endif()
 

@@ -3,8 +3,10 @@
 #include <string.h>
 #include <rtm.h>
 
-static char const *endpoint = "YOUR_ENDPOINT";
-static char const *appkey = "YOUR_APPKEY";
+// Replace these values with your project's credentials
+// from DevPortal (https://developer.satori.com/)
+static char const *endpoint = YOUR_ENDPOINT;
+static char const *appkey = YOUR_APPKEY;
 
 int main(void) {
   void *memory = malloc(rtm_client_size);

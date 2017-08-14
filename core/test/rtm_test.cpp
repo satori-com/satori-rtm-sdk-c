@@ -14,9 +14,16 @@
 
 #include <nlohmann_json/json.hpp>
 
-#include <src/rtm.h>
-#include "config.h"
-#include "rtm_internal.h"
+#include <rtm.h>
+#include <rtm_internal.h>
+
+// Replace these values with your project's credentials
+// from DevPortal (https://developer.satori.com/)
+const char *endpoint = YOUR_ENDPOINT;
+const char *appkey = YOUR_APPKEY;
+const char *role_name = YOUR_ROLE;
+const char *role_secret = YOUR_ROLE_SECRET;
+const char *restricted_channel = YOUR_CHANNEL;
 
 using json = nlohmann::json;
 
@@ -845,7 +852,6 @@ class RTMEnvironment: public ::testing::Environment {
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(new RTMEnvironment());
-    load_credentials();
 
 #ifdef _WIN32
     WORD wVersionRequested;

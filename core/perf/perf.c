@@ -3,12 +3,13 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <src/rtm.h>
 #include <sys/time.h>
 #include <sysexits.h>
 #include <stdbool.h>
 #include <mavg.h>
 #include <math.h>
+
+#include <rtm.h>
 
 #define GET_TS_GRANULARITY 100
 #define TRUE 1
