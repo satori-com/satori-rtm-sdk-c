@@ -20,6 +20,10 @@ set(YOUR_CHANNEL "" CACHE STRING "Channel to use in example/test applications")
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
   set(CREDENTIALS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/credentials.json")
   include("parse_credentials.cmake.txt")
+
+  # This makes sure cmake reruns every time the credentials file is changed, and that
+  # the binaries are rebuilt.
+  configure_file(${CREDENTIALS_FILE} "${CMAKE_CURRENT_BINARY_DIR}/.credentials.json.stub")
 endif()
 
 if((TESTS OR EXAMPLES OR TUTORIALS) AND ((NOT YOUR_ENDPOINT) OR (NOT YOUR_APPKEY)))
