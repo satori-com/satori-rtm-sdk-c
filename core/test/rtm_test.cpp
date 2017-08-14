@@ -412,8 +412,10 @@ TEST(rtm_test, verbose_logging) {
 TEST(rtm_test, log_message) {
   const char *str = "Test log";
 
-  rtm_status status = _rtm_log_message(RTM_OK, str);
-  ASSERT_EQ(status, RTM_OK);
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+
+  _rtm_log_message(rtm, RTM_OK, str);
 }
 
 TEST(rtm_test, unsubscribe) {

@@ -112,13 +112,15 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
     char *end_of_header;
     if (buffer_size <= input_length) {
       _rtm_io_close(rtm);
-      return _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to store HTTP CONNECT response.");
+      _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to store HTTP CONNECT response.");
+      return RTM_ERR_OOM;
     }
 
     ssize_t read = _rtm_io_read(rtm, input_buffer + input_length, buffer_size - input_length, YES);
     if (read <= 0) {
       _rtm_io_close(rtm);
-      return _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
+      _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
+      return RTM_ERR_READ;
     }
     input_length += read;
 
@@ -126,10 +128,10 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
     end_of_header = strstr(input_buffer, "\r\n\r\n");
     if (end_of_header) {
       if (strncmp(input_buffer, "HTTP/1.1 200", 12) != 0 && strncmp(input_buffer, "HTTP/1.0 200", 12) != 0) {
-        rtm_status rc = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Received unexpected response from server:");
+        _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Received unexpected response from server:");
         _rtm_log_message(rtm, RTM_ERR_PROTOCOL, input_buffer);
         _rtm_io_close(rtm);
-        return rc;
+        return RTM_ERR_PROTOCOL;
       }
 
       return RTM_OK;
@@ -161,7 +163,8 @@ static rtm_status _rtm_io_connect(
 
   if (strlen(endpoint) < 10) {
     // 10 is the minimum size of the endpoint string ws://api.satori.com/
-    return _rtm_log_error(rtm, RTM_ERR_PARAM_INVALID, "endpoint malformed – too short.");
+    _rtm_log_error(rtm, RTM_ERR_PARAM_INVALID, "endpoint malformed – too short.");
+    return RTM_ERR_PARAM_INVALID;
   }
 
   rtm_status rc;
@@ -716,13 +719,15 @@ static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
     const char *end_of_header;
     if (buffer_size <= input_length) {
       _rtm_io_close(rtm);
-      return _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to store HTTP response.");
+      _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to store HTTP response.");
+      return RTM_ERR_OOM;
     }
 
     ssize_t bytes_read = _rtm_io_read(rtm, input_buffer + input_length, buffer_size - input_length, YES);
     if (bytes_read < 0) {
       _rtm_io_close(rtm);
-      return _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
+      _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
+      return RTM_ERR_READ;
     }
 
     input_length += bytes_read;
@@ -732,10 +737,10 @@ static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
     if (end_of_header) {
       size_t header_len = end_of_header - input_buffer + 4; // include the blank line we just matched
       if (strncmp(input_buffer, "HTTP/1.1 101", 12) != 0) {
-        rtm_status rc = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Received unexpected response from server:");
+        _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Received unexpected response from server:");
         _rtm_log_message(rtm, RTM_ERR_PROTOCOL, input_buffer);
         _rtm_io_close(rtm);
-        return rc;
+        return RTM_ERR_PROTOCOL;
       }
       memmove(input_buffer, end_of_header, input_length - header_len);
       rtm->input_length = input_length - header_len;
@@ -764,9 +769,9 @@ static rtm_status _rtm_send_http_upgrade_request(rtm_client_t *rtm, const char *
   }
 
   if (_rtm_io_write(rtm, request, p - request) < 0) {
-    rtm_status rc = _rtm_log_error(rtm, RTM_ERR_WRITE, "Error writing to network during connection handshake");
+    _rtm_log_error(rtm, RTM_ERR_WRITE, "Error writing to network during connection handshake");
     _rtm_io_close(rtm);
-    return rc;
+    return RTM_ERR_PROTOCOL;
   }
   return RTM_OK;
 }
@@ -779,8 +784,9 @@ static rtm_status _rtm_check_hostname_length(rtm_client_t *rtm, size_t length) {
   if (length < _RTM_MAX_HOSTNAME_SIZE) {
     return RTM_OK;
   } else {
-    return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid:  hostname too long – size=%d expected<%d",
+    _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid:  hostname too long – size=%d expected<%d",
                          length, _RTM_MAX_HOSTNAME_SIZE);
+    return RTM_ERR_PARAM;
   }
 }
 
@@ -795,7 +801,8 @@ static rtm_status _rtm_check_hostname_length(rtm_client_t *rtm, size_t length) {
 static rtm_status _rtm_prepare_path(rtm_client_t *rtm, char *path, const char *appkey) {
   CHECK_MAX_SIZE(path, _RTM_MAX_PATH_SIZE);
   if (!*path) {
-    return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: path has incorrect format");
+    _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: path has incorrect format");
+    return RTM_ERR_PARAM;
   }
 
   // Strip a tailing slash
@@ -808,7 +815,8 @@ static rtm_status _rtm_prepare_path(rtm_client_t *rtm, char *path, const char *a
 
   int w = snprintf(end_of_path, size, "%s?appkey=%s", RTM_PATH, appkey);
   if (w == 0 || w >= size) {
-    return _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to build path - appkey malformed?");
+    _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to build path - appkey malformed?");
+    return RTM_ERR_OOM;
   }
 
   return RTM_OK;
@@ -854,7 +862,8 @@ static rtm_status _rtm_parse_endpoint(
   }
 
   if (!*hostname_start) {
-    return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: hostname should have non-zero length");
+    _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: hostname should have non-zero length");
+    return RTM_ERR_PARAM;
   }
 
   // try to find URI path
@@ -884,7 +893,8 @@ static rtm_status _rtm_parse_endpoint(
       }
       // not a number
       if (!(('0' <= *port_p) && (*port_p <= '9'))) {
-        return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: port must be an integer");
+        _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: port must be an integer");
+        return RTM_ERR_PARAM;
       }
       port_p++;
     }
@@ -902,7 +912,8 @@ static rtm_status _rtm_parse_endpoint(
   int hostname_length = hostname_end - hostname_start;
   rtm_status rc = _rtm_check_hostname_length(rtm, hostname_length);
   if (RTM_OK != rc) {
-    return _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: hostname has incorrect length");
+    _rtm_log_error(rtm, RTM_ERR_PARAM, "param endpoint invalid: hostname has incorrect length");
+    return RTM_ERR_PARAM;
   }
   // _rtm_check_hostname_length verifies that hostname_length is smaller than
   // the hostname buffer.
@@ -1308,31 +1319,30 @@ void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler) 
     rtm->handle_raw_pdu = handler;
 }
 
-rtm_status _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
+void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
   if (!rtm->error_logger)
-    return error;
+    return;
   va_list vl;
   va_start(vl, message);
-  rtm_status rc = _rtm_logv_error(rtm, error, message, vl);
+  _rtm_logv_error(rtm, error, message, vl);
   va_end(vl);
-  return rc;
 }
 
-rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
+void _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
 
   if (!rtm->error_logger)
-    return error;
+    return;
 
   char *p = _rtm_snprintf(rtm->scratch_buffer, _RTM_SCRATCH_BUFFER_SIZE,
                         "%p (%d):", (void*) rtm, error);
 
   if(!p) {
     rtm->error_logger("message too long to print");
-    return error;
+    return;
   }
 
   int written = vsnprintf(p, _RTM_SCRATCH_BUFFER_SIZE - (p - rtm->scratch_buffer), message, args);
@@ -1341,7 +1351,6 @@ rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *mess
   } else {
     rtm->error_logger(rtm->scratch_buffer);
   }
-  return error;
 }
 
 rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
@@ -1358,11 +1367,10 @@ rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   return rc;
 }
 
-rtm_status _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message) {
+void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message) {
   ASSERT_NOT_NULL(message);
   if (rtm->error_logger)
     rtm->error_logger(message);
-  return status;
 }
 
 void rtm_enable_verbose_logging(rtm_client_t *rtm) {
@@ -1392,8 +1400,10 @@ void _rtm_b64encode_16bytes(char const *input, char *output) {
 
 rtm_status rtm_poll(rtm_client_t *rtm) {
   CHECK_PARAM(rtm);
-  if (rtm->fd < 0)
-    return _rtm_log_error(rtm, RTM_ERR_CLOSED, "connection closed");
+  if (rtm->fd < 0) {
+    _rtm_log_error(rtm, RTM_ERR_CLOSED, "connection closed");
+    return RTM_ERR_CLOSED;
+  }
 
   rtm_status return_code = RTM_OK;
 
@@ -1466,7 +1476,8 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
     if (payload_length >= RTM_MAX_MESSAGE_SIZE) {
       // if the frame is bigger than the internal buffer, it will never be decoded.
-      return_code = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "message size beyond RTM limit – size=%d", payload_length);
+      _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "message size beyond RTM limit – size=%d", payload_length);
+      return_code = RTM_ERR_PROTOCOL;
       // FIXME pberndt: skip this many bytes, do not drop connection
       goto ws_error;
     }
@@ -1484,8 +1495,9 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
       if (!frame_fin || payload_length > _RTM_MAX_CONTROL_FRAME_SIZE) {
         // control frames must be single fragment, 125 bytes or less
-        return_code = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "malformed control frame received – opcode=%d size=%d",
+        _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "malformed control frame received – opcode=%d size=%d",
                                     frame_opcode, frame_payload_length);
+        return_code = RTM_ERR_PROTOCOL;
         goto ws_error;
       }
 
@@ -1503,7 +1515,8 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
       if (!frame_fin) {
         // TODO: add split frame support?
         // FIXME pberndt: Or least simply skip fragmented frames instead of failing hard
-        return_code = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unhandled split frame.");
+        _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unhandled split frame.");
+        return_code = RTM_ERR_PROTOCOL;
         goto ws_error;
       }
 
@@ -1525,7 +1538,8 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
       }
     } else {
       // unhandled opcode
-      return_code = _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unknown frame with opcode=%d", frame_opcode);
+      _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unknown frame with opcode=%d", frame_opcode);
+      return_code = RTM_ERR_PROTOCOL;
       goto ws_error;
     }
     input_length -= payload_length;

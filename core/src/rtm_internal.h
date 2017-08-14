@@ -113,9 +113,9 @@ ssize_t    _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte);
 void _rtm_b64encode_16bytes(char const *input, char *output);
 
 // Logging
-rtm_status _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...);
-rtm_status _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list vl);
-RTM_API rtm_status _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message);
+void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...);
+void _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list vl);
+RTM_TEST_API void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message);
 
 #define TRUE 1
 #define YES 1
@@ -148,18 +148,24 @@ RTM_API rtm_status _rtm_test_prepare_path(rtm_client_t *rtm, char *path, const c
 #endif
 
 #define CHECK_PARAM(param) \
-  if (param == NULL) \
-    return _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is required")
+  if (param == NULL) { \
+    _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is required"); \
+    return RTM_ERR_PARAM; \
+  }
 
 #define CHECK_MAX_SIZE(param, length)\
   CHECK_PARAM(param); \
-  if (strlen(param) > (length) ) \
-    return _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is too long. max=" #length)
+  if (strlen(param) > (length) ) { \
+    _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is too long. max=" #length); \
+    return RTM_ERR_PARAM; \
+  }
 
 #define CHECK_EXACT_SIZE(param, length)\
   CHECK_PARAM(param); \
-  if (strlen(param) != (length) ) \
-    return _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is not of expected length " #length)
+  if (strlen(param) != (length) ) { \
+    _rtm_log_message(rtm, RTM_ERR_PARAM, "param '"#param "' is not of expected length " #length); \
+    return RTM_ERR_PARAM; \
+  }
 
 enum WebSocketOpCode {
     WS_CONTINUATION = 0x00,

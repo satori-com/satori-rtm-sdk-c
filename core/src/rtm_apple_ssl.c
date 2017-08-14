@@ -119,7 +119,8 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *host) {
   if (noErr != status) {
     SSLClose(rtm->sslContext);
     CFRelease(rtm->sslContext);
-    return _rtm_log_error(rtm, RTM_ERR_TLS, "TLS handshake failed. OSStatus=%d", status);
+    _rtm_log_error(rtm, RTM_ERR_TLS, "TLS handshake failed. OSStatus=%d", status);
+    return RTM_ERR_TLS;
   }
 
   return RTM_OK;

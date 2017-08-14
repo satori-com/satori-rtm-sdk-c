@@ -18,8 +18,10 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
   rtm->fd = -1;
 
   int fd = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
-  if (fd < 0)
-    return _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot create a socket");
+  if (fd < 0) {
+    _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot create a socket");
+    return RTM_ERR_CONNECT;
+  }
 
   fcntl(fd, F_SETFL, O_NONBLOCK); // non blocking socket.
 
@@ -83,15 +85,17 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
       return RTM_OK;
     } else {
       close(fd);
-      return _rtm_log_error(rtm, RTM_ERR_CONNECT,
+      _rtm_log_error(rtm, RTM_ERR_CONNECT,
               "connection error – errno=%d message=%s", errno,
               strerror(errno));
+      return RTM_ERR_CONNECT;
     }
   }
   // should never come here.
-  return _rtm_log_error(rtm, RTM_ERR_CONNECT,
+  _rtm_log_error(rtm, RTM_ERR_CONNECT,
           "connection error – errno=%d message=%s", errno,
           strerror(errno));
+  return RTM_ERR_CONNECT;
 }
 
 rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostname, const char *port) {
@@ -110,8 +114,9 @@ rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostn
   struct addrinfo *res = NULL;
   int getaddrinfo_result = getaddrinfo(hostname, port, &hints, &res);
   if (getaddrinfo_result) {
-    return _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot find hostname=%s – reason=%s", hostname,
+    _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot find hostname=%s – reason=%s", hostname,
       gai_strerror(getaddrinfo_result));
+    return RTM_ERR_CONNECT;
   }
 
   // iterate through the records to find a working peer
@@ -156,10 +161,10 @@ rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeo
   } while (ping_repeat || (poll_result < 0 && (EAGAIN == errno || EINTR == errno)));
 
   if (poll_result < 0) {
-    return _rtm_log_error(rtm, RTM_ERR_NETWORK, "error while waiting for socket – errno=%d error=%s",
+    _rtm_log_error(rtm, RTM_ERR_NETWORK, "error while waiting for socket – errno=%d error=%s",
                          errno,
                          strerror(errno));
-
+    return RTM_ERR_NETWORK;
   }
   return RTM_OK;
 
