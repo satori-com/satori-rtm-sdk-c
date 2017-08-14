@@ -113,6 +113,24 @@ static std::string make_channel(int len = 6) {
   return r;
 }
 
+TEST(rtm_test, init_ex) {
+  size_t size = RTM_CLIENT_SIZE(2*10240);
+  void *memory = alloca(size);
+
+  rtm_client_t *rtm = rtm_init_ex(memory, size, rtm_default_pdu_handler, nullptr);
+
+  ASSERT_NE(rtm, nullptr);
+}
+
+TEST(rtm_test, init_ex_fail_too_small) {
+  size_t size = RTM_CLIENT_SIZE(0);
+  void *memory = alloca(size);
+
+  rtm_client_t *rtm = rtm_init_ex(memory, size, rtm_default_pdu_handler, nullptr);
+
+  ASSERT_EQ(rtm_connect(rtm, endpoint, appkey), RTM_ERR_OOM);
+}
+
 TEST(rtm_test, subscribe) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);

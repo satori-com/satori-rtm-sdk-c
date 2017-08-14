@@ -422,6 +422,7 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  *
  * @return initialized rtm_client_t object
  *
+ * @see ::rtm_init_ex
  * @see ::rtm_close
  * @see ::rtm_get_user_context
  *
@@ -431,6 +432,40 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  */
 RTM_API rtm_client_t *rtm_init(
   void *memory,
+  rtm_pdu_handler_t *pdu_handler,
+  void *user_context);
+
+/**
+ * @brief Calculate the size requirements for rtm_client_t
+ *
+ * @param[in] buffer_size Total number of bytes for buffers
+ * @return size of the rtm_client_t structure
+ */
+#define RTM_CLIENT_SIZE(buffer_size) (_rtm_client_struct_size + 2*buffer_size)
+extern const size_t _rtm_client_struct_size;
+
+/**
+ * @brief Initialize an instance of rtm_client_t with a custom buffer size
+ *
+ * @param[in] memory a buffer of at least rtm_client_min_size bytes
+ * @param[in] memory_size The allocation size of memory
+ * @param[in] pdu_handler the callback for all PDUs
+ * @param[in] user_context an opaque user specified data associated with this
+ *            RTM object
+ *
+ *
+ * @return initialized rtm_client_t object
+ *
+ * @see ::RTM_CLIENT_SIZE
+ * @see ::rtm_init
+ * @see ::rtm_close
+ * @see ::rtm_get_user_context
+ *
+ *
+ */
+RTM_API rtm_client_t *rtm_init_ex(
+  void *memory,
+  size_t memory_size,
   rtm_pdu_handler_t *pdu_handler,
   void *user_context);
 

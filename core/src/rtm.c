@@ -12,6 +12,7 @@
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
 const size_t rtm_client_size = _RTM_CLIENT_DESIRED_SIZE;
 const size_t rtm_client_min_size = _RTM_CLIENT_MIN_SIZE;
+const size_t _rtm_client_struct_size = _RTM_CLIENT_SIZE(0);
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len);
 void(*rtm_text_frame_handler)(rtm_client_t *rtm, char *message, size_t message_len) = rtm_default_text_frame_handler;
@@ -66,12 +67,14 @@ RTM_API rtm_client_t * rtm_init(
   rtm_pdu_handler_t *pdu_handler,
   void *user_context) {
 
-  // FIXME The size of *memory should be passed by the client
-  const size_t memory_size = _RTM_CLIENT_DESIRED_SIZE;
+  return rtm_init_ex(memory, _RTM_CLIENT_DESIRED_SIZE, pdu_handler, user_context);
+}
 
-  if(memory_size < _RTM_CLIENT_MIN_SIZE) {
-    return NULL;
-  }
+RTM_API rtm_client_t * rtm_init_ex(
+  void *memory,
+  size_t memory_size,
+  rtm_pdu_handler_t *pdu_handler,
+  void *user_context) {
 
   if (memory == NULL) {
     return NULL;
@@ -808,6 +811,7 @@ static rtm_status _rtm_send_http_upgrade_request(rtm_client_t *rtm, const char *
       path, hostname, sec_key);
 
   if (!p) {
+    _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to send HTTP upgrade request");
     return RTM_ERR_OOM;
   }
 
