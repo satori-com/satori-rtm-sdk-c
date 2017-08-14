@@ -399,7 +399,8 @@ TEST(rtm_test, rtm_wait_timeout) {
 }
 
 TEST(rtm_test, verbose_logging) {
-  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
 
   rtm_disable_verbose_logging(rtm);
   ASSERT_EQ(rtm->is_verbose, 0u) << "verbose_logging Unable to disable verbose loggin";
@@ -637,7 +638,8 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 }
 
 TEST(rtm_test, parse_endpoint_test) {
-  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
 
   char hostname[255];
   char port[10];
@@ -762,7 +764,9 @@ TEST(rtm_test, parse_endpoint_test) {
 }
 
 TEST(rtm_test, prepare_path_test) {
-  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+
   char path[255];
   rtm_status rc;
 
