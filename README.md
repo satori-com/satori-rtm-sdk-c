@@ -28,13 +28,8 @@ $ cmake ..
 $ cmake --build .
 ```
 
-To build with tests, execute:
-```sh
-$ cmake .. -Dtest=1
-$ cmake --build .
-```
-
-To run the unit tests, first you need to create a credentials.json file:
+To compile with support for the unit tests, first you need to create a credentials.json file in the base
+directory:
 
 ```sh
 $ cat credentials.json
@@ -55,6 +50,12 @@ $ cat credentials.json
 
 You must use [DevPortal](https://developer.satori.com/) to create role and set channel permissions.
 
+To then build with support for tests, execute:
+```sh
+$ mkdir build && cd build
+$ cmake .. -DTESTS=1
+$ cmake --build .
+```
 
 After that, execute:
 ```sh
