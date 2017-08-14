@@ -239,10 +239,10 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
 
   rtm->ssl_connection = openssl_create_connection(rtm->ssl_context, rtm->fd);
   if (NULL == rtm->ssl_connection) {
-    rc = _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to connect");
+    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to connect");
     SSL_CTX_free(rtm->ssl_context);
     rtm->ssl_context = NULL;
-    return rc;
+    return RTM_ERR_TLS;
   }
 
   rc = openssl_handshake(rtm, hostname);
