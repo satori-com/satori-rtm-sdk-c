@@ -9,7 +9,7 @@ if(UNIX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 endif()
 file(GLOB TEST_FILES *_test.cpp)
-add_executable(rtm_unit_tests ${TEST_FILES} ${ADDL_FILES})
+add_executable(rtm_unit_tests ${TEST_FILES})
 
 if(USE_APPLE_SSL)
 add_definitions(-DUSE_APPLE_SSL)
