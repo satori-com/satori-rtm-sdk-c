@@ -93,7 +93,7 @@ RTM_API rtm_client_t * rtm_init(
   size_t available_memory_for_buffers = memory_size - sizeof(rtm_client_t) - _RTM_WS_PRE_BUFFER;
   size_t buffer_size = available_memory_for_buffers / 2;
 
-  rtm->input_buffer  = memory + sizeof(rtm_client_t);
+  rtm->input_buffer = (char*)memory + sizeof(rtm_client_t);
   rtm->input_buffer_size = buffer_size;
   rtm->output_buffer = rtm->input_buffer + buffer_size;
   rtm->output_buffer_size = buffer_size + _RTM_WS_PRE_BUFFER;
