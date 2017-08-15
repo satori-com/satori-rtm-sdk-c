@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib> // alloca
 #include <ctime>
+#include <set>
 #include <vector>
 
 #ifdef _WIN32
@@ -129,6 +130,94 @@ TEST(rtm_test, init_ex_fail_too_small) {
   rtm_client_t *rtm = rtm_init_ex(memory, size, rtm_default_pdu_handler, nullptr);
 
   ASSERT_EQ(rtm_connect(rtm, endpoint, appkey), RTM_ERR_OOM);
+}
+
+TEST(rtm_test, test_allocators) {
+  size_t size = RTM_CLIENT_SIZE(512);
+  void *memory = alloca(size);
+
+  struct alloc_t {
+    std::set<char *> allocs;
+    int number_of_allocs;
+    int number_of_frees;
+
+    alloc_t() { reset(); }
+    ~alloc_t() {
+      reset();
+    }
+
+    void reset() {
+      number_of_allocs = 0;
+      number_of_frees = 0;
+
+      for(char *p : allocs) {
+        delete[] p;
+      }
+      allocs.clear();
+    }
+
+    char *alloc(size_t size) {
+      char *retval = new char[size];
+      allocs.insert(retval);
+      number_of_allocs++;
+      return retval;
+    }
+
+    void free(char *mem) {
+      auto this_alloc = allocs.find(mem);
+
+      ASSERT_NE(this_alloc, allocs.end());
+
+      allocs.erase(this_alloc);
+      number_of_frees++;
+      delete[] mem;
+    }
+  };
+
+  alloc_t allocations {};
+
+  rtm_client_t *rtm = rtm_init_ex(memory, size, pdu_recorder, &allocations);
+
+  rtm_set_allocator(rtm,
+      [](rtm_client_t *rtm, size_t amount) {
+        alloc_t *alloc = static_cast<alloc_t *>(rtm_get_user_context(rtm));
+        return (void*)alloc->alloc(amount);
+      },
+      [](rtm_client_t *rtm, void *mem) {
+        alloc_t *alloc = static_cast<alloc_t *>(rtm_get_user_context(rtm));
+        alloc->free((char*)mem);
+      });
+
+  int rc = rtm_connect(rtm, endpoint, appkey);
+  ASSERT_EQ(0, allocations.number_of_allocs) << "Memory allocated for connect() call even though it wasn't needed.";
+
+  std::vector<char> large_message(10000, 'A');
+  large_message.back() = 0;
+
+  std::string const channel = make_channel();
+
+  rc = rtm_subscribe(rtm, channel.c_str(), nullptr);
+  ASSERT_EQ(0, allocations.number_of_allocs) << "Memory allocated for subscribe() call even though it wasn't needed.";
+
+  ASSERT_EQ(RTM_OK, rtm_publish_string(rtm, channel.c_str(), &large_message[0], nullptr));
+  ASSERT_NE(0, allocations.number_of_allocs) << "No memory allocated even though we sent a large message.";
+  ASSERT_EQ(allocations.number_of_frees, allocations.number_of_allocs) << "Memory allocated for subscribe(), but never free()d.";
+
+  allocations.number_of_allocs = allocations.number_of_frees = 0;
+
+  event_t event;
+  for(int i=0; i<5; i++) {
+    rc = next_event(rtm, &event);
+    if(rc == RTM_OK && event.action == RTM_ACTION_SUBSCRIPTION_DATA) {
+      break;
+    }
+    else if(i == 4) {
+      FAIL() << "Failed to receive subscription data.";
+    }
+  }
+
+  ASSERT_NE(allocations.number_of_allocs, 0) << "No memory allocated even though we received a large message.";
+  ASSERT_EQ(allocations.number_of_frees, allocations.number_of_allocs) << "Memory allocated for rtm_poll(), but never free()d.";
 }
 
 TEST(rtm_test, subscribe) {
