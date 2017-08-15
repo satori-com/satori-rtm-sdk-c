@@ -181,7 +181,6 @@ typedef struct _rtm_pdu {
         };
         char const *body;
         char const *nonce;
-        rtm_list_iterator_t channel_iterator;
     };
 } rtm_pdu_t;
 
