@@ -29,6 +29,9 @@ char* generate_message(int size) {
 
 
 void BM_parse_pdu(benchmark::State &state) {
+  char rtm_m[rtm_client_size];
+  rtm_client_t *rtm = rtm_init(&rtm_m, NULL, NULL);
+
   const char *tmpl = "{\"action\":\"rtm/publish/ok\",\"id\":42,\"body\":{\"next\":\"1479315802:0\",\"messages\":[\"%s\"]}}";
   char *msg = generate_message(state.range_x());
 
@@ -39,7 +42,7 @@ void BM_parse_pdu(benchmark::State &state) {
   while (state.KeepRunning()) {
     strcpy(pdu_dup, pdu_text);
     rtm_pdu_t pdu = {0};
-    rtm_parse_pdu(pdu_dup, &pdu);
+    rtm_parse_pdu(rtm, pdu_dup, &pdu);
   }
 }
 

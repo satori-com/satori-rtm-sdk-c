@@ -1,20 +1,30 @@
 #include <gtest/gtest.h>
 #include <cstdint>
+#include <rtm.h>
 #include <rtm_internal.h>
 #include <cstdlib> // alloca
 #include <queue>
+#include <vector>
 
 struct subscription_data_t {
   std::string sub_id;
   std::string message;
 };
 
-rtm_client_t *rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+struct rtm_wrapper_t {
+  std::vector<char> rtm_data;
+  rtm_client_t *rtm;
+
+  rtm_wrapper_t() {
+    rtm_data.resize(rtm_client_size);
+    rtm = rtm_init(&rtm_data[0], rtm_default_pdu_handler, nullptr);
+  }
+} rtm_wrapper;
 
 TEST(rtm_json, pdu_rtm_standard_response) {
   rtm_pdu_t pdu{};
   char json[] = R"({"action":"rtm/subscription/data","body":{"position":"1479315802:0","messages":["a",null,42 ]}})";
-  rtm_parse_pdu(json, &pdu);
+  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, pdu.action);
   ASSERT_NOT_NULL(pdu.position);
@@ -22,15 +32,14 @@ TEST(rtm_json, pdu_rtm_standard_response) {
 
   for (auto expected_message : {"\"a\"", "null", "42"}) {
       char *got_message = rtm_iterate(&pdu.message_iterator);
-      ASSERT(got_message);
-      ASSERT_EQ(0, strcmp(expected_message, got_message));
+      ASSERT_STREQ(expected_message, got_message);
   }
 }
 
 TEST(rtm_json, pdu_field_in_random_order) {
   rtm_pdu_t pdu{};
   char json[] = R"({ "body" :  { "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"}, "action"    : "rtm/publish/ok" , "id" : 42 })";
-  rtm_parse_pdu(json, &pdu);
+  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.action);
   // ASSERT_TRUE(0 == strcmp(R"({ "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"})", pdu.body));
@@ -40,7 +49,7 @@ TEST(rtm_json, pdu_field_in_random_order) {
 TEST(rtm_json, pdu_body_is_absent) {
   rtm_pdu_t pdu{};
   char json[] = R"(  { "action" : "rtm/publish/ok" , "id" : 42  } )";
-  rtm_parse_pdu(json, &pdu);
+  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.action);
   ASSERT_TRUE(nullptr == pdu.body);
@@ -50,17 +59,17 @@ TEST(rtm_json, pdu_body_is_absent) {
 TEST(rtm_json, pdu_action_is_absent) {
   rtm_pdu_t pdu{};
   char json[] = R"(  {    "id" : 42  ,"body":{"stuff":[1,2,null]}} )";
-  rtm_parse_pdu(json, &pdu);
+  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
-  ASSERT_EQ(0, strcmp(R"({"stuff":[1,2,null]})", pdu.body));
+  ASSERT_STREQ(R"({"stuff":[1,2,null]})", pdu.body);
   ASSERT_EQ(42u, pdu.request_id);
 }
 
 TEST(rtm_json, pdu_empty_json) {
   rtm_pdu_t pdu{};
   char json[] = " {}";
-  rtm_parse_pdu(json, &pdu);
+  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
   ASSERT_TRUE(nullptr == pdu.body);
@@ -88,6 +97,26 @@ TEST(rtm_json, find_element) {
 
   message = rtm_iterate(&iter);
   ASSERT_EQ(nullptr, message);
+}
+
+TEST(rtm_json, handle_invalid_json) {
+  rtm_pdu_t pdu{};
+
+  std::string invalids[] = {
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 )",
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 ]\" )",
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 ],)",
+    R"({"action":"rtm/subscription/data","body" {}})",
+    R"({"action":"rtm/subscription/data","body":)",
+    R"({"action":"rtm/subscription/data","body"})",
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 }])",
+    R"({"action":"rtm/subscription/data","body":{"a":[{}}]}})",
+  };
+
+  for(auto i : invalids) {
+    std::string i_c = i;
+    ASSERT_EQ(RTM_ERR_PROTOCOL, rtm_parse_pdu(rtm_wrapper.rtm, const_cast<char*>(i_c.c_str()), &pdu)) << "Input '" << i << "' went through";
+  }
 }
 
 TEST(rtm_json, escape) {
@@ -120,9 +149,6 @@ TEST(rtm_json, escape) {
   ret = _rtm_json_escape(buf, 128, unicode_3);
   ASSERT_TRUE(0 == strcmp(buf, unicode_3));
   ASSERT_EQ(strlen(unicode_3), ret - buf);
-
-  ret = _rtm_json_escape(buf, -1, "foo bar");
-  ASSERT_EQ(nullptr, ret);
 
   ret = _rtm_json_escape(buf, 0, "foo bar");
   ASSERT_EQ(nullptr, ret);
