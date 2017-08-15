@@ -45,6 +45,7 @@ extern "C" {
 #define _RTM_SCRATCH_BUFFER_SIZE (256)
 
 #define _RTM_BUFFER_TO_IO(base) (base + _RTM_WS_PRE_BUFFER)
+#define _RTM_IO_TO_BUFFER(base) (base - _RTM_WS_PRE_BUFFER)
 
 #define _RTM_INBOUND_HEADER_SIZE_SMALL  (2)
 #define _RTM_INBOUND_HEADER_SIZE_NORMAL (2 + 2)

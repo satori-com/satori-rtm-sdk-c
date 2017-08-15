@@ -35,6 +35,11 @@ static char *_rtm_prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
 static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out);
 
+// PDU sending
+static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, int data_type, unsigned *ack_id);
+static rtm_status _rtm_channel_action(rtm_client_t *rtm, const char *action, const char *channel, unsigned *ack_id);
+static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, const char *body, unsigned *ack_id);
+
 // Stub malloc() doing nothing but printing an error
 static void *_rtm_nop_malloc(rtm_client_t *rtm, size_t size);
 
@@ -323,10 +328,19 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
-rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
+/**
+ * Write a PDU containing a channel and a message
+ *
+ * @param action Action field of PDU, e.g. auth/authenticate
+ * @param channel Name of the channel
+ * @param data Data, depends on data_type
+ * @param data_type 0 for a string, 1 for JSON
+ * @param ack_id Stores the ID of the packet if non-null
+ */
+static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, int data_type, unsigned *ack_id) {
   CHECK_PARAM(rtm);
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(string, RTM_MAX_MESSAGE_SIZE);
+  CHECK_MAX_SIZE(data, RTM_MAX_MESSAGE_SIZE);
 
   if (!ack_id) {
     rtm_status rc;
@@ -336,88 +350,163 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
     }
   }
 
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
+  char *base_buf = rtm->output_buffer;
+  char *buf = _RTM_BUFFER_TO_IO(base_buf);
+  size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), string);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
+  do {
+    p = _rtm_prepare_pdu_without_body(rtm, p, size, action, ack_id);
+    p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+    p = _rtm_json_escape(p, size - (p - buf), channel);
+    if (data_type == 0) {
+      // String
+      p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
+      p = _rtm_json_escape(p, size - (p - buf), data);
+      p = _rtm_snprintf(p, size - (p - buf), "\"}}");
+    }
+    else if(data_type == 1) {
+      // Json
+      p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", data);
+    }
 
-  if (!p) {
-    return RTM_ERR_OOM;
+    if (!p) {
+      if(base_buf == rtm->output_buffer) {
+        // Insufficient memory. Allow the user to allocate more.
+        // 73 bytes for JSON encoding of PDU (adding two extra quote characters
+        // for strings & assuming a 10 digit ack_id), double the other numbers
+        // as a worst-case measure if every character needs escaping.
+        size = _RTM_WS_PRE_BUFFER + 73 + 2 * (strlen(channel) + strlen(data)) + 1;
+        base_buf = rtm->malloc_fn(rtm, size);
+
+        if (base_buf) {
+          p = buf = _RTM_BUFFER_TO_IO(base_buf);
+          continue;
+        }
+      }
+
+      return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
+    }
+
+    break;
+  } while(1);
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, base_buf, p - buf);
+
+  if (base_buf != rtm->output_buffer) {
+    rtm->free_fn(rtm, base_buf);
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+}
+
+/**
+ * Write a PDU containing a channel
+ *
+ * @param action Action field of PDU, e.g. auth/authenticate
+ * @param channel Name of the channel
+ * @param ack_id Stores the ID of the packet if non-null
+ */
+static rtm_status _rtm_channel_action(rtm_client_t *rtm, const char *action, const char *channel, unsigned *ack_id) {
+  CHECK_PARAM(rtm);
+  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
+
+  char *base_buf = rtm->output_buffer;
+  char *buf = _RTM_BUFFER_TO_IO(base_buf);
+  size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
+  char *p = buf;
+
+  do {
+    p = _rtm_prepare_pdu_without_body(rtm, p, size, action, ack_id);
+    p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+    p = _rtm_json_escape(p, size - (p - buf), channel);
+    p = _rtm_snprintf(p, size - (p - buf), "\"}}");
+
+    if (!p) {
+      if (base_buf == rtm->output_buffer) {
+        // Insufficient memory. Allow the user to allocate more.
+        // 63 bytes for JSON encoding of PDU (assuming a 10 digit ack_id),
+        // worst case length for encoded channel name
+        size = _RTM_WS_PRE_BUFFER + 63 + 2 * strlen(channel);
+        base_buf = rtm->malloc_fn(rtm, size);
+
+        if (base_buf) {
+          buf = p = _RTM_BUFFER_TO_IO(base_buf);
+          continue;
+        }
+      }
+
+      return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
+    }
+
+    break;
+  }
+  while(1);
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, base_buf, p - buf);
+
+  if (base_buf != rtm->output_buffer) {
+    rtm->free_fn(rtm, base_buf);
+  }
+
+  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+}
+
+/**
+ * Write a PDU with arbitrary action and body
+ *
+ * @param action Action field of PDU, e.g. auth/authenticate
+ * @param body Body of the PDU
+ */
+static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, const char *body, unsigned *ack_id) {
+  CHECK_PARAM(rtm);
+
+  char *base_buf = rtm->output_buffer;
+  char *buf = _RTM_BUFFER_TO_IO(base_buf);
+  size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
+  char *p = _rtm_prepare_pdu(rtm, buf, size, action, body, ack_id);
+
+  if (!p) {
+    // Insufficient memory. Allow the user to allocate more.
+    // 63 bytes for JSON encoding of PDU (assuming a 10 digit ack_id)
+    size = _RTM_WS_PRE_BUFFER + 63 + strlen(body);
+    base_buf = rtm->malloc_fn(rtm, size);
+    if (!base_buf) {
+      return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
+    }
+
+    buf = _RTM_BUFFER_TO_IO(base_buf);
+    p = _rtm_prepare_pdu(rtm, buf, size, "rtm/subscribe", body, ack_id);
+
+    if (!p) {
+      rtm->free_fn(rtm, base_buf);
+      return RTM_ERR_OOM;
+    }
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, base_buf, p - buf);
+
+  if (base_buf != rtm->output_buffer) {
+    rtm->free_fn(rtm, base_buf);
+  }
+
+  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+}
+
+rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
+  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, string, 0, ack_id);
 }
 
 rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *json, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-  }
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, json, 1, ack_id);
 }
 
 rtm_status rtm_subscribe(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/subscribe", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action(rtm, "rtm/subscribe", channel, ack_id);
 }
 
 rtm_status rtm_subscribe_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_prepare_pdu(rtm, buf, rtm->output_buffer_size - _RTM_WS_PRE_BUFFER, "rtm/subscribe", body, ack_id);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_action_with_body(rtm, "rtm/subscribe", body, ack_id);
 }
 
 rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *subscription_id, unsigned *ack_id) {
@@ -462,121 +551,24 @@ void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval) {
 }
 
 rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_PARAM(channel);
-  CHECK_PARAM(ack_id);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/read", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action(rtm, "rtm/read", channel, ack_id);
 }
 
 rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_prepare_pdu(rtm, buf, rtm->output_buffer_size - _RTM_WS_PRE_BUFFER, "rtm/read", body, ack_id);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_action_with_body(rtm, "rtm/read", body, ack_id);
 }
 
+
 rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(string, RTM_MAX_MESSAGE_SIZE);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-  }
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), string);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, string, 0, ack_id);
 }
 
 rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *json, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-  }
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, json, 1, ack_id);
 }
 
 rtm_status rtm_delete(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/delete", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action(rtm, "rtm/delete", channel, ack_id);
 }
 
 rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json) {
