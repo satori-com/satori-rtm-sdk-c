@@ -35,6 +35,7 @@ struct event_t {
 
 std::queue<event_t> event_queue;
 std::queue<std::string> message_queue;
+std::queue<std::string> error_message_queue;
 
 void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   event_t event;
@@ -46,7 +47,6 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
     case RTM_ACTION_HANDSHAKE_ERROR:
     case RTM_ACTION_PUBLISH_ERROR:
     case RTM_ACTION_READ_ERROR:
-    case RTM_ACTION_SEARCH_ERROR:
     case RTM_ACTION_SUBSCRIBE_ERROR:
     case RTM_ACTION_UNSUBSCRIBE_ERROR:
     case RTM_ACTION_WRITE_ERROR:
@@ -75,20 +75,6 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       }
       return;
     }
-    case RTM_ACTION_SEARCH_OK:
-    case RTM_ACTION_SEARCH_DATA: {
-      char *channel;
-      while ((channel = rtm_iterate(&pdu->channel_iterator))) {
-        event_t data = event;
-        data.action = RTM_ACTION_SEARCH_DATA;
-        data.info = std::string(channel);
-        event_queue.push(data);
-      }
-      if (RTM_ACTION_SEARCH_DATA == event.action) {
-        return;
-      }
-      break;
-    }
     default:
       event.info = "";
       break;
@@ -100,6 +86,10 @@ void raw_pdu_recorder(rtm_client_t *rtm, char const *raw_pdu) {
   event_t event{};
   event.info = std::string(raw_pdu);
   event_queue.push(event);
+}
+
+void error_message_recorder(const char *error_message) {
+  error_message_queue.push(error_message);
 }
 
 
@@ -414,7 +404,8 @@ TEST(rtm_test, rtm_wait_timeout) {
 }
 
 TEST(rtm_test, verbose_logging) {
-  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
 
   rtm_disable_verbose_logging(rtm);
   ASSERT_EQ(rtm->is_verbose, 0u) << "verbose_logging Unable to disable verbose loggin";
@@ -423,11 +414,28 @@ TEST(rtm_test, verbose_logging) {
   ASSERT_EQ(rtm->is_verbose, 1u) << "verbose_logging Unable to enable verbose loggin";
 }
 
+TEST(rtm_test, error_handler) {
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+
+  rtm_set_error_logger(rtm, error_message_recorder);
+  ASSERT_EQ(error_message_queue.size(), 0) << "Error message queue isn't empty to start with";
+
+  rtm_connect(rtm, "thisisaninvalidendpoint", "thisisaninvalidkey");
+
+  ASSERT_GT(error_message_queue.size(), 0) << "Error message queue is empty even though an error occurred";
+  ASSERT_NE(error_message_queue.front().find("Unsupported scheme in endpoint=thisisaninvalidendpoint"), std::string::npos) << "Unexpected error message: " << error_message_queue.front();
+
+  error_message_queue.pop();
+}
+
 TEST(rtm_test, log_message) {
   const char *str = "Test log";
 
-  rtm_status status = _rtm_log_message(RTM_OK, str);
-  ASSERT_EQ(status, RTM_OK);
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+
+  _rtm_log_message(rtm, RTM_OK, str);
 }
 
 TEST(rtm_test, unsubscribe) {
@@ -651,44 +659,9 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
   rtm_close(rtm);
 }
 
-TEST(rtm_test, DISABLED_rtm_search_test) {
-  unsigned int request_id;
+TEST(rtm_test, parse_endpoint_test) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
-  int rc = rtm_connect(rtm, endpoint, appkey);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
-
-  std::string const channel = make_channel();
-  rc = rtm_publish_string(rtm, channel.c_str(), "test", &request_id);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed to send a publish request";
-
-  event_t event;
-  rc = next_event(rtm, &event);
-  ASSERT_EQ(rc, RTM_OK) << "Failed to receive an ack";
-  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
-
-  rc = rtm_search(rtm, channel.c_str(), &request_id);
-  ASSERT_EQ(rc, RTM_OK) << "Failed to send a search request";
-
-  std::vector<std::string> channels;
-
-  do {
-    rc = next_event(rtm, &event);
-    ASSERT_EQ(RTM_OK, rc) << "Failed to receive PDU";
-    ASSERT_TRUE((RTM_ACTION_SEARCH_DATA == event.action) || (RTM_ACTION_SEARCH_OK == event.action));
-    if (RTM_ACTION_SEARCH_DATA == event.action) {
-      std::string name = json::parse(event.info).get<std::string>();
-      channels.push_back(name);
-    }
-  } while (RTM_ACTION_SEARCH_OK != event.action);
-
-
-  bool found = channels.end() != std::find(channels.begin(), channels.end(), channel);
-  ASSERT_EQ(true, found) << "rtm/search failed to find our channel";
-}
-
-TEST(rtm_test, parse_endpoint_test) {
-  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
   char hostname[255];
   char port[10];
@@ -813,7 +786,9 @@ TEST(rtm_test, parse_endpoint_test) {
 }
 
 TEST(rtm_test, prepare_path_test) {
-  auto rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+
   char path[255];
   rtm_status rc;
 
@@ -846,6 +821,9 @@ class RTMEnvironment: public ::testing::Environment {
 
       std::queue<std::string> message_queue_empty;
       std::swap(message_queue, message_queue_empty);
+
+      std::queue<std::string> error_message_queue_empty;
+      std::swap(error_message_queue, error_message_queue_empty);
     }
 };
 

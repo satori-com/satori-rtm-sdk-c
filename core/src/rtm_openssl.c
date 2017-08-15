@@ -27,7 +27,8 @@ static rtm_status openssl_initialize(rtm_client_t *rtm) {
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
   if (!OPENSSL_init_ssl(OPENSSL_INIT_LOAD_CONFIG, NULL)) {
-    return _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL initialization failed");
+    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL initialization failed");
+    return RTM_ERR_TLS;
   }
 #else
   (void) OPENSSL_config(NULL);
@@ -39,7 +40,8 @@ static rtm_status openssl_initialize(rtm_client_t *rtm) {
 
 
   if (NULL == ssl_method) {
-    return _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL initialization failed");
+    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL initialization failed");
+    return RTM_ERR_TLS;
   }
 
 #if !defined(NDEBUG) && defined (OPENSSL_THREADS)
@@ -213,7 +215,8 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
 
   rtm->ssl_context = openssl_create_context();
   if (NULL == rtm->ssl_context) {
-    return _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to create context");
+    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to create context");
+    return RTM_ERR_TLS;
   }
 
 #if defined(_WIN32) && defined(_MSC_VER)
@@ -236,10 +239,10 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
 
   rtm->ssl_connection = openssl_create_connection(rtm->ssl_context, rtm->fd);
   if (NULL == rtm->ssl_connection) {
-    rc = _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to connect");
+    _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to connect");
     SSL_CTX_free(rtm->ssl_context);
     rtm->ssl_context = NULL;
-    return rc;
+    return RTM_ERR_TLS;
   }
 
   rc = openssl_handshake(rtm, hostname);

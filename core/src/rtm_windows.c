@@ -18,8 +18,10 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
   rtm->fd = -1;
 
   int fd = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
-  if (fd < 0)
-    return _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot create a socket");
+  if (fd < 0) {
+    _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot create a socket");
+    return RTM_ERR_CONNECT;
+  }
 
   unsigned long nonblocking = 1;
   ioctlsocket(fd, FIONBIO, &nonblocking);
@@ -72,15 +74,17 @@ try_again:
     }
     else {
       _close(fd);
-      return _rtm_log_error(rtm, RTM_ERR_CONNECT,
+      _rtm_log_error(rtm, RTM_ERR_CONNECT,
         "strange connection error - errno=%d message=%s", last_error,
         strerror(last_error));
+      return RTM_ERR_CONNECT;
     }
   }
   // should never come here.
-  return _rtm_log_error(rtm, RTM_ERR_CONNECT,
+  _rtm_log_error(rtm, RTM_ERR_CONNECT,
     "weird connection error - errno=%d message=%s", last_error,
     strerror(last_error));
+  return RTM_ERR_CONNECT;
 }
 
 rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostname, const char *port) {
@@ -99,8 +103,9 @@ rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostn
   struct addrinfo *res = NULL;
   int getaddrinfo_result = getaddrinfo(hostname, port, &hints, &res);
   if (getaddrinfo_result) {
-    return _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot find hostname=%s – reason=%s", hostname,
+    _rtm_log_error(rtm, RTM_ERR_CONNECT, "Cannot find hostname=%s - reason=%s", hostname,
       gai_strerror(getaddrinfo_result));
+    return RTM_ERR_CONNECT;
   }
 
   // iterate through the records to find a working peer
@@ -148,10 +153,10 @@ rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeo
   } while (ping_repeat || (poll_result < 0 && (WSAEWOULDBLOCK == last_error || WSAEINTR == last_error)));
 
   if (poll_result < 0) {
-    return _rtm_log_error(rtm, RTM_ERR_NETWORK, "error while waiting for socket – errno=%d error=%s",
+    _rtm_log_error(rtm, RTM_ERR_NETWORK, "error while waiting for socket - errno=%d error=%s",
       last_error,
       strerror(last_error));
-
+    return RTM_ERR_NETWORK;
   }
   return RTM_OK;
 
@@ -186,7 +191,7 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
         return -1;
     }
     else {
-      _rtm_log_error(rtm, RTM_ERR_WRITE, "Error writing to the socket – errno=%d message=%s", last_error, strerror(last_error));
+      _rtm_log_error(rtm, RTM_ERR_WRITE, "Error writing to the socket - errno=%d message=%s", last_error, strerror(last_error));
       return -1;
     }
   }
@@ -221,7 +226,7 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
         return 0;
     }
     else {
-      _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from the socket – errno=%d message=%s", last_error, strerror(last_error));
+      _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from the socket - errno=%d message=%s", last_error, strerror(last_error));
       return -1;
     }
   }

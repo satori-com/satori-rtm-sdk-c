@@ -31,12 +31,12 @@ static rtm_status gtls_initialize(rtm_client_t *rtm) {
     }
 
     if (certificate_store_found != 1) {
-      return _rtm_log_error(rtm, RTM_ERR_TLS,
-                           "GnuTLS Unable to load TLS trusted root certificates, or no certs found");
+      _rtm_log_error(rtm, RTM_ERR_TLS, "GnuTLS Unable to load TLS trusted root certificates, or no certs found");
+      return RTM_ERR_TLS;
     }
   }
 #else
-  _rtm_log_message(RTM_OK, "GNUTLS version < 3 no system root certificates defined");
+  _rtm_log_message(rtm, RTM_OK, "GNUTLS version < 3 no system root certificates defined");
 #endif
   return RTM_OK;
 }
@@ -71,11 +71,11 @@ static rtm_status gtls_handshake(rtm_client_t *rtm) {
   } while (ret < 0 && gnutls_error_is_fatal(ret) == 0);
 
   if (ret < 0) {
-    rtm_status error = _rtm_log_error(rtm, RTM_ERR_TLS, "TLS handshake failed – reason %s – %s",
-                                     gnutls_strerror(ret),
-                                     gnutls_alert_get_name(gnutls_alert_get(rtm->session)));
     gnutls_deinit(rtm->session);
-    return error;
+    _rtm_log_error(rtm, RTM_ERR_TLS, "TLS handshake failed – reason %s – %s",
+                   gnutls_strerror(ret),
+                   gnutls_alert_get_name(gnutls_alert_get(rtm->session)));
+    return RTM_ERR_TLS;
   }
   return RTM_OK;
 }
