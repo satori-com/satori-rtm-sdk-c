@@ -974,10 +974,6 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
   ASSERT_NOT_NULL(io_buffer);
   ASSERT(op <= WS_OPCODE_LAST);
 
-  if (len >= _RTM_MAX_BUFFER - _RTM_WS_PRE_BUFFER) {
-      _rtm_log_error(rtm, RTM_ERR_PARAM, "Write overflow");
-      return -1;
-  }
   io_buffer += _RTM_WS_PRE_BUFFER;
 
   if (rtm->is_verbose) {
