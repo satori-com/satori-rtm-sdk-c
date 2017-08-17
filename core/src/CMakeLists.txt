@@ -1,5 +1,8 @@
 # Construct sources list
-set(SOURCES rtm.c rtm_json.c rtm_byteorder.c)
+set(BASE_SOURCES rtm.c rtm_json.c rtm_byteorder.c)
+set(SOURCES ${BASE_SOURCES})
+file(GLOB BASE_HEADERS *.h)
+
 
 if(UNIX)
   list(APPEND SOURCES io/rtm_posix.c)
@@ -45,8 +48,8 @@ include(CheckFunctionExists)
 check_function_exists(getenv RTM_HAS_GETENV)
 set(RTM_LOGGING ${ENABLE_LOGGING})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
+configure_file(rtm_config.h.in
+  rtm_config.h
   @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
@@ -83,3 +86,49 @@ install(FILES rtm.h
 install(TARGETS rtm-core-sdk
         DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
+
+# Arduino SDK
+if(ARDUINO_SDK)
+  set(ARDUINO_DIR ${CMAKE_CURRENT_BINARY_DIR}/arduino)
+
+  # For certificate validation
+  # Included in esp8266/Arduino master, not yet in stable. The only other means
+  # of validation is by fingerprint, but that changes too often. Disabled for now.
+  #
+  #set(TEST_ENDPOINT zkng8p1v.api.satori.com)
+  #add_custom_command(
+  #  OUTPUT ${ARDUINO_DIR}/ssl_cert.c
+  #  COMMAND echo 'const char *_rtm_ssl_cert = ' > ${ARDUINO_DIR}/ssl_cert.c
+  #  # The following extracts the last certificate from the certificate chain at the
+  #  # endpoint and prints it as a c string.  Works with any posix compatible sed.
+  #  COMMAND openssl s_client -showcerts -connect ${TEST_ENDPOINT}:443 </dev/null 2>&1 | sed -ne ': o; $$ {x\;p\;}\; /-BEGIN CERTIFICATE-/{ s/.*/\"&\\\\n\"/\; h\;b i\; }\; d\; : i\; n\; s/.*/\"&\\\\n\"/\; H\; /-END CERTIFICATE-/ { n\; b o\; }\; b i\;' >> ${ARDUINO_DIR}/ssl_cert.c
+  #  COMMAND echo '\\;' >> ${ARDUINO_DIR}/ssl_cert.c
+  #)
+
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../library.properties.in ${ARDUINO_DIR}/library.properties @ONLY)
+
+  function(ArduinoConfig)
+    get_cmake_property(NAMES VARIABLES)
+    foreach(NAME ${NAMES})
+      if(NAME MATCHES "^RTM_")
+        set(${NAME} 0)
+      endif()
+    endforeach()
+    set(RTM_HAS_SSL 1)
+
+    configure_file(rtm_config.h.in ${ARDUINO_DIR}/rtm_config.h @ONLY)
+  endfunction()
+  ArduinoConfig()
+
+  set(ARDUINO_FILES ${ARDUINO_DIR}/rtm_config.h ${ARDUINO_DIR}/library.properties ${CMAKE_CURRENT_SOURCE_DIR}/io/rtm_esp_arduino.cpp ${CMAKE_CURRENT_SOURCE_DIR}/rtm_hmac_md5.c ${BASE_SOURCES} ${BASE_HEADERS})
+  set(ARDUINO_TARGET ${CMAKE_BINARY_DIR}/satori_esp_arduino_library.zip)
+  add_custom_command(
+    OUTPUT ${ARDUINO_TARGET}
+    COMMAND rm -f ${ARDUINO_TARGET}
+    COMMAND zip -j ${ARDUINO_TARGET} ${ARDUINO_FILES}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${ARDUINO_FILES}
+  )
+
+  add_custom_target(arduino-lib ALL DEPENDS ${ARDUINO_TARGET})
+endif()

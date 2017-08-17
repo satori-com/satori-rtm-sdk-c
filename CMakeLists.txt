@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(satori-sdk-c)
 include(ExternalProject)
 
+option(ARDUINO_SDK "Generate a library for ESP/Arduino" OFF)
 option(TESTS "Build all tests." OFF)
 option(BENCH "Build all benchmarks." OFF)
 option(EXAMPLES "Build all examples." OFF)
