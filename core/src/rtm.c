@@ -96,9 +96,11 @@ RTM_API rtm_client_t * rtm_init(
   rtm->output_buffer = rtm->input_buffer + buffer_size;
   rtm->output_buffer_size = buffer_size + _RTM_WS_PRE_BUFFER;
 
+#ifdef RTM_HAS_GETENV
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
   }
+#endif
 
   return rtm;
 }
