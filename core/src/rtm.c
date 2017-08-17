@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <panzi/portable_endian.h>
-
 #include "rtm_internal.h"
 
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
@@ -1005,7 +1003,7 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (126 | 0x80);
-    *(uint16_t *) (&io_buffer[2]) = htobe16(len);
+    *(uint16_t *) (&io_buffer[2]) = _rtm_ntohs(len);
     *(uint32_t *) (&io_buffer[4]) = mask;
     len += _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
 
@@ -1013,7 +1011,7 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_LARGE;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (127 | 0x80);
-    *(uint64_t *) (&io_buffer[2]) = htobe64(len);
+    *(uint64_t *) (&io_buffer[2]) = _rtm_ntohll(len);
     *(uint32_t *) (&io_buffer[10]) = mask;
     len += _RTM_OUTBOUND_HEADER_SIZE_LARGE;
   }
@@ -1508,12 +1506,12 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else if (frame_payload_length == 126) { // 126 -> 16 bit size
       if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL)
         return RTM_WOULD_BLOCK;
-      payload_length = be16toh(*(uint16_t *) (&ws_frame[2]));
+      payload_length = _rtm_ntohs(*(uint16_t *) (&ws_frame[2]));
       header_length = _RTM_INBOUND_HEADER_SIZE_NORMAL;
     } else { // 127 -> 64 bit size
       if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
         return RTM_WOULD_BLOCK;
-      payload_length = (size_t)be64toh(*(uint64_t *) (&ws_frame[2]));
+      payload_length = (size_t)_rtm_ntohll(*(uint64_t *) (&ws_frame[2]));
       header_length = _RTM_INBOUND_HEADER_SIZE_LARGE;
     }
 

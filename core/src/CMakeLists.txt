@@ -6,7 +6,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 # Construct sources list
-set(SOURCES rtm.c rtm_json.c)
+set(SOURCES rtm.c rtm_json.c rtm_byteorder.c)
 
 if(UNIX)
   list(APPEND SOURCES io/rtm_posix.c)

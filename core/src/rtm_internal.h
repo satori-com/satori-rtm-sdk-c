@@ -192,6 +192,39 @@ enum WebSocketOpCode {
     WS_OPCODE_LAST = 0x0A,
 };
 
+// Byte order
+#ifdef _RTM_ACTIVE_ENDIAN_TEST
+  uint16_t _rtm_ntohs(uint16_t in);
+  uint64_t _rtm_ntohll(uint64_t in);
+#elif (defined(_WIN16) || defined(_WIN32) || defined(_WIN64))
+  #if BYTE_ORDER == LITTLE_ENDIAN
+    #define _rtm_ntohs ntohs
+    #define _rtm_ntohll ntohll
+  #else
+    #define _rtm_ntohs(x) x
+    #define _rtm_ntohll(x) x
+  #endif
+#elif defined(__linux__) || defined(__CYGWIN__)
+  #include <endian.h>
+
+  #define _rtm_ntohs be16toh
+  #define _rtm_ntohll be64toh
+#elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
+  #include <sys/endian.h>
+
+  #define _rtm_ntohs be16toh
+  #define _rtm_ntohll be64toh
+#elif defined(__APPLE__)
+  #include <libkern/OSByteOrder.h>
+
+  #define _rtm_ntohs OSSwapBigToHostInt16
+  #define _rtm_ntohll OSSwapBigToHostInt64
+#else
+  #define _RTM_ACTIVE_ENDIAN_TEST
+  uint16_t _rtm_ntohs(uint16_t in);
+  uint64_t _rtm_ntohll(uint64_t in);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

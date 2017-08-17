@@ -15,6 +15,5 @@ s.source       = { :git => "https://github.com/satori-com/satori-rtm-sdk-c.git",
 s.source_files  = "ios-wrapper/SatoriRtmSdkWrapper/SatoriRtmSdkWrapper/**/*.{h,m}", "core/src/*.{h,c}", "core/src/io/rtm_posix.c", "core/src/ssl/rtm_apple_ssl.c"
 s.public_header_files = "ios-wrapper/SatoriRtmSdkWrapper/SatoriRtmSdkWrapper/**/*.h", "core/src/rtm.h"
 s.pod_target_xcconfig  = { "HEADER_SEARCH_PATHS" => "$(PODS_TARGET_SRCROOT)/vendor/**", "GCC_PREPROCESSOR_DEFINITIONS" => "USE_APPLE_SSL" }
-s.preserve_paths = 'vendor/panzi/portable_endian.h'
 
 end
