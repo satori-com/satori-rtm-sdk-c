@@ -4,6 +4,7 @@
 #include "rtm.h"
 
 #include <stdint.h>
+#include <stdarg.h>
 
 #ifdef _WIN32
 #include <BaseTsd.h>
