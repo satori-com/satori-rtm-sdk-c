@@ -7,13 +7,66 @@ if (NOT CMAKE_VERSION VERSION_LESS 3.4)
     cmake_policy(SET CMP0042 NEW)
 endif ()
 
-
 option(USE_GNUTLS "Use GNUTLS backend" OFF)
 option(USE_OPENSSL "Use OpenSSL backend" OFF)
 option(USE_APPLE_SSL "Use Apple TLS backend" OFF)
 option(DOC "Build the documentation" OFF)
 option(BUILD_STATIC "Build static version" OFF)
 option(COVERAGE "Generate coverage statistics" OFF)
+
+# Set global compiler flags
+if (${CMAKE_C_COMPILER_ID} MATCHES "Clang")
+  # using Clang
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -Wall -Werror -Wno-long-long -Wno-unknown-pragmas")
+elseif (${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+  # using GCC
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -Wall -Werror -Wno-long-long -Wno-unknown-pragmas")
+elseif (${CMAKE_C_COMPILER_ID} MATCHES "Intel")
+  # using Intel C++
+  # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-long-long")
+elseif (MSVC)
+  # using Visual Studio C++
+  string(REGEX REPLACE "/W[0-4]" "/Wall" CMAKE_CC_FLAGS "${CMAKE_C_FLAGS}")
+endif()
+
+# Select SSL implementation
+if(USE_GNUTLS AND USE_OPENSSL)
+  message(FATAL_ERROR "USE_GNUTLS and USE_OPENSSL are mutually exclusive")
+endif()
+
+if(USE_GNUTLS AND USE_APPLE_SSL)
+  message(FATAL_ERROR "USE_GNUTLS and USE_APPLE_SSL are mutually exclusive")
+endif()
+
+if(USE_OPENSSL AND USE_APPLE_SSL)
+  message(FATAL_ERROR "USE_OPENSSL and USE_APPLE_SSL are mutually exclusive")
+endif()
+
+if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
+  if(APPLE)
+    set(USE_APPLE_SSL ON)
+  else()
+    find_package(OpenSSL)
+    if(OPENSSL_FOUND)
+      set(USE_OPENSSL ON)
+    else()
+      find_package(GnuTLS)
+      if(GNUTLS_FOUND)
+        set(USE_GNUTLS ON)
+      else()
+        if(NOT SKIP_TLS)
+          message(FATAL_ERROR "Failed to find a SSL implementation. Please install OpenSSL or GnuTLS.\n"
+            "If you know what you are doing, you can skip this test by defining SKIP_TLS. Mind that TLS "
+            "support is required for connections to Satori.")
+        endif()
+      endif()
+    endif()
+  endif()
+endif()
+
+# Anything from the core will require access to the SDK
+set(RTM_SDK_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${RTM_SDK_DIRECTORY})
 
 if(COVERAGE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
@@ -35,172 +88,9 @@ if(COVERAGE)
     )
 endif()
 
-if (${CMAKE_C_COMPILER_ID} MATCHES "Clang")
-  # using Clang
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -Wall -Werror -Wno-long-long -Wno-unknown-pragmas")
-elseif (${CMAKE_C_COMPILER_ID} MATCHES "GNU")
-  # using GCC
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -Wall -Werror -Wno-long-long -Wno-unknown-pragmas")
-elseif (${CMAKE_C_COMPILER_ID} MATCHES "Intel")
-  # using Intel C++
-  # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-long-long")
-elseif (MSVC)
-  # using Visual Studio C++
-  string(REGEX REPLACE "/W[0-4]" "/Wall" CMAKE_CC_FLAGS "${CMAKE_C_FLAGS}")
-endif()
-
-if(USE_GNUTLS AND USE_OPENSSL)
-  message(FATAL_ERROR "USE_GNUTLS and USE_OPENSSL are mutually exclusive")
-endif()
-
-if(USE_GNUTLS AND USE_APPLE_SSL)
-  message(FATAL_ERROR "USE_GNUTLS and USE_APPLE_SSL are mutually exclusive")
-endif()
-
-if(USE_OPENSSL AND USE_APPLE_SSL)
-  message(FATAL_ERROR "USE_OPENSSL and USE_APPLE_SSL are mutually exclusive")
-endif()
-
-if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
-  if(APPLE)
-    set(USE_APPLE_SSL ON)
-  else()
-    set(USE_OPENSSL ON)
-  endif()
-endif()
-
-set(RTM_SDK_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src)
-include_directories(${RTM_SDK_DIRECTORY})
-include_directories(system ../vendor)
-
-# Create configuration header
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
-  @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-
-# Construct sources list
-
-set(SOURCES src/rtm.c src/rtm_json.c)
-
-if(UNIX)
-list(APPEND SOURCES src/rtm_posix.c)
-elseif(MSVC)
-list(APPEND SOURCES src/rtm_windows.c)
-else()
-message(FATAL_ERROR "Environment that is neither UNIX nor Visual Studio is not supported")
-endif()
-
-if(USE_GNUTLS)
-  list(APPEND SOURCES src/rtm_gnutls.c)
-elseif(USE_OPENSSL)
-  list(APPEND SOURCES src/rtm_openssl.c src/rtm_openssl_bio.c)
-elseif(USE_APPLE_SSL)
-  list(APPEND SOURCES src/rtm_apple_ssl.c)
-endif()
-
-# sources list is now ready
-
-if(BUILD_STATIC)
-    add_library(rtm-core-sdk STATIC ${SOURCES})
-else()
-    add_library(rtm-core-sdk SHARED ${SOURCES})
-endif()
-
-set_target_properties(rtm-core-sdk PROPERTIES LINKER_LANGUAGE C)
-
-if(UNIX)
-else()
-target_link_libraries(rtm-core-sdk wsock32 ws2_32)
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-endif()
-
-include_directories("$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>")
-
-if(USE_GNUTLS)
-  find_package(GnuTLS REQUIRED)
-  message(STATUS "GNU TLS: " ${GNUTLS_VERSION_STRING})
-
-  include_directories(${GNUTLS_INCLUDE_DIR})
-  target_link_libraries(rtm-core-sdk ${GNUTLS_LIBRARIES})
-  add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
-
-  set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
-elseif(USE_OPENSSL)
-
-  add_definitions(-DUSE_OPENSSL)
-
-  if (MSVC)
-      message(WARNING
-          "\nAutomatically finding OpenSSL on Windows is not supported yet. "
-          "Please install OpenSSL and configure the Visual Studio Project to find it. ")
-  else()
-      find_package(OpenSSL REQUIRED)
-      add_definitions(${OPENSSL_DEFINITIONS})
-      message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
-      include_directories(${OPENSSL_INCLUDE_DIR})
-      target_link_libraries(rtm-core-sdk ${OPENSSL_LIBRARIES})
-
-      set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
-  endif(MSVC)
-
-elseif(USE_APPLE_SSL)
-  message(STATUS "Selected Apple Security framework")
-
-  target_link_libraries(rtm-core-sdk "-framework foundation" "-framework security")
-  add_definitions(-DUSE_APPLE_SSL)
-
-  set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
-else()
-  message(STATUS "No TLS backend selected.")
-
-endif()
-
 if(DOC)
-  find_package(Doxygen REQUIRED)
-  add_custom_target(documentation ALL
-                    COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                    COMMENT "Generating API documentation with Doxygen"
-                    VERBATIM)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs/html DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/docs)
-
+  add_subdirectory(docs)
 endif()
-
-if(OSX)
-    if(BUILD_STATIC)
-      set_target_properties(rtm-core-sdk PROPERTIES
-                            OUTPUT_NAME "SatoriCoreSDKtatic"
-                            INSTALL_NAME_DIR "@rpath/SatoriCoreSDKStatic.framework"
-                            INSTALL_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
-                            )
-      install(FILES src/rtm.h
-              DESTINATION include/SatoriCoreSDKStatic
-              RENAME Core.h
-              )
-  else()
-      set_target_properties(rtm-core-sdk PROPERTIES
-                            OUTPUT_NAME "SatoriCoreSDK"
-                            INSTALL_NAME_DIR "@rpath/SatoriCoreSDK.framework"
-                            INSTALL_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
-                            )
-      install(FILES src/rtm.h
-              DESTINATION include/SatoriCoreSDK
-              RENAME Core.h
-              )
-  endif()
-endif()
-
-install(FILES src/rtm.h
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-       )
-install(TARGETS rtm-core-sdk
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-       )
 
 if(EXAMPLES)
   add_subdirectory(examples)
@@ -220,9 +110,19 @@ if(PERF)
 endif()
 
 if(UNIX)
+  if(USE_GNUTLS)
+    set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
+  elseif(USE_OPENSSL)
+    set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
+  elseif(USE_APPLE_SSL)
+    set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
+  endif()
+
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/satori-rtm.pc.in
                 ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
                 @ONLY)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
     DESTINATION "${CMAKE_INSTALL_PKGCONFIGDIR}")
 endif()
+
+add_subdirectory(src)
