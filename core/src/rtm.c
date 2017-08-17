@@ -925,7 +925,8 @@ static rtm_status _rtm_parse_endpoint(
     if(port_length >= _RTM_MAX_PORT_SIZE - 1) {
       return RTM_ERR_OOM;
     }
-    sprintf(port_out, "%.*s", port_length, port_delimiter + 1);
+    memcpy(port_out, port_delimiter + 1, port_length);
+    port_out[port_length] = 0;
     hostname_end = port_delimiter;
   } else {
     strcpy(port_out, auto_port);
@@ -940,7 +941,8 @@ static rtm_status _rtm_parse_endpoint(
   }
   // _rtm_check_hostname_length verifies that hostname_length is smaller than
   // the hostname buffer.
-  sprintf(hostname_out, "%.*s", hostname_length, hostname_start);
+  memcpy(hostname_out, hostname_start, hostname_length);
+  hostname_out[hostname_length] = 0;
 
   return RTM_OK;
 }
