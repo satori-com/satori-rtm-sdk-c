@@ -69,6 +69,40 @@ endif()
 set(RTM_SDK_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${RTM_SDK_DIRECTORY})
 
+if(USE_GNUTLS)
+  find_package(GnuTLS REQUIRED)
+  message(STATUS "GNU TLS: " ${GNUTLS_VERSION_STRING})
+
+  include_directories(${GNUTLS_INCLUDE_DIR})
+  add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
+  set(TLS_LIBRARIES ${GNUTLS_LIBRARIES})
+  set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
+
+elseif(USE_OPENSSL)
+  if(MSVC)
+      message(WARNING
+          "\nAutomatically finding OpenSSL on Windows is not supported yet. "
+          "Please install OpenSSL and configure the Visual Studio Project to find it. ")
+  else()
+      find_package(OpenSSL REQUIRED)
+      message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
+
+      add_definitions(${OPENSSL_DEFINITIONS})
+      include_directories(${OPENSSL_INCLUDE_DIR})
+      set(TLS_LIBRARIES ${OPENSSL_LIBRARIES})
+  endif()
+  add_definitions(-DUSE_OPENSSL)
+  set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
+
+elseif(USE_APPLE_SSL)
+  message(STATUS "Selected Apple Security framework")
+
+  add_definitions(-DUSE_APPLE_SSL)
+  set(TLS_LIBRARIES "-framework foundation" "-framework security")
+  set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
+endif()
+
+
 if(COVERAGE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
@@ -79,10 +113,10 @@ if(COVERAGE)
     endif()
 
     add_custom_target(coverage
-      COMMAND lcov -c -d CMakeFiles/rtm-core-sdk.dir/src -o CMakeFiles/coverage.info
+      COMMAND lcov -c -d src/CMakeFiles/rtm-core-sdk.dir -o CMakeFiles/coverage.info
       COMMAND genhtml CMakeFiles/coverage.info -o CMakeFiles/coverage_report
       COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "Check the ${CMAKE_CURRENT_BINARY_DIR}/CMakeFile/coverage_report to get more information"
-      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/rtm-core-sdk.dir/src/*.gcda
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/src/CMakeFiles/rtm-core-sdk.dir/*.gcda
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Generating coverage information"
       VERBATIM
@@ -111,14 +145,6 @@ if(PERF)
 endif()
 
 if(UNIX)
-  if(USE_GNUTLS)
-    set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
-  elseif(USE_OPENSSL)
-    set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
-  elseif(USE_APPLE_SSL)
-    set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
-  endif()
-
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/satori-rtm.pc.in
                 ${CMAKE_CURRENT_BINARY_DIR}/satori-rtm.pc
                 @ONLY)

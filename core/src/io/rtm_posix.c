@@ -175,9 +175,11 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
   if (output_size == 0)
     return 0;
 
+#ifdef RTM_HAS_SSL
   if (rtm->is_secure) {
     return _rtm_io_write_tls(rtm, output_buffer, output_size);
   }
+#endif
 
   ssize_t write_result;
   ssize_t written = 0;
@@ -206,9 +208,11 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
   if (input_size == 0)
     return 0;
 
+#ifdef RTM_HAS_SSL
   if (rtm->is_secure) {
     return _rtm_io_read_tls(rtm, input_buffer, input_size, wait);
   }
+#endif
 
   ssize_t read_result;
   while (TRUE) {
@@ -232,10 +236,12 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
 rtm_status _rtm_io_close(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
 
+#ifdef RTM_HAS_SSL
   if (rtm->is_secure) {
     _rtm_io_close_tls_session(rtm);
     rtm->is_secure = NO;
   }
+#endif
 
   if (rtm->fd >= 0) {
     close(rtm->fd);

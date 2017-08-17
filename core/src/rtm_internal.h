@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdarg.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <BaseTsd.h>

@@ -1,13 +1,3 @@
-# Create configuration header
-include(CheckFunctionExists)
-check_function_exists(getenv RTM_HAS_GETENV)
-set(RTM_LOGGING ${ENABLE_LOGGING})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
-  @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-
 # Construct sources list
 set(SOURCES rtm.c rtm_json.c rtm_byteorder.c)
 
@@ -20,12 +10,16 @@ else()
 endif()
 
 if(USE_GNUTLS)
+  set(RTM_HAS_SSL 1)
   list(APPEND SOURCES ssl/rtm_gnutls.c)
 elseif(USE_OPENSSL)
+  set(RTM_HAS_SSL 1)
   list(APPEND SOURCES ssl/rtm_openssl.c ssl/rtm_openssl_bio.c)
 elseif(USE_APPLE_SSL)
+  set(RTM_HAS_SSL 1)
   list(APPEND SOURCES ssl/rtm_apple_ssl.c)
 else()
+  set(RTM_HAS_SSL 0)
   list(APPEND SOURCES ssl/rtm_hmac_md5.c)
 endif()
 
@@ -44,39 +38,19 @@ if(MSVC)
 endif()
 
 include_directories("$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>")
+target_link_libraries(rtm-core-sdk ${TLS_LIBRARIES})
 
-if(USE_GNUTLS)
-  find_package(GnuTLS REQUIRED)
-  message(STATUS "GNU TLS: " ${GNUTLS_VERSION_STRING})
+# Create configuration header
+include(CheckFunctionExists)
+check_function_exists(getenv RTM_HAS_GETENV)
+set(RTM_LOGGING ${ENABLE_LOGGING})
 
-  include_directories(${GNUTLS_INCLUDE_DIR})
-  target_link_libraries(rtm-core-sdk ${GNUTLS_LIBRARIES})
-  add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
+  @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-elseif(USE_OPENSSL)
-  add_definitions(-DUSE_OPENSSL)
-  if(MSVC)
-      message(WARNING
-          "\nAutomatically finding OpenSSL on Windows is not supported yet. "
-          "Please install OpenSSL and configure the Visual Studio Project to find it. ")
-  else()
-      find_package(OpenSSL REQUIRED)
-      message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
-
-      add_definitions(${OPENSSL_DEFINITIONS})
-      include_directories(${OPENSSL_INCLUDE_DIR})
-      target_link_libraries(rtm-core-sdk ${OPENSSL_LIBRARIES})
-  endif()
-
-elseif(USE_APPLE_SSL)
-  message(STATUS "Selected Apple Security framework")
-
-  target_link_libraries(rtm-core-sdk "-framework foundation" "-framework security")
-  add_definitions(-DUSE_APPLE_SSL)
-
-else()
-  message(STATUS "No TLS backend selected.")
-endif()
 
 # Installation
 if(OSX)

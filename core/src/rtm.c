@@ -230,7 +230,11 @@ static rtm_status _rtm_io_connect(
 
   rtm->is_secure = NO;
   if (use_tls) {
+#ifdef RTM_HAS_SSL
     rc = _rtm_io_open_tls_session(rtm, hostname);
+#else
+    rc = RTM_ERR_PARAM_INVALID;
+#endif
     if (RTM_OK != rc) {
       _rtm_io_close(rtm);
       return rc;
