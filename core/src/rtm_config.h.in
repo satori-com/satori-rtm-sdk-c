@@ -16,5 +16,6 @@
 #cmakedefine RTM_HAS_GETENV
 #cmakedefine RTM_LOGGING
 #cmakedefine RTM_HAS_SSL
+#cmakedefine RTM_HAS_ISSPACE
 
 #endif // CORE_RTM_CONFIG_H__INCLUDED

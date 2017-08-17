@@ -1,10 +1,18 @@
-#include <ctype.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "rtm_internal.h"
+
+#ifdef RTM_HAS_ISSPACE
+  #include <ctype.h>
+#else
+  static int _rtm_isspace(int c) {
+    return c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r' || c == ' ';
+  }
+  #define isspace _rtm_isspace
+#endif
 
 static char *find_end_of_element(char *json) {
   int brackets = 0;
