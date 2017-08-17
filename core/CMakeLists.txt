@@ -7,6 +7,7 @@ if (NOT CMAKE_VERSION VERSION_LESS 3.4)
     cmake_policy(SET CMP0042 NEW)
 endif ()
 
+option(ENABLE_LOGGING "Compile with logging support" ON)
 option(USE_GNUTLS "Use GNUTLS backend" OFF)
 option(USE_OPENSSL "Use OpenSSL backend" OFF)
 option(USE_APPLE_SSL "Use Apple TLS backend" OFF)

@@ -86,7 +86,9 @@ RTM_API rtm_client_t * rtm_init(
   rtm->is_secure = NO;
   rtm->ws_ping_interval = 45;
   rtm->connect_timeout = 5;
+#ifdef RTM_LOGGING
   rtm->error_logger = rtm_default_error_logger;
+#endif
 
   size_t available_memory_for_buffers = memory_size - sizeof(rtm_client_t) - _RTM_WS_PRE_BUFFER;
   size_t buffer_size = available_memory_for_buffers / 2;
@@ -660,11 +662,12 @@ static const char *const action_table[] = {
     [RTM_ACTION_WRITE_OK] = "rtm/write/ok"
 };
 
+#ifdef RTM_LOGGING
 void rtm_default_error_logger(const char *message) {
-  // FIXME USE NSLog on Mac and iOS
   fprintf(stderr, "%s\n", message);
   fflush(stderr);
 }
+#endif
 
 void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
   printf("received pdu: client=%p, action=%s, id=%u\n",
@@ -694,6 +697,7 @@ void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 }
 
 const char *rtm_error_string(rtm_status status) {
+#ifdef RTM_LOGGING
   switch (status) {
     case RTM_OK:
       return "RTM_OK: No error.";
@@ -722,6 +726,9 @@ const char *rtm_error_string(rtm_status status) {
     default:
       return "RTM_UNKNOWN: Unknown status of operation.";
   }
+#else
+  return "";
+#endif
 }
 
 // Internal code
@@ -976,9 +983,11 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
 
   io_buffer += _RTM_WS_PRE_BUFFER;
 
+#ifdef RTM_LOGGING
   if (rtm->is_verbose) {
     fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
   }
+#endif
 
   // RFC 6455 asks for this mask to come from a strong entropy source, but we
   // cannot afford to block here. Since the application is to increase
@@ -1331,7 +1340,7 @@ void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler) 
     rtm->handle_raw_pdu = handler;
 }
 
-void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
+void _rtm_log_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
   if (!rtm->error_logger)
@@ -1342,7 +1351,7 @@ void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ..
   va_end(vl);
 }
 
-void _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
+void _rtm_logv_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
 
@@ -1379,7 +1388,7 @@ rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   return rc;
 }
 
-void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message) {
+void _rtm_log_message_impl(rtm_client_t *rtm, rtm_status status, const char *message) {
   ASSERT_NOT_NULL(message);
   if (rtm->error_logger)
     rtm->error_logger(message);
@@ -1572,10 +1581,12 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         return RTM_ERR_CLOSED;
       } else if (WS_PING == frame_opcode || WS_PONG == frame_opcode) {
         // FIXME pberndt: Reply to PING
-        const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
+#ifdef RTM_LOGGING
         if (rtm->is_verbose) {
+          const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
           fprintf(stderr, "RECV: %s\n", frame_type);
         }
+#endif
       }
     } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode || WS_CONTINUATION == frame_opcode) { /* data frame */
       if (frame_opcode == WS_CONTINUATION && !rtm->fragment_end) {
@@ -1623,9 +1634,11 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
           size_t reassembled_payload_length = fragment_target + payload_length - base_input_buffer;
 
+#ifdef RTM_LOGGING
           if (rtm->is_verbose) {
             fprintf(stderr, "RECV: %.*s\n", (int)reassembled_payload_length, base_input_buffer);
           }
+#endif
 
           rtm_text_frame_handler(rtm, base_input_buffer, reassembled_payload_length);
           return_code = RTM_OK;
@@ -1640,9 +1653,11 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         char save = ws_frame[payload_length];
         ws_frame[payload_length] = 0; // be nice, null terminate
 
+#ifdef RTM_LOGGING
         if (rtm->is_verbose) {
           fprintf(stderr, "RECV: %.*s\n", (int)payload_length, ws_frame);
         }
+#endif
 
         rtm_text_frame_handler(rtm, ws_frame, payload_length);
         ws_frame[payload_length] = save;

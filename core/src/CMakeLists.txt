@@ -1,6 +1,7 @@
 # Create configuration header
 include(CheckFunctionExists)
 check_function_exists(getenv RTM_HAS_GETENV)
+set(RTM_LOGGING ${ENABLE_LOGGING})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtm_config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
   @ONLY)
