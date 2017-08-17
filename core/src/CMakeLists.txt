@@ -9,19 +9,21 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rtm_config.h
 set(SOURCES rtm.c rtm_json.c)
 
 if(UNIX)
-  list(APPEND SOURCES rtm_posix.c)
+  list(APPEND SOURCES io/rtm_posix.c)
 elseif(MSVC)
-  list(APPEND SOURCES rtm_windows.c)
+  list(APPEND SOURCES io/rtm_windows.c)
 else()
   message(FATAL_ERROR "Environment that is neither UNIX nor Visual Studio is not supported")
 endif()
 
 if(USE_GNUTLS)
-  list(APPEND SOURCES rtm_gnutls.c)
+  list(APPEND SOURCES ssl/rtm_gnutls.c)
 elseif(USE_OPENSSL)
-  list(APPEND SOURCES rtm_openssl.c rtm_openssl_bio.c)
+  list(APPEND SOURCES ssl/rtm_openssl.c ssl/rtm_openssl_bio.c)
 elseif(USE_APPLE_SSL)
-  list(APPEND SOURCES rtm_apple_ssl.c)
+  list(APPEND SOURCES ssl/rtm_apple_ssl.c)
+else()
+  list(APPEND SOURCES ssl/rtm_hmac_md5.c)
 endif()
 
 # Sources list is now ready
