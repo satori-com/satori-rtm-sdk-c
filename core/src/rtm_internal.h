@@ -60,9 +60,15 @@ struct _rtm_client {
     void *user;
     int fd;
     ssize_t input_length;
+    char *fragment_end;
+
+    size_t huge_packet_bytes;
+
     unsigned is_closed: 1;
     unsigned is_used: 1;
     unsigned is_verbose: 1;
+    unsigned is_in_huge_packet_skip: 1;
+
     unsigned last_request_id;
     unsigned last_ping_ts;
     time_t ws_ping_interval;
@@ -83,11 +89,16 @@ struct _rtm_client {
 
     rtm_error_logger_t *error_logger;
 
+    char scratch_buffer[_RTM_SCRATCH_BUFFER_SIZE];
+
     // The buffers are padded so we are always guaranteed to have
     // enough bytes to pre pad any buffer with websocket framing
-    char input_buffer[_RTM_WS_PRE_BUFFER + _RTM_MAX_BUFFER + 1]; // add 1 to ALWAYS have a zero terminated buffer
-    char output_buffer[_RTM_WS_PRE_BUFFER + _RTM_MAX_BUFFER + 1];
-    char scratch_buffer[_RTM_SCRATCH_BUFFER_SIZE];
+
+    size_t input_buffer_size; // Ideal size: _RTM_MAX_BUFFER + 1
+    char *input_buffer;
+
+    size_t output_buffer_size; // Ideal size: _RTM_WS_PRE_BUFFER + _RTM_MAX_BUFFER + 1
+    char *output_buffer;
 };
 
 // json methods
@@ -122,7 +133,9 @@ RTM_TEST_API void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const c
 #define FALSE 0
 #define NO 0
 
-#define RTM_CLIENT_SIZE (sizeof(struct _rtm_client))
+#define _RTM_MINIMAL_PDU_SIZE    256 /* Enough to store handshake and authentication PDUs */
+#define _RTM_CLIENT_MIN_SIZE     (sizeof(struct _rtm_client) + _RTM_WS_PRE_BUFFER + 2*(_RTM_MINIMAL_PDU_SIZE + 1))
+#define _RTM_CLIENT_DESIRED_SIZE (sizeof(struct _rtm_client) + _RTM_WS_PRE_BUFFER + 2*(_RTM_MAX_BUFFER + 1))
 
 enum rtm_url_scheme_t {
     SCHEME_WS = 1,
