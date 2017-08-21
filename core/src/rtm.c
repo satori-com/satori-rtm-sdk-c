@@ -371,18 +371,32 @@ static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char
     }
 
     if (!p) {
-      if(base_buf == rtm->output_buffer) {
-        // Insufficient memory. Allow the user to allocate more.
-        // 73 bytes for JSON encoding of PDU (adding two extra quote characters
-        // for strings & assuming a 10 digit ack_id), double the other numbers
-        // as a worst-case measure if every character needs escaping.
-        size = _RTM_WS_PRE_BUFFER + 73 + 2 * (strlen(channel) + strlen(data)) + 1;
-        base_buf = rtm->malloc_fn(rtm, size);
-
-        if (base_buf) {
-          p = buf = _RTM_BUFFER_TO_IO(base_buf);
-          continue;
+      // Insufficient memory. Allow the user to allocate more.
+      if(base_buf != rtm->output_buffer) {
+        // We tried allocating space before. Increase size by a factor of two,
+        // and retry.
+        rtm->free_fn(rtm, base_buf);
+        size *= 2;
+      }
+      else {
+        // Make a guess on the size of the request. If our guess is not correct,
+        // we will allocate more space in out next attempt.
+        size_t new_size = _RTM_WS_PRE_BUFFER
+          + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":{{\"channel\":\"\",\"message\":\"\"}}")
+          + strlen(action) + 6 * (strlen(channel) + strlen(data)) + 1;
+        if(new_size > size) {
+          size = new_size;
         }
+        else {
+          size *= 2;
+        }
+      }
+
+      base_buf = rtm->malloc_fn(rtm, size);
+
+      if (base_buf) {
+        p = buf = _RTM_BUFFER_TO_IO(base_buf);
+        continue;
       }
 
       return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
@@ -423,17 +437,32 @@ static rtm_status _rtm_channel_action(rtm_client_t *rtm, const char *action, con
     p = _rtm_snprintf(p, size - (p - buf), "\"}}");
 
     if (!p) {
-      if (base_buf == rtm->output_buffer) {
-        // Insufficient memory. Allow the user to allocate more.
-        // 63 bytes for JSON encoding of PDU (assuming a 10 digit ack_id),
-        // worst case length for encoded channel name
-        size = _RTM_WS_PRE_BUFFER + 63 + 2 * strlen(channel);
-        base_buf = rtm->malloc_fn(rtm, size);
-
-        if (base_buf) {
-          buf = p = _RTM_BUFFER_TO_IO(base_buf);
-          continue;
+      // Insufficient memory. Allow the user to allocate more.
+      if(base_buf != rtm->output_buffer) {
+        // We tried allocating space before. Increase size by a factor of two,
+        // and retry.
+        rtm->free_fn(rtm, base_buf);
+        size *= 2;
+      }
+      else {
+        // Make a guess on the size of the request. If our guess is not correct,
+        // we will allocate more space in out next attempt.
+        size_t new_size = _RTM_WS_PRE_BUFFER
+          + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":{{\"channel\":\"\"}}")
+          + strlen(action) + 6 * (strlen(channel)) + 1;
+        if(new_size > size) {
+          size = new_size;
         }
+        else {
+          size *= 2;
+        }
+      }
+
+      base_buf = rtm->malloc_fn(rtm, size);
+
+      if (base_buf) {
+        p = buf = _RTM_BUFFER_TO_IO(base_buf);
+        continue;
       }
 
       return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
