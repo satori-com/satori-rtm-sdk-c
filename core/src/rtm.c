@@ -1486,10 +1486,10 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
   char *base_input_buffer;
   size_t base_input_buffer_size;
-  if (rtm->huge_buffer) {
+  if (rtm->dynamic_input_buffer) {
     // Dynamically allocated buffer for large data bursts
-    base_input_buffer = rtm->huge_buffer;
-    base_input_buffer_size = rtm->huge_buffer_size;
+    base_input_buffer = rtm->dynamic_input_buffer;
+    base_input_buffer_size = rtm->dynamic_input_buffer_size;
   }
   else {
     // Base buffer used normally
@@ -1654,11 +1654,11 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
           memcpy(memory, ws_frame, rtm->input_length);
         }
 
-        if(rtm->huge_buffer) {
-          rtm->free_fn(rtm, rtm->huge_buffer);
+        if(rtm->dynamic_input_buffer) {
+          rtm->free_fn(rtm, rtm->dynamic_input_buffer);
         }
-        rtm->huge_buffer = memory;
-        rtm->huge_buffer_size = amount_to_allocate;
+        rtm->dynamic_input_buffer = memory;
+        rtm->dynamic_input_buffer_size = amount_to_allocate;
 
         // Uncomment if the "return" is ever replaced by "break":
         //have_incomplete_message = TRUE;
@@ -1790,16 +1790,16 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
   /*
    * Discard the huge frame buffer if it isn't needed anymore
    */
-  if (!have_incomplete_message && rtm->huge_buffer) {
+  if (!have_incomplete_message && rtm->dynamic_input_buffer) {
     assert(!rtm->fragment_end);
 
     if (rtm->input_length > 0) {
       memcpy(rtm->input_buffer, ws_frame, rtm->input_length);
     }
 
-    rtm->free_fn(rtm, rtm->huge_buffer);
-    rtm->huge_buffer = NULL;
-    rtm->huge_buffer_size = 0;
+    rtm->free_fn(rtm, rtm->dynamic_input_buffer);
+    rtm->dynamic_input_buffer = NULL;
+    rtm->dynamic_input_buffer_size = 0;
   }
 
   /*
