@@ -101,20 +101,20 @@ char *_rtm_json_escape(char *dest, ssize_t n, const char *str) {
       *pb++ = *c;
     } else if ((*c & 0xe0) == 0xc0) { /* two bytes, UTF-8 unicode (110x xxxx) */
       if (free_space < 2) { return NULL; }
-      if(!c[1]) continue; // Invalid UTF8, ignore character
+      if(!c[1]) break; // Invalid UTF8, stop processing
       free_space -= 2;
       *pb++ = *c++;
       *pb++ = *c;
     } else if ((*c & 0xf0) == 0xe0) { /* three bytes, UTF-8 unicode (1110 xxxx) */
       if (free_space < 3) { return NULL; }
-      if(!c[1] || !c[2]) continue; // Invalid UTF8, ignore character
+      if(!c[1] || !c[2]) break; // Invalid UTF8, stop processing
       free_space -= 3;
       *pb++ = *c++;
       *pb++ = *c++;
       *pb++ = *c;
     } else if ((*c & 0xf8) == 0xf0) { /* four bytes, UTF-8 encode (1111 0xxx) */
       if (free_space < 4) { return NULL; }
-      if(!c[1] || !c[2] || !c[3]) continue; // Invalid UTF8, ignore character
+      if(!c[1] || !c[2] || !c[3]) break; // Invalid UTF8, stop processing
       free_space -= 4;
       *pb++ = *c++;
       *pb++ = *c++;
