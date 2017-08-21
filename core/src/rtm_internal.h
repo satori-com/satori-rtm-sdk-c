@@ -63,7 +63,7 @@ struct _rtm_client {
     ssize_t input_length;
     char *fragment_end;
 
-    size_t huge_packet_bytes;
+    size_t skip_next_n_input_bytes;
 
     unsigned is_closed: 1;
     unsigned is_used: 1;

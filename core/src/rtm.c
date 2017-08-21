@@ -1519,18 +1519,18 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
   char *ws_frame = read_buffer;
   int have_incomplete_message = FALSE;
 
-  if (rtm->huge_packet_bytes > 0) {
+  if (rtm->skip_next_n_input_bytes > 0) {
     // We are in the middle of processing a frame that is too large to handle
     // and the user decided to discard.
-    if (rtm->huge_packet_bytes > rtm->input_length) {
-      rtm->huge_packet_bytes -= rtm->input_length;
+    if (rtm->skip_next_n_input_bytes > rtm->input_length) {
+      rtm->skip_next_n_input_bytes -= rtm->input_length;
       rtm->input_length = 0;
       return RTM_WOULD_BLOCK;
     }
     else {
-      ws_frame += rtm->huge_packet_bytes;
-      rtm->input_length -= rtm->huge_packet_bytes;
-      rtm->huge_packet_bytes = 0;
+      ws_frame += rtm->skip_next_n_input_bytes;
+      rtm->input_length -= rtm->skip_next_n_input_bytes;
+      rtm->skip_next_n_input_bytes = 0;
     }
   }
 
@@ -1625,7 +1625,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
           rtm->fragment_end = NULL;
         }
 
-        rtm->huge_packet_bytes = payload_length - (rtm->input_length - header_length);
+        rtm->skip_next_n_input_bytes = payload_length - (rtm->input_length - header_length);
         rtm->input_length = 0;
       }
       else {
