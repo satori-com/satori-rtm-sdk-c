@@ -36,7 +36,7 @@ static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t
     const char *action, unsigned *ack_id_out);
 
 // PDU sending
-static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, int data_type, unsigned *ack_id);
+static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, enum rtm_field_type_t data_type, unsigned *ack_id);
 static rtm_status _rtm_channel_action(rtm_client_t *rtm, const char *action, const char *channel, unsigned *ack_id);
 static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, const char *body, unsigned *ack_id);
 
@@ -334,10 +334,10 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
  * @param action Action field of PDU, e.g. auth/authenticate
  * @param channel Name of the channel
  * @param data Data, depends on data_type
- * @param data_type 0 for a string, 1 for JSON
+ * @param data_type String or JSON
  * @param ack_id Stores the ID of the packet if non-null
  */
-static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, int data_type, unsigned *ack_id) {
+static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, enum rtm_field_type_t data_type, unsigned *ack_id) {
   CHECK_PARAM(rtm);
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
   CHECK_MAX_SIZE(data, RTM_MAX_MESSAGE_SIZE);
@@ -359,13 +359,13 @@ static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char
     p = _rtm_prepare_pdu_without_body(rtm, p, size, action, ack_id);
     p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
     p = _rtm_json_escape(p, size - (p - buf), channel);
-    if (data_type == 0) {
+    if (data_type == FIELD_STRING) {
       // String
       p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
       p = _rtm_json_escape(p, size - (p - buf), data);
       p = _rtm_snprintf(p, size - (p - buf), "\"}}");
     }
-    else if(data_type == 1) {
+    else if(data_type == FIELD_JSON) {
       // Json
       p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", data);
     }
@@ -523,11 +523,11 @@ static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, c
 }
 
 rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
-  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, string, 0, ack_id);
+  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, string, FIELD_STRING, ack_id);
 }
 
 rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *json, unsigned *ack_id) {
-  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, json, 1, ack_id);
+  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, json, FIELD_JSON, ack_id);
 }
 
 rtm_status rtm_subscribe(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
@@ -589,11 +589,11 @@ rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack
 
 
 rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
-  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, string, 0, ack_id);
+  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, string, FIELD_STRING, ack_id);
 }
 
 rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *json, unsigned *ack_id) {
-  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, json, 1, ack_id);
+  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, json, FIELD_JSON, ack_id);
 }
 
 rtm_status rtm_delete(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
@@ -1118,18 +1118,6 @@ static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t
 
   return p;
 }
-
-enum rtm_field_type_t {
-  FIELD_JSON,
-  FIELD_ITERATOR,
-  FIELD_STRING
-};
-
-typedef struct {
-  enum rtm_field_type_t type;
-  char *name;
-  void *dst;
-} field_t;
 
 void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);

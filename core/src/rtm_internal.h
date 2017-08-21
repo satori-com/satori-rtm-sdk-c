@@ -107,6 +107,18 @@ struct _rtm_client {
     char *dynamic_input_buffer;
 };
 
+enum rtm_field_type_t {
+  FIELD_JSON,
+  FIELD_ITERATOR,
+  FIELD_STRING
+};
+
+typedef struct {
+  enum rtm_field_type_t type;
+  char *name;
+  void *dst;
+} field_t;
+
 // json methods
 RTM_TEST_API char *_rtm_json_escape(char *dest, ssize_t n, const char *str);
 char *_rtm_json_find_begin_obj(char *p);
