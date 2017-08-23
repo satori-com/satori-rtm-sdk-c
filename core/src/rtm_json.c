@@ -215,6 +215,7 @@ char *_rtm_json_find_element(char* p, char **cursor, size_t *length) {
   if (end == NULL || !*end) {
     // Invalid JSON
     *cursor = NULL;
+    *length = 0;
     return NULL;
   }
 
