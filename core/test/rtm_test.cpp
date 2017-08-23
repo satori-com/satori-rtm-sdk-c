@@ -65,7 +65,9 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       event.info = std::string(pdu->message);
       break;
     case RTM_ACTION_UNKNOWN:
-      event.info = std::string(pdu->body);
+      if(pdu->body) {
+        event.info = std::string(pdu->body);
+      }
       break;
     case RTM_ACTION_SUBSCRIPTION_DATA: {
       char *message;
@@ -947,42 +949,6 @@ TEST(rtm_test, prepare_path_test) {
   ASSERT_EQ("/foo/v2?appkey=zzzzzz", std::string(path));
 }
 
-class RTMEnvironment: public ::testing::Environment {
-  public:
-    void TearDown() override {
-      std::queue<event_t> event_queue_empty;
-      std::swap(event_queue, event_queue_empty);
-
-      std::queue<std::string> message_queue_empty;
-      std::swap(message_queue, message_queue_empty);
-
-      std::queue<std::string> error_message_queue_empty;
-      std::swap(error_message_queue, error_message_queue_empty);
-    }
-};
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    ::testing::AddGlobalTestEnvironment(new RTMEnvironment());
-
-#ifdef _WIN32
-    WORD wVersionRequested;
-    WSADATA wsaData;
-    int err;
-
-    wVersionRequested = MAKEWORD(2, 2);
-    err = WSAStartup(wVersionRequested, &wsaData);
-    if (err != 0) {
-        std::cerr << "WSAStartup failed with " << err << std::endl;
-    }
-#endif
-
-  int64_t seed = std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1);
-  srand(seed);
-
-  return RUN_ALL_TESTS();
-}
-
 TEST(rtm_test, wait_ping) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
@@ -1021,4 +987,241 @@ TEST(rtm_test, publish_noack_ping) {
   };
 
   ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
+}
+
+std::string _ws_encode(std::string message) {
+  std::stringstream frame;
+
+  size_t size = message.size();
+  frame << "XX"; // Two bytes for minimal header
+  if(size > 126) {
+    if(size <= 0xFFFF) {
+      frame << "XX"; // Four bytes for normal header
+    }
+    else {
+      frame << "XXXXXXXX"; // Ten bytes for large header
+    }
+  }
+  frame << message;
+  std::string rv = frame.str();
+  rv[0] = 0;
+  if(size < 126) {
+    rv[1] = size;
+  }
+  else if(size < 0xFFFF) {
+    rv[1] = 126;
+    for(int i=1+2; i>1; i--) {
+      rv[i] = size & 0xFF;
+      size >>= 8;
+    }
+  }
+  else {
+    rv[1] = 127;
+    for(int i=1+8; i>1; i--) {
+      rv[i] = size & 0xFF;
+      size >>= 8;
+    }
+  }
+  return rv;
+}
+
+TEST(rtm_ws_processing, normal_ws_frame) {
+  char memory[RTM_CLIENT_SIZE(100)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer);
+  rtm->input_length = frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, fragmented_ws_frame) {
+  char memory[RTM_CLIENT_SIZE(100)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\"");
+  frame[0] = (char)(1); // Normal, fragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer);
+  rtm->input_length = frame.size();
+
+  frame = _ws_encode(",\"id\":");
+  frame[0] = 0; // Fragment
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  frame = _ws_encode("1}");
+  frame[0] = 0x80; // Last fragment
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_single_frame_skip) {
+  char memory[RTM_CLIENT_SIZE(100)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  rtm->input_length = 10;
+  rtm->skip_next_n_input_bytes = 10;
+
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_fragments_skip) {
+  char memory[RTM_CLIENT_SIZE(200)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  rtm->skip_current_fragmented_frame = 1;
+
+  auto frame = _ws_encode("invalid-stuff-that-wont-parse");
+  frame[0] = 0; // Continuation frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  frame = _ws_encode("invalid-stuff-that-wont-parse");
+  frame[0] = 0x80; // Last fragment
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_handle_large_input) {
+  char memory[RTM_CLIENT_SIZE(50)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
+
+  std::stringstream large_message;
+  large_message << "{\"action\":\"rtm/publish/ok\",\"id\":1,\"addl\":\"";
+  for(int i=0; i<10000; i++) large_message << "A";
+  large_message << "\"}";
+
+  auto frame = _ws_encode(large_message.str());
+  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+
+  std::copy(frame.begin(), frame.begin() + 50, rtm->input_buffer);
+  rtm->input_length = 50;
+
+  ASSERT_EQ(RTM_WOULD_BLOCK, _rtm_handle_input(rtm));
+  ASSERT_NE(nullptr, rtm->dynamic_input_buffer);
+  ASSERT_GE(rtm->dynamic_input_buffer_size, frame.size());
+
+  std::copy(frame.begin() + 50, frame.end(), rtm->dynamic_input_buffer + rtm->input_length);
+  rtm->input_length += frame.size() - 50;
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  ASSERT_EQ(nullptr, rtm->dynamic_input_buffer);
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_skip_fragmented_input) {
+  char memory[RTM_CLIENT_SIZE(50)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_null_malloc, rtm_null_free);
+
+  std::stringstream large_message;
+  large_message << "{\"action\":\"rtm/publish/ok\",\"id\":1,\"addl\":\"";
+  for(int i=0; i<10000; i++) large_message << "A";
+  large_message << "\"}";
+
+  for(int repeat=0; repeat<3; repeat++) {
+    auto frame = _ws_encode(large_message.str());
+    if(repeat == 0)
+      frame[0] = (char)(1); // Fragmented frame
+    else if(repeat == 1)
+      frame[0] = (char)(0); // Continuation frame
+    else
+      frame[0] = (char)(0x80); // Last frame
+
+    for(int i=0; i<frame.size(); i += 50) {
+      auto until = std::min((size_t)i+50, frame.size());
+      std::copy(&frame[i], &frame[until], rtm->input_buffer);
+      rtm->input_length = until - i;
+
+      ASSERT_EQ(RTM_WOULD_BLOCK, _rtm_handle_input(rtm));
+    }
+  }
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+
+/////////////////////////
+
+class RTMEnvironment: public ::testing::Environment {
+  public:
+    void TearDown() override {
+      std::queue<event_t> event_queue_empty;
+      std::swap(event_queue, event_queue_empty);
+
+      std::queue<std::string> message_queue_empty;
+      std::swap(message_queue, message_queue_empty);
+
+      std::queue<std::string> error_message_queue_empty;
+      std::swap(error_message_queue, error_message_queue_empty);
+    }
+};
+
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    ::testing::AddGlobalTestEnvironment(new RTMEnvironment());
+
+#ifdef _WIN32
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int err;
+
+    wVersionRequested = MAKEWORD(2, 2);
+    err = WSAStartup(wVersionRequested, &wsaData);
+    if (err != 0) {
+        std::cerr << "WSAStartup failed with " << err << std::endl;
+    }
+#endif
+
+  int64_t seed = std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1);
+  srand(seed);
+
+  return RUN_ALL_TESTS();
 }
