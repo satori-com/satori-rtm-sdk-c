@@ -291,8 +291,10 @@ char *_rtm_json_find_kv_pair(char *p, char **key, size_t *key_length, char **val
 }
 
 /**
- * Skip to the beginning of the next JSON object, or return NULL if the next
- * token with semantic meaning is not an object.
+ * Skip to the beginning of the next JSON object
+ *
+ * @param[in] p Pointer to a JSON stream
+ * @return Pointer to the first character after the next "{", or NULL if none is found.
  */
 char *_rtm_json_find_begin_obj(char *p) {
   while ((*p != '{') && isspace(*p)) {
