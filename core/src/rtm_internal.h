@@ -60,15 +60,15 @@ extern "C" {
 struct _rtm_client {
     void *user;
     int fd;
-    ssize_t input_length;
-    char *fragment_end;
 
+    size_t fragment_length;
+    size_t input_length;
     size_t skip_next_n_input_bytes;
 
     unsigned is_closed: 1;
     unsigned is_used: 1;
     unsigned is_verbose: 1;
-    unsigned is_in_huge_packet_skip: 1;
+    unsigned skip_current_fragmented_frame: 1;
 
     unsigned last_request_id;
     unsigned last_ping_ts;
