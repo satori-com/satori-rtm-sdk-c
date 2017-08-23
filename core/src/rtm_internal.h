@@ -102,7 +102,7 @@ struct _rtm_client {
 };
 
 // json methods
-RTM_TEST_API char *_rtm_json_escape(char *dest, size_t n, const char *str);
+RTM_TEST_API char *_rtm_json_escape(char *dest, ssize_t n, const char *str);
 char *_rtm_json_find_begin_obj(char *p);
 char *_rtm_json_find_element(char* p, char **cursor, size_t *length);
 RTM_TEST_API char *_rtm_json_find_kv_pair(char *p, char **key, size_t *key_length, char **value, size_t *value_length);

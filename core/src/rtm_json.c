@@ -16,7 +16,7 @@
  * @return Pointer pointing to first position in dest after str, or NULL in
  *         case there isn't enough memory.
  */
-char *_rtm_json_escape(char *dest, size_t n, const char *str) {
+char *_rtm_json_escape(char *dest, ssize_t n, const char *str) {
   if (n <= 0 || dest == NULL) {
     return NULL;
   }
