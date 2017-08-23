@@ -119,6 +119,10 @@ typedef struct {
   void *dst;
 } field_t;
 
+// websocket frame processing
+rtm_status _rtm_fill_input_buffer(rtm_client_t *rtm);
+rtm_status _rtm_handle_input(rtm_client_t *rtm);
+
 // json methods
 RTM_TEST_API char *_rtm_json_escape(char *dest, ssize_t n, const char *str);
 char *_rtm_json_find_begin_obj(char *p);

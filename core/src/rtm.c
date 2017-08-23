@@ -1465,12 +1465,28 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
   rtm_status return_code = RTM_OK;
 
+  // Send out a Websocket Ping if the last one was too long ago
   return_code = _rtm_check_interval_and_send_ws_ping(rtm);
   if (RTM_OK != return_code) {
     return return_code;
   }
 
   // Fill the buffer with data available in the socket
+  return_code = _rtm_fill_input_buffer(rtm);
+  if (RTM_OK != return_code) {
+    return return_code;
+  }
+
+  // Handle the actual input
+  return_code = _rtm_handle_input(rtm);
+  if (return_code != RTM_OK && return_code != RTM_WOULD_BLOCK) {
+    rtm_close(rtm);
+  }
+  return return_code;
+}
+
+rtm_status _rtm_handle_input(rtm_client_t *rtm) {
+  rtm_status return_code;
 
   char *base_input_buffer;
   size_t base_input_buffer_size;
@@ -1484,31 +1500,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     base_input_buffer = rtm->input_buffer;
     base_input_buffer_size = rtm->input_buffer_size;
   }
-
-  /*
-   * The memory layout of the input buffer is as follows:
-   *
-   * First, it stores any partially reconstructed fragmented frame, with a
-   * length of rtm->fragment_length. Then come possibly partial frames.
-   */
-  char *read_buffer = base_input_buffer + rtm->fragment_length;
-  ssize_t to_read = base_input_buffer_size - rtm->input_length - rtm->fragment_length;
-
-  if (to_read > 0) {
-    ssize_t bytes_read = _rtm_io_read(rtm, read_buffer + rtm->input_length, (size_t) to_read, NO);
-
-    if (bytes_read < 0)
-      return RTM_ERR_READ;
-
-    if (bytes_read == 0) {
-      // No data yet
-      return RTM_WOULD_BLOCK;
-    }
-
-    rtm->input_length += bytes_read;
-  }
-
-  char *ws_frame = read_buffer;
+  char *ws_frame = base_input_buffer + rtm->fragment_length;
 
   if (rtm->skip_next_n_input_bytes > 0) {
     // We are in the middle of processing a frame that is too large to handle
@@ -1541,9 +1533,9 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     size_t frame_payload_length = (size_t) (ws_frame[1] & 0x7f);
     unsigned frame_masked = (0 != (ws_frame[1] & 0x80));
 
-    if (frame_masked) { /* no mask from server */
-      return_code = RTM_ERR_PROTOCOL;
-      goto ws_error;
+    if (frame_masked) {
+      // no mask from server
+      return RTM_ERR_PROTOCOL;
     }
 
     size_t header_length = 0; // two bytes already consumed.
@@ -1588,8 +1580,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         // This is the start of a fragmented packet, but we are already in the
         // process of skipping one.
         _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence start of fragmented frame");
-        return_code = RTM_ERR_PROTOCOL;
-        goto ws_error;
+        return RTM_ERR_PROTOCOL;
       }
 
       size_t amount_to_allocate = header_length + payload_length + 1;
@@ -1603,8 +1594,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
       if (!memory) {
         // The user decided against allocating more memory.
         if (rtm->is_closed) {
-          return_code = RTM_ERR_CLOSED;
-          goto ws_error;
+          return RTM_ERR_CLOSED;
         }
 
         // If the user did not close the connection in the malloc() function
@@ -1662,8 +1652,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         // control frames must be single fragment, 125 bytes or less
         _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "malformed control frame received – opcode=%d size=%d",
                                     frame_opcode, payload_length);
-        return_code = RTM_ERR_PROTOCOL;
-        goto ws_error;
+        return RTM_ERR_PROTOCOL;
       }
 
       if (WS_CLOSE == frame_opcode) {
@@ -1677,26 +1666,23 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         }
       }
     } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode || WS_CONTINUATION == frame_opcode) { /* data frame */
-      if (frame_opcode == WS_CONTINUATION && !rtm->fragment_length) {
+      if (frame_opcode == WS_CONTINUATION && !rtm->fragment_length && !rtm->skip_current_fragmented_frame) {
         _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence continuation frame");
-        return_code = RTM_ERR_PROTOCOL;
-        goto ws_error;
+        return RTM_ERR_PROTOCOL;
       }
 
       if (!frame_fin) {
         // Fragmented frame
-
-        if (frame_opcode != WS_CONTINUATION && rtm->fragment_length) {
-          _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence start of fragmented frame");
-          return_code = RTM_ERR_PROTOCOL;
-          goto ws_error;
-        }
-
         if (rtm->skip_current_fragmented_frame) {
           // We discarded parts of this packet sequence. So discard this one,
           // too.
         }
         else {
+          if (frame_opcode != WS_CONTINUATION && rtm->fragment_length) {
+            _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence start of fragmented frame");
+            return RTM_ERR_PROTOCOL;
+          }
+
           // Store body data away (essentially: remove WebSocket header)
           // We always have enough memory to do that, because the frame is in the
           // same buffer as are the fragments.
@@ -1704,7 +1690,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
           rtm->fragment_length += payload_length;
         }
       }
-      else if (rtm->fragment_length && frame_opcode == WS_CONTINUATION) {
+      else if (frame_opcode == WS_CONTINUATION) {
         // Last in a series of fragmented frames.
 
         if (rtm->skip_current_fragmented_frame) {
@@ -1728,7 +1714,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
           rtm->fragment_length = 0;
         }
       }
-      else {
+      else if (frame_opcode == WS_TEXT || frame_opcode == WS_BINARY) {
         // Normal, non-fragmented frame.
         return_code = RTM_OK;
 
@@ -1750,8 +1736,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else {
       // unhandled opcode
       _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unknown frame with opcode=%d", frame_opcode);
-      return_code = RTM_ERR_PROTOCOL;
-      goto ws_error;
+      return RTM_ERR_PROTOCOL;
     }
     rtm->input_length -= payload_length;
     ws_frame += payload_length;
@@ -1780,12 +1765,41 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     memmove(new_read_buffer, ws_frame, rtm->input_length);
   }
   return return_code;
-
-  ws_error:
-  // abort?
-  _rtm_io_close(rtm);
-  return return_code;
 }
+
+rtm_status _rtm_fill_input_buffer(rtm_client_t *rtm) {
+  char *base_input_buffer;
+  size_t base_input_buffer_size;
+  if (rtm->dynamic_input_buffer) {
+    // Dynamically allocated buffer for large data bursts
+    base_input_buffer = rtm->dynamic_input_buffer;
+    base_input_buffer_size = rtm->dynamic_input_buffer_size;
+  }
+  else {
+    // Base buffer used normally
+    base_input_buffer = rtm->input_buffer;
+    base_input_buffer_size = rtm->input_buffer_size;
+  }
+
+  char *read_buffer = base_input_buffer + rtm->fragment_length;
+  ssize_t to_read = base_input_buffer_size - rtm->input_length - rtm->fragment_length;
+
+  if (to_read > 0) {
+    ssize_t bytes_read = _rtm_io_read(rtm, read_buffer + rtm->input_length, (size_t) to_read, NO);
+
+    if (bytes_read < 0)
+      return RTM_ERR_READ;
+
+    if (bytes_read == 0) {
+      return RTM_WOULD_BLOCK;
+    }
+
+    rtm->input_length += bytes_read;
+  }
+
+  return RTM_OK;
+}
+
 
 #if defined(RTM_TEST_ENV)
 rtm_status _rtm_test_parse_endpoint(
