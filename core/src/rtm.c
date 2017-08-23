@@ -383,7 +383,7 @@ static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char
         // we will allocate more space in out next attempt.
         size_t new_size = _RTM_WS_PRE_BUFFER
           + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":{{\"channel\":\"\",\"message\":\"\"}}")
-          + strlen(action) + 6 * (strlen(channel) + strlen(data)) + 1;
+          + strlen(action) + (strlen(channel) + strlen(data)) + 1;
         if(new_size > size) {
           size = new_size;
         }
@@ -449,7 +449,7 @@ static rtm_status _rtm_channel_action(rtm_client_t *rtm, const char *action, con
         // we will allocate more space in out next attempt.
         size_t new_size = _RTM_WS_PRE_BUFFER
           + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":{{\"channel\":\"\"}}")
-          + strlen(action) + 6 * (strlen(channel)) + 1;
+          + strlen(action) + (strlen(channel)) + 1;
         if(new_size > size) {
           size = new_size;
         }
