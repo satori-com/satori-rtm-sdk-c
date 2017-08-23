@@ -1086,23 +1086,14 @@ rtm_status rtm_parse_pdu(rtm_client_t *rtm, char *message, rtm_pdu_t *pdu) {
   enum rtm_action_t action = RTM_ACTION_UNKNOWN;
   char *p = _rtm_json_find_begin_obj(message);
   int pdu_valid = TRUE;
-  int has_more = p && *p != '}';
   pdu->request_id = 0;
 
-  while (pdu_valid && p && has_more) {
+  while (pdu_valid && p) {
     char *key, *value;
     size_t key_length, value_length;
 
     p = _rtm_json_find_kv_pair(p, &key, &key_length, &value, &value_length);
-    if (key_length < 2 || !p || !value) {
-      pdu_valid = FALSE;
-      break;
-    }
-    has_more = *p == ',';
-    if(has_more) {
-      p++;
-    }
-    else if(*p != '}') {
+    if (key_length < 2 || !value) {
       pdu_valid = FALSE;
       break;
     }
@@ -1237,22 +1228,17 @@ rtm_status rtm_parse_pdu(rtm_client_t *rtm, char *message, rtm_pdu_t *pdu) {
   }
 
   p = _rtm_json_find_begin_obj(body);
-  has_more = p && *p != '}';
 
-  while (p && has_more) {
+  while (p) {
     char *key, *value;
     size_t key_length, value_length;
 
     p = _rtm_json_find_kv_pair(p, &key, &key_length, &value, &value_length);
-    if (key_length < 2 || !p) {
-      pdu_valid = FALSE;
+    if (!p && key && !*key) {
+      // Valid, but empty object.
       break;
     }
-    has_more = *p == ',';
-    if (has_more) {
-      p++;
-    }
-    else if(*p != '}') {
+    if (key_length < 2 || !value) {
       pdu_valid = FALSE;
       break;
     }
@@ -1261,7 +1247,6 @@ rtm_status rtm_parse_pdu(rtm_client_t *rtm, char *message, rtm_pdu_t *pdu) {
     // We only want the nonce.
     if (action == RTM_ACTION_HANDSHAKE_OK && !strncmp(key, "\"data\"", key_length)) {
       p = _rtm_json_find_begin_obj(value);
-      has_more = TRUE;
       continue;
     }
 

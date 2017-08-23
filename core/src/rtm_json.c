@@ -128,6 +128,12 @@ static char *find_end_of_element(char *p) {
   int brackets = 0;
   char c;
 
+  // Special case: If we are at a non-opening control character, return that
+  // character
+  if(*p == ',' || *p == ':' || *p == '}') {
+    return p;
+  }
+
 not_in_a_string:
   c = *json;
   ++json;
@@ -224,6 +230,8 @@ char *_rtm_json_find_element(char* p, char **cursor, size_t *length) {
   return next_element;
 }
 
+static char _rtm_json_find_kv_pair_sentinel[] = "";
+
 /**
  * Parse the next key/value pair out of a JSON object
  *
@@ -232,25 +240,53 @@ char *_rtm_json_find_element(char* p, char **cursor, size_t *length) {
  * @param[out] key Will contain the length of the next key
  * @param[out] key Will point to the start of the next value
  * @param[out] key Will contain the length of the next value
- * @return A pointer to the next element (usually a "," or a "}")
+ * @return A pointer to the next key, or NULL at the end of the object
+ *
+ * If this function detects invalid JSON, key and value will be NULL. If it is
+ * invoked on an empty object, key and value will point to an empty string.
  */
 char *_rtm_json_find_kv_pair(char *p, char **key, size_t *key_length, char **value, size_t *value_length) {
   *key = NULL;
+  *key_length = 0;
   *value = NULL;
+  *value_length = 0;
 
   p = _rtm_json_find_element(p, key, key_length);
 
   if (!p || *p != ':') {
+    *key_length = 0;
+    if(*key && **key == '}') {
+      // End of object
+      *key = _rtm_json_find_kv_pair_sentinel;
+      *value = _rtm_json_find_kv_pair_sentinel;
+    }
+    else {
+      *key = NULL;
+    }
     return NULL;
   }
   p++;
   if (!*p) {
+    *key = NULL;
+    *key_length = 0;
     return NULL;
   }
 
   p = _rtm_json_find_element(p, value, value_length);
 
-  return p;
+  if(!p || (*p != ',' && *p != '}') || (*value && (**value == '}' || **value == ','))) {
+    *key = NULL;
+    *key_length = 0;
+    *value = NULL;
+    *value_length = 0;
+    return NULL;
+  }
+  else if(*p == ',') {
+    return p + 1;
+  }
+  else {
+    return NULL;
+  }
 }
 
 /**
