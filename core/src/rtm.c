@@ -498,7 +498,7 @@ static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, c
   if (!p) {
     // Insufficient memory. Allow the user to allocate more.
     // 63 bytes for JSON encoding of PDU (assuming a 10 digit ack_id)
-    size = _RTM_WS_PRE_BUFFER + 63 + strlen(body);
+    size = _RTM_WS_PRE_BUFFER + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":}") + strlen(action) + strlen(body);
     base_buf = rtm->malloc_fn(rtm, size);
     if (!base_buf) {
       return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
