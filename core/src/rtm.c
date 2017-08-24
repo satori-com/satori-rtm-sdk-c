@@ -1523,12 +1523,23 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else if (frame_payload_length == 126) { // 126 -> 16 bit size
       if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL)
         return RTM_WOULD_BLOCK;
-      payload_length = _rtm_ntohs(*(uint16_t *) (&ws_frame[2]));
+      uint16_t payload_encoded;
+      memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
+      payload_length = _rtm_ntohs(payload_encoded);
       header_length = _RTM_INBOUND_HEADER_SIZE_NORMAL;
     } else { // 127 -> 64 bit size
       if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
         return RTM_WOULD_BLOCK;
-      payload_length = (size_t)_rtm_ntohll(*(uint64_t *) (&ws_frame[2]));
+      uint64_t payload_encoded;
+      memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
+      payload_encoded = _rtm_ntohll(payload_encoded);
+      if(payload_encoded > SIZE_MAX) {
+        // FIXME Handle this case gracefully
+        _rtm_log_error(rtm, RTM_ERR_OOM, "Received message larger than this system can handle");
+        return_code = RTM_ERR_OOM;
+        goto ws_error;
+      }
+      payload_length = (size_t)payload_encoded;
       header_length = _RTM_INBOUND_HEADER_SIZE_LARGE;
     }
 
