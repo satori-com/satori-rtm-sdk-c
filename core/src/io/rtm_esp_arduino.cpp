@@ -16,14 +16,14 @@
 class RTMWiFiClient : public WiFiClientSecure {
   bool is_secure;
 
-	public:
+  public:
     RTMWiFiClient() : is_secure(false) {};
 
-		int connect(IPAddress ip, uint16_t port) override {
-			return WiFiClient::connect(ip, port);
-		}
+    int connect(IPAddress ip, uint16_t port) override {
+      return WiFiClient::connect(ip, port);
+    }
 
-		int connect(const char *name, uint16_t port) override {
+    int connect(const char *name, uint16_t port) override {
       IPAddress remote_addr;
       if (!WiFi.hostByName(name, remote_addr)) {
           return 0;
@@ -32,21 +32,21 @@ class RTMWiFiClient : public WiFiClientSecure {
           return 0;
       }
       return 1;
-		}
+    }
 
-		size_t write(const uint8_t *buf, size_t size) override {
+    size_t write(const uint8_t *buf, size_t size) override {
       if(is_secure) {
         return WiFiClientSecure::write(buf, size);
       }
-			return WiFiClient::write(buf, size);
-		}
+      return WiFiClient::write(buf, size);
+    }
 
-		int read(uint8_t *buf, size_t size) override {
+    int read(uint8_t *buf, size_t size) override {
       if(is_secure) {
         return WiFiClientSecure::read(buf, size);
       }
-			return WiFiClient::read(buf, size);
-		}
+      return WiFiClient::read(buf, size);
+    }
 
     int available() override {
       if(is_secure) {
@@ -62,11 +62,11 @@ class RTMWiFiClient : public WiFiClientSecure {
       return WiFiClient::connected();
     }
 
-		virtual int ssl_handshake(const char *hostname) {
-			int rc = _connectSSL(hostname);
+    virtual int ssl_handshake(const char *hostname) {
+      int rc = _connectSSL(hostname);
       is_secure = rc == 1;
       return rc;
-		}
+    }
 };
 
 static std::map<int, RTMWiFiClient *> connections; //!< fd to client map
