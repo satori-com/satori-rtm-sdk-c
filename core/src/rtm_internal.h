@@ -6,6 +6,12 @@
 #include <stdint.h>
 
 #ifdef _WIN32
+
+#if !defined(__WINDOWS__)
+  #define __WINDOWS__
+#endif
+#include <Winsock2.h>
+
 #include <BaseTsd.h>
 
 typedef SSIZE_T ssize_t;
@@ -190,7 +196,7 @@ typedef struct {
 
 // websocket frame processing
 rtm_status _rtm_fill_input_buffer(rtm_client_t *rtm);
-rtm_status _rtm_handle_input(rtm_client_t *rtm);
+RTM_TEST_API rtm_status _rtm_handle_input(rtm_client_t *rtm);
 
 // json methods
 RTM_TEST_API char *_rtm_json_escape(char *dest, ssize_t n, const char *str);

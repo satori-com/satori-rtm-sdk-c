@@ -128,22 +128,15 @@ if(USE_GNUTLS)
 
   set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
 elseif(USE_OPENSSL)
+    find_package(OpenSSL REQUIRED)
+    message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
+
+    add_definitions(${OPENSSL_DEFINITIONS})
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    set(TLS_LIBRARIES ${OPENSSL_LIBRARIES})
 
   add_definitions(-DUSE_OPENSSL)
-
-  if (MSVC)
-      message(WARNING
-          "\nAutomatically finding OpenSSL on Windows is not supported yet. "
-          "Please install OpenSSL and configure the Visual Studio Project to find it. ")
-  else()
-      find_package(OpenSSL REQUIRED)
-      add_definitions(${OPENSSL_DEFINITIONS})
-      message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
-      include_directories(${OPENSSL_INCLUDE_DIR})
-      target_link_libraries(rtm-core-sdk ${OPENSSL_LIBRARIES})
-
-      set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
-  endif(MSVC)
+  set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
 
 elseif(USE_APPLE_SSL)
   message(STATUS "Selected Apple Security framework")

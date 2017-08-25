@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <queue>
 #include <chrono>
 #include <cstdint>
@@ -1197,7 +1198,7 @@ TEST(rtm_ws_processing, oom_skip_fragmented_input) {
       frame[0] = (char)(0x80 | WS_CONTINUATION); // Last frame
 
     for(int i=0; i<frame.size(); i += 50) {
-      auto until = std::min((size_t)i+50, frame.size());
+      auto until = (std::min)((size_t)i+50, frame.size());
       std::copy(&frame[i], &frame[until], rtm->input_buffer);
       rtm->input_length = until - i;
 

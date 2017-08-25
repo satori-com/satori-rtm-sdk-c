@@ -311,12 +311,12 @@ typedef void (rtm_free_fn_t)(rtm_client_t *rtm, void *ptr);
 /**
  * @brief malloc() implementation using the system's malloc()
  */
-void *rtm_system_malloc(rtm_client_t *rtm, size_t size);
+RTM_API void *rtm_system_malloc(rtm_client_t *rtm, size_t size);
 
 /**
  * @brief free() implementation using the system's free()
  */
-void rtm_system_free(rtm_client_t *rtm, void *mem);
+RTM_API void rtm_system_free(rtm_client_t *rtm, void *mem);
 
 /**
  * @brief malloc() implementation that always fails gracefully
@@ -324,12 +324,12 @@ void rtm_system_free(rtm_client_t *rtm, void *mem);
  * This function always returns NULL. Use it if you would like to skip over
  * frames that are too large to handle.
  */
-void *rtm_null_malloc(rtm_client_t *rtm, size_t size);
+RTM_API void *rtm_null_malloc(rtm_client_t *rtm, size_t size);
 
 /**
  * @brief free() implementation that does nothing
  */
-void rtm_null_free(rtm_client_t *rtm, void *mem);
+RTM_API void rtm_null_free(rtm_client_t *rtm, void *mem);
 
 /**
  * @brief Set the allocator used by the RTM structure.
@@ -363,7 +363,7 @@ RTM_API void rtm_set_allocator(rtm_client_t *rtm, rtm_malloc_fn_t *malloc_ptr, r
  *
  * @param[in] message to log as a zero terminated string.
  */
-void rtm_default_error_logger(const char *message);
+RTM_API void rtm_default_error_logger(const char *message);
 
 /**
  * @brief Default message handler prints all messages to stdout.
@@ -372,7 +372,7 @@ void rtm_default_error_logger(const char *message);
  * @param[in] channel name of the channel
  * @param[in] message message to output
  */
-void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
+RTM_API void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
                                  const char *message);
 
 /**
@@ -874,9 +874,9 @@ RTM_API rtm_status rtm_wait_timeout(rtm_client_t *rtm, int timeout_in_seconds);
  * @param[in] rtm instance of the client
  *
  * @return the status of the operation
- * @retval RTM_OK the operation succeeded and decoded at least one websocket 
+ * @retval RTM_OK the operation succeeded and decoded at least one websocket
  *         frame
- * @retval RTM_WOULD_BLOCK the operation needs more data to process the buffer 
+ * @retval RTM_WOULD_BLOCK the operation needs more data to process the buffer
  *         (got partial frames or no frames at all)
  * @retval RTM_ERR_* when something went wrong
  *
