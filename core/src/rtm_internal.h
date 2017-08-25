@@ -209,6 +209,10 @@ enum WebSocketOpCode {
   uint16_t _rtm_ntohs(uint16_t in);
   uint64_t _rtm_ntohll(uint64_t in);
 #elif (defined(_WIN16) || defined(_WIN32) || defined(_WIN64))
+  #if !defined(__WINDOWS__)
+    #define __WINDOWS__
+  #endif
+  #include <Winsock2.h>
   #if BYTE_ORDER == LITTLE_ENDIAN
     #define _rtm_ntohs ntohs
     #define _rtm_ntohll ntohll
