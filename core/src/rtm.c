@@ -983,6 +983,8 @@ static void _rtm_ws_mask(char *buf, size_t len, uint32_t mask) {
  * use.
  */
 static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len) {
+  // FIXME Handle the case len > SIZE_MAX
+
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(io_buffer);
   ASSERT(op <= WS_OPCODE_LAST);
@@ -1020,16 +1022,18 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (126 | 0x80);
-    *(uint16_t *) (&io_buffer[2]) = _rtm_ntohs(len);
-    *(uint32_t *) (&io_buffer[4]) = mask;
+    uint16_t size = _rtm_ntohs(len);
+    memcpy(&io_buffer[2], &size, sizeof(size));
+    memcpy(&io_buffer[4], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
 
   } else {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_LARGE;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (127 | 0x80);
-    *(uint64_t *) (&io_buffer[2]) = _rtm_ntohll(len);
-    *(uint32_t *) (&io_buffer[10]) = mask;
+    uint64_t size = _rtm_ntohll(len);
+    memcpy(&io_buffer[2], &size, sizeof(size));
+    memcpy(&io_buffer[10], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_LARGE;
   }
   return _rtm_io_write(rtm, io_buffer, len);
