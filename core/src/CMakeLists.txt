@@ -23,7 +23,7 @@ elseif(USE_APPLE_SSL)
   list(APPEND SOURCES ssl/rtm_apple_ssl.c)
 else()
   set(RTM_HAS_SSL 0)
-  list(APPEND SOURCES ssl/rtm_hmac_md5.c)
+  list(APPEND SOURCES rtm_hmac_md5.c)
 endif()
 
 # Sources list is now ready
