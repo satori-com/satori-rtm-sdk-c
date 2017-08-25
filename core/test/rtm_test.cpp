@@ -636,15 +636,14 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 
   char const *messages[] =
       {"null", "42",
-       // FIXME: Uncomment this case when serverside is fixed
-       // "3.14159",
+       "3.14159",
        R"("")", R"("hello")", "[]", "{}", "[null]", "[42]",
        "[3.14159]", R"(["\""])", R"(["hello"])",
        R"({"key":null})", R"({"key":42})", R"({"key":3.14159})",
        R"({"key":""})", R"({"key":"hello"})",
        R"({"key":[]})", R"({"key":{}})",
-       R"({"key":[42, "foo"]})", R"({"key":{"foo": 42}})",
-       R"([{}, null, {"key":"value"}, null])",
+       R"({"key":[42,"foo"]})", R"({"key":{"foo":42}})",
+       R"([{},null,{"key":"value"},null])",
       };
 
   for (char const *message : messages) {
@@ -653,7 +652,19 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
       rc = next_event(rtm, &event);
       ASSERT_EQ(rc, RTM_OK) << "Failed to wait";
       ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, event.action);
-      ASSERT_EQ(channel + ":" + std::string(message), event.info);
+
+      std::string coded_response = event.info;
+      auto channel_sep = coded_response.find(":");
+      ASSERT_NE(std::string::npos, channel_sep);
+
+      auto response_channel = coded_response.substr(0, channel_sep);
+      auto response = coded_response.substr(channel_sep + 1);
+
+      ASSERT_EQ(channel, response_channel);
+
+      auto normalized_template  = json::parse(message).dump();
+      auto normalized_response = json::parse(response).dump();
+      ASSERT_EQ(normalized_template, normalized_response);
   }
 
   rtm_close(rtm);
