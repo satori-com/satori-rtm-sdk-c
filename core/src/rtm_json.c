@@ -130,7 +130,7 @@ static char *find_end_of_element(char *p) {
 
   // Special case: If we are at a non-opening control character, return that
   // character
-  if(*p == ',' || *p == ':' || *p == '}') {
+  if(*p == ',' || *p == ':' || *p == '}' || *p == ']') {
     return p;
   }
 
