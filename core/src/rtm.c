@@ -1753,6 +1753,9 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
     rtm->free_fn(rtm, rtm->dynamic_input_buffer);
     rtm->dynamic_input_buffer = NULL;
     rtm->dynamic_input_buffer_size = 0;
+
+    base_input_buffer = rtm->input_buffer;
+    ws_frame = base_input_buffer;
   }
 
   /*
