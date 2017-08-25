@@ -9,9 +9,7 @@
 #include "rtm_internal.h"
 
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
-const size_t rtm_client_size = _RTM_CLIENT_DESIRED_SIZE;
-const size_t rtm_client_min_size = _RTM_CLIENT_MIN_SIZE;
-const size_t _rtm_client_struct_size = _RTM_CLIENT_SIZE(0);
+const size_t rtm_client_size = RTM_CLIENT_SIZE(RTM_MAX_MESSAGE_SIZE);
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len);
 void(*rtm_text_frame_handler)(rtm_client_t *rtm, char *message, size_t message_len) = rtm_default_text_frame_handler;
@@ -71,7 +69,7 @@ RTM_API rtm_client_t * rtm_init(
   rtm_pdu_handler_t *pdu_handler,
   void *user_context) {
 
-  return rtm_init_ex(memory, _RTM_CLIENT_DESIRED_SIZE, pdu_handler, user_context);
+  return rtm_init_ex(memory, rtm_client_size, pdu_handler, user_context);
 }
 
 RTM_API rtm_client_t * rtm_init_ex(

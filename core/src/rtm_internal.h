@@ -41,7 +41,6 @@ extern "C" {
 #endif
 
 #define _RTM_WS_PRE_BUFFER 16
-#define _RTM_MAX_BUFFER (128*1024 - _RTM_WS_PRE_BUFFER)
 
 #define _RTM_MAX_HOSTNAME_SIZE 255 // that's what POSIX says...
 #define _RTM_MAX_PORT_SIZE 6       // 5 digits + 0
@@ -244,8 +243,6 @@ RTM_TEST_API void _rtm_log_message_impl(rtm_client_t *rtm, rtm_status status, co
 
 #define _RTM_MINIMAL_PDU_SIZE    256 /* Enough to store handshake and authentication PDUs */
 #define _RTM_CLIENT_SIZE(buffer_size)  (sizeof(struct _rtm_client) + _RTM_WS_PRE_BUFFER + 2*(buffer_size + 1))
-#define _RTM_CLIENT_MIN_SIZE     _RTM_CLIENT_SIZE(_RTM_MINIMAL_PDU_SIZE)
-#define _RTM_CLIENT_DESIRED_SIZE _RTM_CLIENT_SIZE(_RTM_MAX_BUFFER)
 
 enum rtm_url_scheme_t {
     SCHEME_WS = 1,

@@ -271,11 +271,6 @@ typedef enum {
 RTM_API extern const size_t rtm_client_size;
 
 /**
- * @brief Minimal supported size of ::rtm_client_t in bytes.
- */
-RTM_API extern const size_t rtm_client_min_size;
-
-/**
  * @brief Set the error logger used by the RTM structure. The default value
  * is @c ::rtm_default_error_logger.
  */
@@ -414,7 +409,7 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
 /**
  * @brief Initialize an instance of rtm_client_t
  *
- * @param[in] memory a buffer of size RTM_CLIENT_SIZE
+ * @param[in] memory a buffer of size rtm_client_size
  * @param[in] pdu_handler the callback for all PDUs
  * @param[in] user_context an opaque user specified data associated with this 
  *            RTM object
@@ -441,8 +436,7 @@ RTM_API rtm_client_t *rtm_init(
  * @param[in] buffer_size Total number of bytes for buffers
  * @return size of the rtm_client_t structure
  */
-#define RTM_CLIENT_SIZE(buffer_size) (_rtm_client_struct_size + 2*buffer_size)
-extern const size_t _rtm_client_struct_size;
+#define RTM_CLIENT_SIZE(buffer_size) (_RTM_CLIENT_T_SIZE + 2*buffer_size)
 
 /**
  * @brief Initialize an instance of rtm_client_t with a custom buffer size

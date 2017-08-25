@@ -12,6 +12,7 @@
 
 #define RTM_CHECK_VERSION(major, minor, patch) (RTM_ENCODE_PATCH_VERSION(major, minor, patch) >= RTM_API_VERSION)
 
+#define _RTM_CLIENT_T_SIZE @_RTM_CLIENT_T_SIZE@
 
 #cmakedefine RTM_HAS_GETENV
 #cmakedefine RTM_HAS_FIO
