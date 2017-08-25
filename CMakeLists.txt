@@ -56,6 +56,11 @@ if(NOT GNUInstallDirs_FOUND)
 endif(NOT GNUInstallDirs_FOUND)
 set(CMAKE_INSTALL_PKGCONFIGDIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
 
+if(EXISTS "conanbuildinfo.cmake")
+  include("conanbuildinfo.cmake")
+  conan_basic_setup()
+endif()
+
 set(MAJOR_VERSION 2)
 set(MINOR_VERSION 0)
 set(PATCH_VERSION 0)
