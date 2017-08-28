@@ -201,6 +201,7 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
 ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, int wait) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(input_buffer);
+  errno = 0;
   if (input_size == 0)
     return 0;
 
@@ -222,6 +223,7 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
       if (wait && _rtm_io_wait(rtm, YES, NO, -1) != RTM_OK)
         return -1;
       if (!wait) {
+        // errno is set for OS independent consumption in rtm.c
         errno = EAGAIN;
         return -1;
       }
