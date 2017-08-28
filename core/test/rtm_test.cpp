@@ -1025,7 +1025,7 @@ TEST(rtm_ws_processing, normal_ws_frame) {
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
 
   auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
-  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
   std::copy(frame.begin(), frame.end(), rtm->input_buffer);
   rtm->input_length = frame.size();
 
@@ -1041,17 +1041,17 @@ TEST(rtm_ws_processing, fragmented_ws_frame) {
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
 
   auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\"");
-  frame[0] = (char)(1); // Normal, fragmented frame
+  frame[0] = (char)(WS_TEXT); // Normal, fragmented frame
   std::copy(frame.begin(), frame.end(), rtm->input_buffer);
   rtm->input_length = frame.size();
 
   frame = _ws_encode(",\"id\":");
-  frame[0] = 0; // Fragment
+  frame[0] = WS_CONTINUATION; // Fragment
   std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
   rtm->input_length += frame.size();
 
   frame = _ws_encode("1}");
-  frame[0] = 0x80; // Last fragment
+  frame[0] = (char)(0x80 | WS_CONTINUATION); // Last fragment
   std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
   rtm->input_length += frame.size();
 
@@ -1071,7 +1071,7 @@ TEST(rtm_ws_processing, oom_single_frame_skip) {
 
 
   auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
-  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
   std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
   rtm->input_length += frame.size();
 
@@ -1089,17 +1089,17 @@ TEST(rtm_ws_processing, oom_fragments_skip) {
   rtm->skip_current_fragmented_frame = 1;
 
   auto frame = _ws_encode("invalid-stuff-that-wont-parse");
-  frame[0] = 0; // Continuation frame
+  frame[0] = WS_CONTINUATION; // Continuation frame
   std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
   rtm->input_length += frame.size();
 
   frame = _ws_encode("invalid-stuff-that-wont-parse");
-  frame[0] = 0x80; // Last fragment
+  frame[0] = (char)(0x80 | WS_CONTINUATION); // Last fragment
   std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
   rtm->input_length += frame.size();
 
   frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
-  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
   std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
   rtm->input_length += frame.size();
 
@@ -1121,7 +1121,7 @@ TEST(rtm_ws_processing, oom_handle_large_input) {
   large_message << "\"}";
 
   auto frame = _ws_encode(large_message.str());
-  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
 
   std::copy(frame.begin(), frame.begin() + 50, rtm->input_buffer);
   rtm->input_length = 50;
@@ -1155,11 +1155,11 @@ TEST(rtm_ws_processing, oom_skip_fragmented_input) {
   for(int repeat=0; repeat<3; repeat++) {
     auto frame = _ws_encode(large_message.str());
     if(repeat == 0)
-      frame[0] = (char)(1); // Fragmented frame
+      frame[0] = (char)(WS_TEXT); // Fragmented frame
     else if(repeat == 1)
-      frame[0] = (char)(0); // Continuation frame
+      frame[0] = (char)(WS_CONTINUATION); // Continuation frame
     else
-      frame[0] = (char)(0x80); // Last frame
+      frame[0] = (char)(0x80 | WS_CONTINUATION); // Last frame
 
     for(int i=0; i<frame.size(); i += 50) {
       auto until = std::min((size_t)i+50, frame.size());
