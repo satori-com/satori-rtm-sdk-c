@@ -281,6 +281,11 @@ void rtm_close(rtm_client_t *rtm) {
   if (!rtm) {
     return;
   }
+  if (rtm->dynamic_input_buffer) {
+    rtm->free_fn(rtm, rtm->dynamic_input_buffer);
+    rtm->dynamic_input_buffer = NULL;
+    rtm->dynamic_input_buffer_size = 0;
+  }
   _rtm_io_close(rtm);
 }
 
