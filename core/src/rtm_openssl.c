@@ -273,11 +273,12 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(buf);
   ASSERT(nbyte > 0);
+  errno = 0;
 
   while (TRUE) {
     int read_result = SSL_read(rtm->ssl_connection, buf, (int) nbyte);
 
-    if (read_result > 0) {
+    if (read_result >= 0) {
       return read_result;
     }
 
@@ -286,7 +287,8 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
 
     if (reason == SSL_ERROR_WANT_READ || reason == SSL_ERROR_WANT_WRITE) {
       if (!wait) {
-        return 0;
+        errno = EAGAIN;
+        return -1;
       }
       rc = _rtm_io_wait(rtm, SSL_ERROR_WANT_READ == reason, SSL_ERROR_WANT_WRITE == reason, -1);
     } else {

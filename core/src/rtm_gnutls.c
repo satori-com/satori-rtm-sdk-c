@@ -128,13 +128,15 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(buf);
   ASSERT(nbyte > 0);
+  errno = 0;
 
   while (TRUE) {
     ssize_t read_result = gnutls_record_recv(rtm->session, buf, nbyte);
     if (read_result >= 0) {
-      return read_result; // FIXME: handle 0 correctly
+      return read_result;
     } else if (!wait && read_result == GNUTLS_E_AGAIN) {
-      return 0;
+      errno = EAGAIN;
+      return -1;
     } else if (_rtm_gtls_wait_for_socket(rtm, RTM_ERR_READ, (int) read_result, wait, NO) != RTM_OK) {
       return -1;
     }
