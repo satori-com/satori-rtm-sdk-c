@@ -1078,56 +1078,55 @@ typedef struct {
   void *dst;
 } field_t;
 
-void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
+rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(message);
 
-  char *el;
-  ssize_t el_len;
   char *body = NULL;
   enum rtm_action_t action = RTM_ACTION_UNKNOWN;
   char *p = _rtm_json_find_begin_obj(message);
+  int pdu_valid = TRUE;
+  pdu->request_id = 0;
 
-  while (TRUE) {
-    p = _rtm_json_find_field_name(p, &el, &el_len);
+  while (pdu_valid && p) {
+    char *key, *value;
+    size_t key_length, value_length;
 
-    if (el_len <= 0) {
+    p = _rtm_json_find_kv_pair(p, &key, &key_length, &value, &value_length);
+    if (key_length < 2 || !value) {
+      pdu_valid = FALSE;
       break;
     }
 
-    if (!strncmp("\"action\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &el, &el_len);
-      ASSERT(el_len);
-      if (0 != el_len) {
-        // skip quotes
-        el[el_len - 1] = '\0';
-        ++el;
+    if (!strncmp("\"action\"", key, key_length)) {
+      if (value[0] != '"' || value[value_length-1] != '"' || action != RTM_ACTION_UNKNOWN) {
+        pdu_valid = FALSE;
+        break;
+      }
 
-        enum rtm_action_t o;
-        for (o = 1; o < RTM_ACTION_SENTINEL; ++o) {
-            if (!strncmp(action_table[o] , el, el_len)) {
-                action = o;
-                break;
-            }
+      enum rtm_action_t o;
+      for (o = 1; o < RTM_ACTION_SENTINEL; ++o) {
+        if (!strncmp(action_table[o], value + 1, value_length - 2)) {
+          action = o;
+          break;
         }
       }
-    } else if (!strncmp("\"id\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &el, &el_len);
+    } else if (!strncmp("\"id\"", key, key_length)) {
       char *id_end;
-      pdu->request_id = strtoul(el, &id_end, 10); // unsafe
-      if (id_end == NULL || id_end - el != el_len) {
-        pdu->request_id = 0;
+
+      pdu->request_id = strtoul(value, &id_end, 10);
+      if (id_end == NULL || id_end != value + value_length) {
+        pdu_valid = FALSE;
+        break;
       }
-    } else if (!strncmp("\"body\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &el, &el_len);
-      if (0 != el_len) {
-        el[el_len] = '\0';
-        body = el;
-      }
-    } else {
-      // skip json element
-      p = _rtm_json_find_element(p, &el, &el_len);
+    } else if (!strncmp("\"body\"", key, key_length)) {
+      value[value_length] = 0;
+      body = value;
     }
+  }
+
+  if (!pdu_valid) {
+    return RTM_ERR_PROTOCOL;
   }
 
   field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {{0}};
@@ -1200,7 +1199,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].name = "message";
       break;
     case RTM_ACTION_AUTHENTICATE_OK:
-      return;
+      break;
     case RTM_ACTION_SUBSCRIPTION_DATA: // messages are parsed elsewhere
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
@@ -1216,27 +1215,35 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       break;
     case RTM_ACTION_UNKNOWN:
       pdu->body = body;
-      return;
+      return RTM_OK;
     case RTM_ACTION_SENTINEL:
       ASSERT_NOT_NULL(0); // never happens
   }
 
   if (!body) {
-    return;
+    return RTM_OK;
   }
 
   p = _rtm_json_find_begin_obj(body);
 
-  while (TRUE) {
-    p = _rtm_json_find_field_name(p, &el, &el_len);
+  while (p) {
+    char *key, *value;
+    size_t key_length, value_length;
 
-    if (el_len <= 0) {
+    p = _rtm_json_find_kv_pair(p, &key, &key_length, &value, &value_length);
+    if (!p && key && !*key) {
+      // Valid, but empty object.
+      break;
+    }
+    if (key_length < 2 || !value) {
+      pdu_valid = FALSE;
       break;
     }
 
-    // special case for auth/handshake/ok
-    if (0 == strncmp("data", el + 1, el_len - 2)) {
-      p = _rtm_json_find_begin_obj(p);
+    // For handshakes, the answer is a nested JSON object {data:{nonce:xxx}}.
+    // We only want the nonce.
+    if (action == RTM_ACTION_HANDSHAKE_OK && !strncmp(key, "\"data\"", key_length)) {
+      p = _rtm_json_find_begin_obj(value);
       continue;
     }
 
@@ -1247,61 +1254,62 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       if (!field.name) {
         break;
       }
+
       // skip quotes when compare field name
-      if (0 == strncmp(field.name, el + 1, el_len - 2)) {
-        p = _rtm_json_find_element(p, &el, &el_len);
-        if (el_len <= 0) {
-          continue;
-        }
+      if (!strncmp(field.name, key + 1, key_length - 2)) {
         switch (field.type) {
           case FIELD_JSON:
-            el[el_len] = 0;
-            *((char **)field.dst) = el;
+            value[value_length] = 0;
+            *((char **)field.dst) = value;
             break;
           case FIELD_STRING:
-            el[el_len - 1] = 0;
-            *((char **)field.dst) = el + 1;
+            value[value_length-1] = 0;
+            *((char **)field.dst) = value + 1;
             break;
           case FIELD_ITERATOR:
-            el[el_len - 1] = 0;
-            ASSERT(*el == '[');
-            // TODO: skip whitespace
-            ((rtm_list_iterator_t *)field.dst)->position = el + 1;
+            value[value_length] = 0;
+            ((rtm_list_iterator_t *)field.dst)->position = value + 1;
             break;
         }
       }
     }
   }
+
+  if (!pdu_valid) {
+    return RTM_ERR_PROTOCOL;
+  }
+
+  return RTM_OK;
 }
 
-// FIXME: extra element of array comes out as '}'
 char *rtm_iterate(rtm_list_iterator_t const *iterator) {
   rtm_list_iterator_t *iter = (rtm_list_iterator_t *)iterator;
   if (!iter || !iter->position) {
     return NULL;
   }
 
-  char *result = iter->position;
+  char *this_element_cursor;
+  size_t this_element_length;
 
-  char *el;
-  ssize_t el_len;
+  char *next_element = _rtm_json_find_element(iter->position, &this_element_cursor, &this_element_length);
 
-  _rtm_json_find_element(iter->position, &el, &el_len);
-
-  if (el_len <= 0) {
+  if (next_element == NULL) {
     iter->position = NULL;
     return NULL;
-  } else {
-    el[el_len] = 0;
-    if (el[el_len] == ']') {
-      iter->position = NULL;
-    } else {
-      // TODO: skip whitespace
-      iter->position = el + el_len + 1;
-    }
+  }
+  else if (*next_element == ',') {
+    iter->position = next_element + 1;
+  }
+  else if(!*next_element || *next_element == ']') {
+    iter->position = NULL;
+  }
+  else {
+    iter->position = NULL;
+    return NULL;
   }
 
-  return result;
+  this_element_cursor[this_element_length] = 0;
+  return this_element_cursor;
 }
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len) {
@@ -1316,7 +1324,12 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
 
   if (rtm->handle_pdu) {
       rtm_pdu_t pdu = {0};
-      rtm_parse_pdu(message, &pdu);
+      rtm_status rc = rtm_parse_pdu(message, &pdu);
+      if(rc != RTM_OK) {
+        _rtm_log_error(rtm, rc, "Invalid PDU received");
+        rtm_close(rtm);
+        return;
+      }
 
       rtm->handle_pdu(rtm, &pdu);
   }

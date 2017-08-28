@@ -598,8 +598,9 @@ RTM_API rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *channel,
  *
  * @param[in] json string.
  * @param[out] pdu_out parsed PDU.
+ * @retval RTM_ERR_* an error occurred
  */
-RTM_API void rtm_parse_pdu(char *json, rtm_pdu_t *pdu_out);
+RTM_API rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu);
 
 /**
  * @brief Read the latest published message.
