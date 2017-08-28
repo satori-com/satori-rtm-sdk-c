@@ -139,6 +139,7 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(buf);
   ASSERT_NOT_NULL(buf);
+  errno = 0;
 
   OSStatus status = errSSLWouldBlock;
   while (errSSLWouldBlock == status) {
@@ -151,9 +152,14 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
     if (errSSLWouldBlock == status) {
       if (wait)
         _rtm_io_wait(rtm, YES, NO, -1);
-      else
-        return 0;
+      else {
+        errno = EAGAIN;
+        return -1;
+      }
     }
+  }
+  if (status == errSSLClosedGraceful || status == errSSLClosedAbort) {
+    return 0;
   }
   return -1;
 }

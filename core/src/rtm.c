@@ -740,7 +740,7 @@ static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
     }
 
     ssize_t bytes_read = _rtm_io_read(rtm, input_buffer + input_length, buffer_size - input_length, YES);
-    if (bytes_read < 0) {
+    if (bytes_read <= 0) {
       _rtm_io_close(rtm);
       _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
       return RTM_ERR_READ;
@@ -1450,13 +1450,15 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
   if (to_read > 0) {
     ssize_t bytes_read = _rtm_io_read(rtm, read_buffer + rtm->input_length, (size_t) to_read, NO);
-    if (bytes_read < 0)
-      return RTM_ERR_READ;
+    if (bytes_read <= 0) {
+      if (errno == EAGAIN) {
+        // No data yet
+        return RTM_WOULD_BLOCK;
+      }
 
-    if (bytes_read == 0) {
-      // No data yet
-      return RTM_WOULD_BLOCK;
+      return RTM_ERR_READ;
     }
+
 
     rtm->input_length += bytes_read;
   }
