@@ -208,14 +208,9 @@ TEST(rtm_test, test_allocators) {
   allocations.number_of_allocs = allocations.number_of_frees = 0;
 
   event_t event;
-  for(int i=0; i<15; i++) {
-    rc = next_event(rtm, &event);
-    if(rc == RTM_OK && event.action == RTM_ACTION_SUBSCRIPTION_DATA) {
-      break;
-    }
-    else if(i == 14) {
-      FAIL() << "Failed to receive subscription data.";
-    }
+  rc = next_event(rtm, &event);
+  if(rc != RTM_OK || event.action != RTM_ACTION_SUBSCRIPTION_DATA) {
+    FAIL() << "Failed to receive subscription data.";
   }
 
   ASSERT_NE(allocations.number_of_allocs, 0) << "No memory allocated even though we received a large message.";
