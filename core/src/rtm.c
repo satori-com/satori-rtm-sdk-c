@@ -1500,7 +1500,7 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
     base_input_buffer = rtm->input_buffer;
     base_input_buffer_size = rtm->input_buffer_size;
   }
-  char *ws_frame = base_input_buffer + rtm->fragment_length;
+  char *ws_frame = base_input_buffer + rtm->fragmented_message_length;
 
   if (rtm->skip_next_n_input_bytes > 0) {
     // We are in the middle of processing a frame that is too large to handle
@@ -1562,7 +1562,7 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
 
     // FIXME pberndt Check for payload_length oferflow
 
-    size_t buffer_space_used = rtm->fragment_length + rtm->input_length;
+    size_t buffer_space_used = rtm->fragmented_message_length + rtm->input_length;
     size_t buffer_space_left = (base_input_buffer_size > buffer_space_used) ? (base_input_buffer_size - buffer_space_used) : 0;
     size_t payload_already_buffered = rtm->input_length > header_length ? rtm->input_length - header_length : 0;
     size_t payload_missing = (payload_length > payload_already_buffered) ? (payload_length - payload_already_buffered) : 0;
@@ -1570,13 +1570,13 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
     if (payload_missing > buffer_space_left) {
       // Insufficient memory to ever read this frame.
 
-      if (rtm->skip_current_fragmented_frame && frame_opcode == WS_CONTINUATION) {
+      if (rtm->skip_current_fragmented_message && frame_opcode == WS_CONTINUATION) {
         // This is a huge packet within a series of huge packets that we want
         // to skip. If it has frame_fin set, skip it, but mark the series as
         // ended.
-        rtm->skip_current_fragmented_frame = !frame_fin;
+        rtm->skip_current_fragmented_message = !frame_fin;
       }
-      else if (rtm->skip_current_fragmented_frame && !frame_fin) {
+      else if (rtm->skip_current_fragmented_message && !frame_fin) {
         // This is the start of a fragmented packet, but we are already in the
         // process of skipping one.
         _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence start of fragmented frame");
@@ -1588,7 +1588,7 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
         // Fragmented frame. Allocate even more space.
         amount_to_allocate *= 2;
       }
-      amount_to_allocate += rtm->fragment_length;
+      amount_to_allocate += rtm->fragmented_message_length;
 
       char *memory = rtm->malloc_fn(rtm, amount_to_allocate);
       if (!memory) {
@@ -1603,8 +1603,8 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
         if (!frame_fin) {
           // This packet is part of a series of fragmented packets. Discard them
           // all.
-          rtm->skip_current_fragmented_frame = 1;
-          rtm->fragment_length = 0;
+          rtm->skip_current_fragmented_message = 1;
+          rtm->fragmented_message_length = 0;
         }
 
         rtm->skip_next_n_input_bytes = payload_length - (rtm->input_length - header_length);
@@ -1615,9 +1615,9 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
 
         // Move the partial frame and any fragmented frames to the newly
         // allocated memory chunk
-        if(rtm->fragment_length) {
-          memcpy(memory, base_input_buffer, rtm->fragment_length);
-          memcpy(memory + rtm->fragment_length, ws_frame, rtm->input_length);
+        if(rtm->fragmented_message_length) {
+          memcpy(memory, base_input_buffer, rtm->fragmented_message_length);
+          memcpy(memory + rtm->fragmented_message_length, ws_frame, rtm->input_length);
         }
         else {
           memcpy(memory, ws_frame, rtm->input_length);
@@ -1631,7 +1631,7 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
         rtm->dynamic_input_buffer_size = amount_to_allocate;
         base_input_buffer = memory;
         base_input_buffer_size = amount_to_allocate;
-        ws_frame = memory + rtm->fragment_length;
+        ws_frame = memory + rtm->fragmented_message_length;
       }
 
       return_code = RTM_WOULD_BLOCK;
@@ -1666,19 +1666,19 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
         }
       }
     } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode || WS_CONTINUATION == frame_opcode) { /* data frame */
-      if (frame_opcode == WS_CONTINUATION && !rtm->fragment_length && !rtm->skip_current_fragmented_frame) {
+      if (frame_opcode == WS_CONTINUATION && !rtm->fragmented_message_length && !rtm->skip_current_fragmented_message) {
         _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence continuation frame");
         return RTM_ERR_PROTOCOL;
       }
 
       if (!frame_fin) {
         // Fragmented frame
-        if (rtm->skip_current_fragmented_frame) {
+        if (rtm->skip_current_fragmented_message) {
           // We discarded parts of this packet sequence. So discard this one,
           // too.
         }
         else {
-          if (frame_opcode != WS_CONTINUATION && rtm->fragment_length) {
+          if (frame_opcode != WS_CONTINUATION && rtm->fragmented_message_length) {
             _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence start of fragmented frame");
             return RTM_ERR_PROTOCOL;
           }
@@ -1686,32 +1686,32 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
           // Store body data away (essentially: remove WebSocket header)
           // We always have enough memory to do that, because the frame is in the
           // same buffer as are the fragments.
-          memmove(base_input_buffer + rtm->fragment_length, ws_frame, payload_length);
-          rtm->fragment_length += payload_length;
+          memmove(base_input_buffer + rtm->fragmented_message_length, ws_frame, payload_length);
+          rtm->fragmented_message_length += payload_length;
         }
       }
       else if (frame_opcode == WS_CONTINUATION) {
         // Last in a series of fragmented frames.
 
-        if (rtm->skip_current_fragmented_frame) {
+        if (rtm->skip_current_fragmented_message) {
           // We discarded parts of this packet sequence. So discard this one,
           // too. Then mark the sequence as ended.
-          rtm->skip_current_fragmented_frame = 0;
+          rtm->skip_current_fragmented_message = 0;
         }
         else {
-          // Reassemble the frame, then invoke handler.
-          memmove(base_input_buffer + rtm->fragment_length, ws_frame, payload_length);
-          rtm->fragment_length += payload_length;
-          base_input_buffer[rtm->fragment_length] = 0;
+          // Reassemble the message, then invoke handler.
+          memmove(base_input_buffer + rtm->fragmented_message_length, ws_frame, payload_length);
+          rtm->fragmented_message_length += payload_length;
+          base_input_buffer[rtm->fragmented_message_length] = 0;
 
           if (rtm->is_verbose) {
-            fprintf(stderr, "RECV: %.*s\n", (int)rtm->fragment_length, base_input_buffer);
+            fprintf(stderr, "RECV: %.*s\n", (int)rtm->fragmented_message_length, base_input_buffer);
           }
 
-          rtm_text_frame_handler(rtm, base_input_buffer, rtm->fragment_length);
+          rtm_text_frame_handler(rtm, base_input_buffer, rtm->fragmented_message_length);
           return_code = RTM_OK;
 
-          rtm->fragment_length = 0;
+          rtm->fragmented_message_length = 0;
         }
       }
       else if (frame_opcode == WS_TEXT || frame_opcode == WS_BINARY) {
@@ -1745,7 +1745,7 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
   /*
    * Discard the huge frame buffer if it isn't needed anymore
    */
-  if (rtm->dynamic_input_buffer && !rtm->fragment_length && return_code == RTM_OK && rtm->input_length < rtm->input_buffer_size) {
+  if (rtm->dynamic_input_buffer && !rtm->fragmented_message_length && return_code == RTM_OK && rtm->input_length < rtm->input_buffer_size) {
     if (rtm->input_length > 0) {
       memcpy(rtm->input_buffer, ws_frame, rtm->input_length);
     }
@@ -1763,7 +1763,7 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
    * it will always be at the beginning of the buffer next time around, so we are guaranteed to have
    * memory space for a full frame
    */
-  char *new_read_buffer = base_input_buffer + rtm->fragment_length;
+  char *new_read_buffer = base_input_buffer + rtm->fragmented_message_length;
   if (rtm->input_length > 0 && ws_frame != new_read_buffer) {
     memmove(new_read_buffer, ws_frame, rtm->input_length);
   }
@@ -1784,8 +1784,8 @@ rtm_status _rtm_fill_input_buffer(rtm_client_t *rtm) {
     base_input_buffer_size = rtm->input_buffer_size;
   }
 
-  char *read_buffer = base_input_buffer + rtm->fragment_length;
-  ssize_t to_read = base_input_buffer_size - rtm->input_length - rtm->fragment_length;
+  char *read_buffer = base_input_buffer + rtm->fragmented_message_length;
+  ssize_t to_read = base_input_buffer_size - rtm->input_length - rtm->fragmented_message_length;
 
   if (to_read > 0) {
     ssize_t bytes_read = _rtm_io_read(rtm, read_buffer + rtm->input_length, (size_t) to_read, NO);

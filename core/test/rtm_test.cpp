@@ -1086,7 +1086,7 @@ TEST(rtm_ws_processing, oom_fragments_skip) {
   char memory[RTM_CLIENT_SIZE(200)];
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
 
-  rtm->skip_current_fragmented_frame = 1;
+  rtm->skip_current_fragmented_message = 1;
 
   auto frame = _ws_encode("invalid-stuff-that-wont-parse");
   frame[0] = WS_CONTINUATION; // Continuation frame
