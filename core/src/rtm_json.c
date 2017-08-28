@@ -32,8 +32,8 @@ char *_rtm_json_escape(char *dest, ssize_t n, const char *str) {
   }
 
   static const char toHex[] = "0123456789ABCDEF";
-  const char *c = str;
-  char *pb = dest;
+  const unsigned char *c = (unsigned char *)str;
+  unsigned char *pb = (unsigned char *)dest;
 
   // preserve one char for \0
   size_t free_space = n - 1;
@@ -73,7 +73,7 @@ char *_rtm_json_escape(char *dest, ssize_t n, const char *str) {
       free_space -= 2;
       *pb++ = '\\';
       *pb++ = '"';
-    } else if (0 <= *c && *c <= 0x1f) { // special characters [0..31]
+    } else if (*c <= 0x1f) { // special characters [0..31]
       if (free_space < 6) { return NULL; }
       free_space -= 6;
       *pb++ = '\\';
@@ -82,7 +82,7 @@ char *_rtm_json_escape(char *dest, ssize_t n, const char *str) {
       *pb++ = '0';
       *pb++ = toHex[*c >> 4];
       *pb++ = toHex[*c & 0x0f];
-    } else if (0x20 <= *c && *c <= 0x7f) { // ASCII
+    } else if (0x20 <= *(unsigned char*)c && *(unsigned char *)c <= 0x7f) { // ASCII
       if (free_space < 1) { return NULL; }
       free_space -= 1;
       *pb++ = *c;
@@ -113,7 +113,7 @@ char *_rtm_json_escape(char *dest, ssize_t n, const char *str) {
   }
   *pb = 0;
 
-  return pb;
+  return (char*)pb;
 }
 
 /**

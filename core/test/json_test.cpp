@@ -116,7 +116,7 @@ TEST(rtm_json, escape) {
   //simple string
   const char simple[] = "foo bar";
   ret = _rtm_json_escape(buf, 128, simple);
-  ASSERT_EQ(strlen(simple), ret - buf);
+  ASSERT_EQ(strlen(simple), (size_t)(ret - buf));
   ASSERT_TRUE(0 == strcmp(buf, simple));
 
   // special characters
@@ -128,17 +128,17 @@ TEST(rtm_json, escape) {
   const char unicode_1[] = "Ǆ foo";
   ret = _rtm_json_escape(buf, 128, unicode_1);
   ASSERT_TRUE(0 == strcmp(buf, unicode_1));
-  ASSERT_EQ(strlen(unicode_1), ret - buf);
+  ASSERT_EQ(strlen(unicode_1), (size_t)(ret - buf));
 
   const char unicode_2[] = "௵ foo";
   ret = _rtm_json_escape(buf, 128, unicode_2);
   ASSERT_TRUE(0 == strcmp(buf, unicode_2));
-  ASSERT_EQ(strlen(unicode_2), ret - buf);
+  ASSERT_EQ(strlen(unicode_2), (size_t)(ret - buf));
 
   const char unicode_3[] = "😮 foo";
   ret = _rtm_json_escape(buf, 128, unicode_3);
   ASSERT_TRUE(0 == strcmp(buf, unicode_3));
-  ASSERT_EQ(strlen(unicode_3), ret - buf);
+  ASSERT_EQ(strlen(unicode_3), (size_t)(ret - buf));
 
   ret = _rtm_json_escape(buf, 0, "foo bar");
   ASSERT_EQ(nullptr, ret);

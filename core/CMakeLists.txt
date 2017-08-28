@@ -18,10 +18,10 @@ option(COVERAGE "Generate coverage statistics" OFF)
 # Set global compiler flags
 if (${CMAKE_C_COMPILER_ID} MATCHES "Clang")
   # using Clang
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -Wall -Werror -Wno-long-long -Wno-unknown-pragmas")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wextra")
 elseif (${CMAKE_C_COMPILER_ID} MATCHES "GNU")
   # using GCC
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu89 -Wall -Werror -Wno-long-long -Wno-unknown-pragmas")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wextra")
 elseif (${CMAKE_C_COMPILER_ID} MATCHES "Intel")
   # using Intel C++
   # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-long-long")

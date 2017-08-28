@@ -73,9 +73,8 @@ int authenticate(rtm_client_t *client) {
   return RTM_OK;
 }
 
-int main(int argc, const char *argv[]) {
+int main() {
   void *memory = malloc(rtm_client_size);
-  client_state state = {0};
   rtm_client_t *client = rtm_init(memory, &pdu_handler, &state);
   rtm_status rc = rtm_connect(client, endpoint, appkey);
 

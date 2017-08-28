@@ -40,6 +40,8 @@ std::queue<std::string> message_queue;
 std::queue<std::string> error_message_queue;
 
 void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
+  (void)rtm;
+
   event_t event;
   event.action = pdu->action;
   event.request_id = pdu->request_id;
@@ -87,6 +89,8 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 }
 
 void raw_pdu_recorder(rtm_client_t *rtm, char const *raw_pdu) {
+  (void)rtm;
+
   event_t event{};
   event.info = std::string(raw_pdu);
   event_queue.push(event);
@@ -564,11 +568,11 @@ TEST(rtm_test, error_handler) {
   rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   rtm_set_error_logger(rtm, error_message_recorder);
-  ASSERT_EQ(error_message_queue.size(), 0) << "Error message queue isn't empty to start with";
+  ASSERT_EQ(error_message_queue.size(), 0u) << "Error message queue isn't empty to start with";
 
   rtm_connect(rtm, "thisisaninvalidendpoint", "thisisaninvalidkey");
 
-  ASSERT_GT(error_message_queue.size(), 0) << "Error message queue is empty even though an error occurred";
+  ASSERT_GT(error_message_queue.size(), 0u) << "Error message queue is empty even though an error occurred";
   ASSERT_NE(error_message_queue.front().find("Unsupported scheme in endpoint=thisisaninvalidendpoint"), std::string::npos) << "Unexpected error message: " << error_message_queue.front();
 
   error_message_queue.pop();
@@ -1197,8 +1201,8 @@ TEST(rtm_ws_processing, oom_skip_fragmented_input) {
     else
       frame[0] = (char)(0x80 | WS_CONTINUATION); // Last frame
 
-    for(int i=0; i<frame.size(); i += 50) {
-      auto until = (std::min)((size_t)i+50, frame.size());
+    for(size_t i=0; i<frame.size(); i += 50) {
+      auto until = (std::min)(i+50, frame.size());
       std::copy(&frame[i], &frame[until], rtm->input_buffer);
       rtm->input_length = until - i;
 

@@ -128,7 +128,7 @@ RTM_API rtm_client_t * rtm_init_ex(
  */
 static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostname, char const *port) {
   int len = snprintf(rtm->output_buffer, rtm->output_buffer_size, "CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
-  if(len < 0 || len >= rtm->output_buffer_size) {
+  if(len < 0 || (unsigned)len >= rtm->output_buffer_size) {
     return RTM_ERR_OOM;
   }
   int written = _rtm_io_write(rtm, rtm->output_buffer, len);
@@ -714,20 +714,25 @@ static void *_rtm_nop_malloc(rtm_client_t *rtm, size_t size) {
 }
 
 void *rtm_system_malloc(rtm_client_t *rtm, size_t size) {
+  (void)rtm;
   return malloc(size);
 }
 
 void rtm_system_free(rtm_client_t *rtm, void *mem) {
+  (void)rtm;
   return free(mem);
 }
 
 void *rtm_null_malloc(rtm_client_t *rtm, size_t size) {
+  (void)rtm;
+  (void)size;
   return NULL;
 }
 
 void rtm_null_free(rtm_client_t *rtm, void *mem) {
   // Intentionally empty.
-  (void)1;
+  (void)rtm;
+  (void)mem;
 }
 
 void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
@@ -791,7 +796,7 @@ const char *rtm_error_string(rtm_status status) {
 // Internal code
 
 static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
-  const ssize_t buffer_size = rtm->input_buffer_size;
+  const size_t buffer_size = rtm->input_buffer_size;
   char *input_buffer = rtm->input_buffer;
   // read HTTP response header
   size_t input_length = 0;
@@ -895,7 +900,7 @@ static rtm_status _rtm_prepare_path(rtm_client_t *rtm, char *path, const char *a
   size_t size = _RTM_MAX_PATH_SIZE - (end_of_path - path);
 
   int w = snprintf(end_of_path, size, "%s?appkey=%s", RTM_PATH, appkey);
-  if (w == 0 || w >= size) {
+  if (w <= 0 || (unsigned)w >= size) {
     _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to build path - appkey malformed?");
     return RTM_ERR_OOM;
   }
@@ -1195,14 +1200,25 @@ rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
     return RTM_ERR_PROTOCOL;
   }
 
-  field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {{0}};
+  field_t fields[MAX_INTERESTING_FIELDS_IN_PDU];
+  memset(fields, 0, sizeof(fields));
 
   pdu->action = action;
   switch (action) {
     case RTM_ACTION_SUBSCRIPTION_ERROR:
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->error;
+      fields[0].name = "error";
+
+      fields[1].type = FIELD_STRING;
+      fields[1].dst = &pdu->reason;
+      fields[1].name = "reason";
+
       fields[2].type = FIELD_STRING;
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
+      break;
+
     case RTM_ACTION_GENERAL_ERROR:
     case RTM_ACTION_AUTHENTICATE_ERROR:
     case RTM_ACTION_DELETE_ERROR:
@@ -1220,6 +1236,7 @@ rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->reason;
       fields[1].name = "reason";
       break;
+
     case RTM_ACTION_SUBSCRIPTION_INFO:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->info;
@@ -1233,11 +1250,13 @@ rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
       break;
+
     case RTM_ACTION_HANDSHAKE_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->nonce;
       fields[0].name = "nonce";
       break;
+
     case RTM_ACTION_PUBLISH_OK:
     case RTM_ACTION_DELETE_OK:
     case RTM_ACTION_WRITE_OK:
@@ -1245,6 +1264,7 @@ rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
       break;
+
     case RTM_ACTION_SUBSCRIBE_OK:
     case RTM_ACTION_UNSUBSCRIBE_OK:
       fields[0].type = FIELD_STRING;
@@ -1255,6 +1275,7 @@ rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->subscription_id;
       fields[1].name = "subscription_id";
       break;
+
     case RTM_ACTION_READ_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
@@ -1264,8 +1285,10 @@ rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->message;
       fields[1].name = "message";
       break;
+
     case RTM_ACTION_AUTHENTICATE_OK:
       break;
+
     case RTM_ACTION_SUBSCRIPTION_DATA: // messages are parsed elsewhere
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
@@ -1279,9 +1302,11 @@ rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
       break;
+
     case RTM_ACTION_UNKNOWN:
       pdu->body = body;
       return RTM_OK;
+
     case RTM_ACTION_SENTINEL:
       ASSERT_NOT_NULL(0); // never happens
   }
@@ -1379,6 +1404,7 @@ char *rtm_iterate(rtm_list_iterator_t const *iterator) {
 }
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len) {
+  (void)message_len;
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
   ASSERT(message_len > 0);
@@ -1389,7 +1415,8 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
   }
 
   if (rtm->handle_pdu) {
-      rtm_pdu_t pdu = {0};
+      rtm_pdu_t pdu;
+      memset(&pdu, 0, sizeof(rtm_pdu_t));
       rtm_status rc = rtm_parse_pdu(message, &pdu);
       if(rc != RTM_OK) {
         _rtm_log_error(rtm, rc, "Invalid PDU received");
@@ -1464,6 +1491,7 @@ rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
 }
 
 void _rtm_log_message_impl(rtm_client_t *rtm, rtm_status status, const char *message) {
+  (void)status;
   ASSERT_NOT_NULL(message);
   if (rtm->error_logger)
     rtm->error_logger(message);

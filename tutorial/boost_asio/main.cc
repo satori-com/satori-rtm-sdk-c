@@ -214,6 +214,10 @@ class Rtm {
 						if(m_connected_callback)
 							m_connected_callback(true, nullptr);
 						return;
+
+					default:
+						// We are not interested in other PDUs.
+						return;
 				}
 			}
 

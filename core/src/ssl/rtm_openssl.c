@@ -101,14 +101,10 @@ static rtm_status openssl_load_windows_certificates(rtm_client_t *rtm)
 }
 #endif
 
-static int openssl_verify_callback(int preverify, X509_STORE_CTX *x509_ctx) {
-  return preverify;
-}
-
 static SSL_CTX *openssl_create_context() {
   SSL_CTX *ctx = SSL_CTX_new(ssl_method);
   if (ctx) {
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, openssl_verify_callback);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
     SSL_CTX_set_verify_depth(ctx, 4);
     SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
   }
