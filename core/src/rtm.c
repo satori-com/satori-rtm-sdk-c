@@ -1078,7 +1078,7 @@ typedef struct {
   void *dst;
 } field_t;
 
-rtm_status rtm_parse_pdu(rtm_client_t *rtm, char *message, rtm_pdu_t *pdu) {
+rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(message);
 
@@ -1122,13 +1122,10 @@ rtm_status rtm_parse_pdu(rtm_client_t *rtm, char *message, rtm_pdu_t *pdu) {
     } else if (!strncmp("\"body\"", key, key_length)) {
       value[value_length] = 0;
       body = value;
-    } else {
-      _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Unexpected field in PDU frame: '%.*s'", (int)key_length, key);
     }
   }
 
   if (!pdu_valid) {
-    _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Invalid PDU received");
     return RTM_ERR_PROTOCOL;
   }
 
@@ -1279,7 +1276,6 @@ rtm_status rtm_parse_pdu(rtm_client_t *rtm, char *message, rtm_pdu_t *pdu) {
   }
 
   if (!pdu_valid) {
-    _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "Invalid PDU received");
     return RTM_ERR_PROTOCOL;
   }
 
@@ -1328,7 +1324,9 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
 
   if (rtm->handle_pdu) {
       rtm_pdu_t pdu = {0};
-      if(rtm_parse_pdu(rtm, message, &pdu) != RTM_OK) {
+      rtm_status rc = rtm_parse_pdu(message, &pdu);
+      if(rc != RTM_OK) {
+        _rtm_log_error(rtm, rc, "Invalid PDU received");
         rtm_close(rtm);
         return;
       }

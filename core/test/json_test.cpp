@@ -11,20 +11,10 @@ struct subscription_data_t {
   std::string message;
 };
 
-struct rtm_wrapper_t {
-  std::vector<char> rtm_data;
-  rtm_client_t *rtm;
-
-  rtm_wrapper_t() {
-    rtm_data.resize(rtm_client_size);
-    rtm = rtm_init(&rtm_data[0], rtm_default_pdu_handler, nullptr);
-  }
-} rtm_wrapper;
-
 TEST(rtm_json, pdu_rtm_standard_response) {
   rtm_pdu_t pdu{};
   char json[] = R"({"action":"rtm/subscription/data","body":{"position":"1479315802:0","messages":["a",null,42 ]}})";
-  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
+  rtm_parse_pdu(json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_SUBSCRIPTION_DATA, pdu.action);
   ASSERT_NOT_NULL(pdu.position);
@@ -39,7 +29,7 @@ TEST(rtm_json, pdu_rtm_standard_response) {
 TEST(rtm_json, pdu_field_in_random_order) {
   rtm_pdu_t pdu{};
   char json[] = R"({ "body" :  { "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"}, "action"    : "rtm/publish/ok" , "id" : 42 })";
-  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
+  rtm_parse_pdu(json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.action);
   // ASSERT_TRUE(0 == strcmp(R"({ "action" : "rtm/publish/error" , "id" : 12 , "body" : "foo"})", pdu.body));
@@ -49,7 +39,7 @@ TEST(rtm_json, pdu_field_in_random_order) {
 TEST(rtm_json, pdu_body_is_absent) {
   rtm_pdu_t pdu{};
   char json[] = R"(  { "action" : "rtm/publish/ok" , "id" : 42  } )";
-  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
+  rtm_parse_pdu(json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_PUBLISH_OK, pdu.action);
   ASSERT_TRUE(nullptr == pdu.body);
@@ -59,7 +49,7 @@ TEST(rtm_json, pdu_body_is_absent) {
 TEST(rtm_json, pdu_action_is_absent) {
   rtm_pdu_t pdu{};
   char json[] = R"(  {    "id" : 42  ,"body":{"stuff":[1,2,null]}} )";
-  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
+  rtm_parse_pdu(json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
   ASSERT_STREQ(R"({"stuff":[1,2,null]})", pdu.body);
@@ -69,7 +59,7 @@ TEST(rtm_json, pdu_action_is_absent) {
 TEST(rtm_json, pdu_empty_json) {
   rtm_pdu_t pdu{};
   char json[] = " {}";
-  rtm_parse_pdu(rtm_wrapper.rtm, json, &pdu);
+  rtm_parse_pdu(json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
   ASSERT_TRUE(nullptr == pdu.body);
@@ -115,7 +105,7 @@ TEST(rtm_json, handle_invalid_json) {
 
   for(auto i : invalids) {
     std::string i_c = i;
-    ASSERT_EQ(RTM_ERR_PROTOCOL, rtm_parse_pdu(rtm_wrapper.rtm, const_cast<char*>(i_c.c_str()), &pdu)) << "Input '" << i << "' went through";
+    ASSERT_EQ(RTM_ERR_PROTOCOL, rtm_parse_pdu(const_cast<char*>(i_c.c_str()), &pdu)) << "Input '" << i << "' went through";
   }
 }
 
