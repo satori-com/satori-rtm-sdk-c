@@ -90,6 +90,7 @@ static rtm_status _rtm_gtls_wait_for_socket(rtm_client_t *rtm, rtm_status error_
     return _rtm_io_wait(rtm, readable, writable, -1);
   } else {
     _rtm_log_error(rtm, error_status, "GnuTLS error – error=%d message=%s", error, gnutls_strerror(error));
+    return RTM_ERR_TLS;
   }
   return RTM_OK;
 }
