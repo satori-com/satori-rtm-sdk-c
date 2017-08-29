@@ -52,6 +52,7 @@ static rtm_status gtls_create_session(rtm_client_t *rtm, const char *hostname) {
   gnutls_credentials_set(rtm->session, GNUTLS_CRD_ANON, anoncred);
   gnutls_credentials_set(rtm->session, GNUTLS_CRD_CERTIFICATE, xcred);
   gnutls_server_name_set(rtm->session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
+  gnutls_session_set_verify_cert(rtm->session, hostname, 0);
 
 #if GNUTLS_VERSION_MAJOR >= 3
   gnutls_transport_set_int(rtm->session, rtm->fd);
