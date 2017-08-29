@@ -142,6 +142,9 @@ static SSL *openssl_create_connection(SSL_CTX *ctx, int socket, const char *host
 
   #if OPENSSL_VERSION_NUMBER >= 0x10002000L
     // Support for server name verification
+    // (The docs say that this should work from 1.0.2, and is the default from
+    // 1.1.0, but it does not. To be on the safe side, the manual test below is
+    // enabled for all versions prior to 1.1.0.)
     X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
     X509_VERIFY_PARAM_set1_host(param, hostname, 0);
   #endif
@@ -150,7 +153,7 @@ static SSL *openssl_create_connection(SSL_CTX *ctx, int socket, const char *host
   return ssl;
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10002000L
+#if OPENSSL_VERSION_NUMBER < 0x10010000L
 /**
  * Check whether a hostname matches a pattern
  *
@@ -185,7 +188,7 @@ static rtm_status openssl_check_server_cert(rtm_client_t *rtm, SSL *ssl, const c
     return RTM_ERR_TLS;
   }
 
-  #if OPENSSL_VERSION_NUMBER < 0x10002000L
+  #if OPENSSL_VERSION_NUMBER < 0x10010000L
     // Check server name
     int hostname_verifies_ok = 0;
     STACK_OF(GENERAL_NAME) *san_names = X509_get_ext_d2i((X509 *)server_cert, NID_subject_alt_name, NULL, NULL);

@@ -177,7 +177,7 @@ TEST(rtm_ssl_test, self_signed_ssl) {
 TEST(rtm_ssl_test, expired_ssl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
-  int rc = rtm_connect(rtm, "wss://self-signed.badssl.com", "appkey");
+  int rc = rtm_connect(rtm, "wss://expired.badssl.com", "appkey");
   ASSERT_EQ(RTM_ERR_TLS, rc) << "Connection to SSL endpoint with expired certificate did not fail";
   rtm_close(rtm);
 }
