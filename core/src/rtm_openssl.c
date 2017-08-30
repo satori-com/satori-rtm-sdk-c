@@ -8,6 +8,7 @@
 
 #include <openssl/bio.h>
 #include <openssl/hmac.h>
+#include <openssl/x509v3.h>
 #include "rtm_internal.h"
 #include "rtm_openssl_bio.h"
 
@@ -114,7 +115,7 @@ static SSL_CTX *openssl_create_context() {
 }
 
 /* create new SSL connection state object */
-static SSL *openssl_create_connection(SSL_CTX *ctx, int socket) {
+static SSL *openssl_create_connection(SSL_CTX *ctx, int socket, const char *hostname) {
   ASSERT_NOT_NULL(ctx);
   ASSERT(socket > 0);
   SSL *ssl = SSL_new(ctx);
@@ -125,8 +126,57 @@ static SSL *openssl_create_connection(SSL_CTX *ctx, int socket) {
   }
   BIO_set_fd(bio, socket, BIO_NOCLOSE);
   SSL_set_bio(ssl, bio, bio);
+
+  // SNI support
+  SSL_set_tlsext_host_name(ssl, hostname);
+
+  // Acceptable ciphers as of Aug 2017
+  SSL_set_cipher_list(ssl,
+    "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:"
+    "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256"
+    #if OPENSSL_VERSION_NUMBER < 0x10002000L
+      // To be sure that everyting works, add some old ciphers for old OpenSSL versions
+      ":HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4"
+    #endif
+  );
+
+  #if OPENSSL_VERSION_NUMBER >= 0x10002000L
+    // Support for server name verification
+    // (The docs say that this should work from 1.0.2, and is the default from
+    // 1.1.0, but it does not. To be on the safe side, the manual test below is
+    // enabled for all versions prior to 1.1.0.)
+    X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
+    X509_VERIFY_PARAM_set1_host(param, hostname, 0);
+  #endif
+
+
   return ssl;
 }
+
+#if OPENSSL_VERSION_NUMBER < 0x10010000L
+/**
+ * Check whether a hostname matches a pattern
+ *
+ * The pattern MUST contain at most a single, leading asterisk. This means that
+ * this function cannot serve as a generic validation function, as that would
+ * allow for partial wildcards, too. Also, this does not check whether the
+ * wildcard covers multiple levels of labels. For RTM, this suffices, as we
+ * are only interested in the main domain name.
+ *
+ * @param[in] hostname The hostname of the server
+ * @param[in] pattern The hostname pattern from a SSL certificate
+ * @return TRUE if the pattern matches, FALSE otherwise
+ */
+static int check_host(const char *hostname, const char *pattern) {
+  if(pattern[0] == '*') {
+    pattern++;
+    hostname = hostname + strlen(hostname) - strlen(pattern);
+  }
+  int match = strcasecmp(hostname, pattern);
+
+  return match == 0;
+}
+#endif
 
 static rtm_status openssl_check_server_cert(rtm_client_t *rtm, SSL *ssl, const char *hostname) {
   ASSERT_NOT_NULL(rtm);
@@ -137,6 +187,49 @@ static rtm_status openssl_check_server_cert(rtm_client_t *rtm, SSL *ssl, const c
     _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - peer didn't present a X509 certificate.");
     return RTM_ERR_TLS;
   }
+
+  #if OPENSSL_VERSION_NUMBER < 0x10010000L
+    // Check server name
+    int hostname_verifies_ok = 0;
+    STACK_OF(GENERAL_NAME) *san_names = X509_get_ext_d2i((X509 *)server_cert, NID_subject_alt_name, NULL, NULL);
+    if (san_names) {
+      for (int i=0; i<sk_GENERAL_NAME_num(san_names); i++) {
+        const GENERAL_NAME *sk_name = sk_GENERAL_NAME_value(san_names, i);
+        if (sk_name->type == GEN_DNS) {
+          char *name = (char *)ASN1_STRING_data(sk_name->d.dNSName);
+          if ((size_t)ASN1_STRING_length(sk_name->d.dNSName) == strlen(name) && check_host(hostname, name)) {
+            hostname_verifies_ok = 1;
+            break;
+          }
+        }
+      }
+    }
+    sk_GENERAL_NAME_pop_free(san_names, GENERAL_NAME_free);
+
+    if (!hostname_verifies_ok) {
+      int cn_pos = X509_NAME_get_index_by_NID(X509_get_subject_name((X509 *)server_cert), NID_commonName, -1);
+      if (cn_pos) {
+        X509_NAME_ENTRY *cn_entry = X509_NAME_get_entry(X509_get_subject_name((X509 *)server_cert), cn_pos);
+        if (cn_entry) {
+          ASN1_STRING *cn_asn1 = X509_NAME_ENTRY_get_data(cn_entry);
+          char *cn = (char *)ASN1_STRING_data(cn_asn1);
+
+          if((size_t)ASN1_STRING_length(cn_asn1) == strlen(cn) && check_host(hostname, cn)) {
+            hostname_verifies_ok = 1;
+          }
+        }
+      }
+    }
+
+    if (!hostname_verifies_ok) {
+      _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed - certificate was issued for a different domain.");
+      return RTM_ERR_TLS;
+    }
+  #else
+    (void)hostname;
+  #endif
+
+
   X509_free(server_cert);
   return RTM_OK;
 }
@@ -237,7 +330,7 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
   }
 #endif
 
-  rtm->ssl_connection = openssl_create_connection(rtm->ssl_context, rtm->fd);
+  rtm->ssl_connection = openssl_create_connection(rtm->ssl_context, rtm->fd, hostname);
   if (NULL == rtm->ssl_connection) {
     _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to connect");
     SSL_CTX_free(rtm->ssl_context);

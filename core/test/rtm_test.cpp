@@ -264,12 +264,36 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   rtm_close(rtm);
 }
 
-TEST(rtm_test, connect_ssl) {
+TEST(rtm_ssl_test, connect_ssl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
   rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
+  rtm_close(rtm);
+}
+
+TEST(rtm_ssl_test, self_signed_ssl) {
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, "wss://self-signed.badssl.com", "appkey");
+  ASSERT_EQ(RTM_ERR_TLS, rc) << "Connection to self-signed SSL endpoint did not fail";
+  rtm_close(rtm);
+}
+
+TEST(rtm_ssl_test, expired_ssl) {
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, "wss://expired.badssl.com", "appkey");
+  ASSERT_EQ(RTM_ERR_TLS, rc) << "Connection to SSL endpoint with expired certificate did not fail";
+  rtm_close(rtm);
+}
+
+TEST(rtm_ssl_test, wrong_host_ssl) {
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  int rc = rtm_connect(rtm, "wss://wrong.host.badssl.com", "appkey");
+  ASSERT_EQ(RTM_ERR_TLS, rc) << "Connection to SSL endpoint with wrong host did not fail";
   rtm_close(rtm);
 }
 
