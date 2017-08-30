@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib> // alloca
 #include <ctime>
+#include <set>
 #include <vector>
 
 #ifdef _WIN32
@@ -64,7 +65,9 @@ void pdu_recorder(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
       event.info = std::string(pdu->message);
       break;
     case RTM_ACTION_UNKNOWN:
-      event.info = std::string(pdu->body);
+      if(pdu->body) {
+        event.info = std::string(pdu->body);
+      }
       break;
     case RTM_ACTION_SUBSCRIPTION_DATA: {
       char *message;
@@ -113,10 +116,112 @@ static std::string make_channel(int len = 6) {
   return r;
 }
 
+TEST(rtm_test, init_ex) {
+  size_t size = RTM_CLIENT_SIZE(2*10240);
+  void *memory = alloca(size);
+
+  rtm_client_t *rtm = rtm_init_ex(memory, size, rtm_default_pdu_handler, nullptr);
+
+  ASSERT_NE(rtm, nullptr);
+}
+
+TEST(rtm_test, init_ex_fail_too_small) {
+  size_t size = RTM_CLIENT_SIZE(0);
+  void *memory = alloca(size);
+
+  rtm_client_t *rtm = rtm_init_ex(memory, size, rtm_default_pdu_handler, nullptr);
+
+  ASSERT_EQ(rtm_connect(rtm, endpoint, appkey), RTM_ERR_OOM);
+}
+
+TEST(rtm_test, test_allocators) {
+  size_t size = RTM_CLIENT_SIZE(512);
+  void *memory = alloca(size);
+
+  struct alloc_t {
+    std::set<char *> allocs;
+    int number_of_allocs;
+    int number_of_frees;
+
+    alloc_t() { reset(); }
+    ~alloc_t() {
+      reset();
+    }
+
+    void reset() {
+      number_of_allocs = 0;
+      number_of_frees = 0;
+
+      for(char *p : allocs) {
+        delete[] p;
+      }
+      allocs.clear();
+    }
+
+    char *alloc(size_t size) {
+      char *retval = new char[size];
+      allocs.insert(retval);
+      number_of_allocs++;
+      return retval;
+    }
+
+    void free(char *mem) {
+      auto this_alloc = allocs.find(mem);
+
+      ASSERT_NE(this_alloc, allocs.end());
+
+      allocs.erase(this_alloc);
+      number_of_frees++;
+      delete[] mem;
+    }
+  };
+
+  alloc_t allocations {};
+
+  rtm_client_t *rtm = rtm_init_ex(memory, size, pdu_recorder, &allocations);
+
+  rtm_set_allocator(rtm,
+      [](rtm_client_t *rtm, size_t amount) {
+        alloc_t *alloc = static_cast<alloc_t *>(rtm_get_user_context(rtm));
+        return (void*)alloc->alloc(amount);
+      },
+      [](rtm_client_t *rtm, void *mem) {
+        alloc_t *alloc = static_cast<alloc_t *>(rtm_get_user_context(rtm));
+        alloc->free((char*)mem);
+      });
+
+  int rc = rtm_connect(rtm, endpoint, appkey);
+  ASSERT_EQ(0, allocations.number_of_allocs) << "Memory allocated for connect() call even though it wasn't needed.";
+
+  std::vector<char> large_message(10000, 'A');
+  large_message.back() = 0;
+
+  std::string const channel = make_channel();
+
+  rc = rtm_subscribe(rtm, channel.c_str(), nullptr);
+  ASSERT_EQ(0, allocations.number_of_allocs) << "Memory allocated for subscribe() call even though it wasn't needed.";
+
+  ASSERT_EQ(RTM_OK, rtm_publish_string(rtm, channel.c_str(), &large_message[0], nullptr));
+  ASSERT_NE(0, allocations.number_of_allocs) << "No memory allocated even though we sent a large message.";
+  ASSERT_EQ(allocations.number_of_frees, allocations.number_of_allocs) << "Memory allocated for subscribe(), but never free()d.";
+
+  allocations.number_of_allocs = allocations.number_of_frees = 0;
+
+  event_t event;
+  rc = next_event(rtm, &event);
+  if(rc != RTM_OK || event.action != RTM_ACTION_SUBSCRIPTION_DATA) {
+    FAIL() << "Failed to receive subscription data.";
+  }
+
+  ASSERT_NE(allocations.number_of_allocs, 0) << "No memory allocated even though we received a large message.";
+  ASSERT_EQ(allocations.number_of_frees, allocations.number_of_allocs) << "Memory allocated for rtm_poll(), but never free()d.";
+}
+
 TEST(rtm_test, subscribe) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -129,6 +234,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -161,6 +267,7 @@ TEST(rtm_test, publish_and_subscribe_with_history) {
 TEST(rtm_test, connect_ssl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_close(rtm);
@@ -170,6 +277,7 @@ TEST(rtm_test, publish) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -183,6 +291,7 @@ TEST(rtm_test, overflow) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_null_malloc, rtm_null_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -199,6 +308,7 @@ TEST(rtm_test, publish_json_and_read) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -228,6 +338,7 @@ TEST(rtm_test, read_write_delete) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -283,6 +394,7 @@ TEST(rtm_test, handshake_and_authenticate) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -308,6 +420,7 @@ TEST(rtm_test, publish_and_receive) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -335,6 +448,7 @@ TEST(rtm_test, publish_and_receive) {
 TEST(rtm_test, publish_ws_frame_with_126_bytes_payload) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -355,6 +469,7 @@ TEST(rtm_test, disconnect) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_close(rtm);
@@ -366,6 +481,7 @@ TEST(rtm_test, disconnect) {
 TEST(rtm_test, rtm_poll_does_not_hang_ssl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -378,6 +494,7 @@ TEST(rtm_test, rtm_poll_does_not_hang_ssl) {
 TEST(rtm_test, rtm_poll_does_not_hang_nossl) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -389,6 +506,7 @@ TEST(rtm_test, rtm_poll_does_not_hang_nossl) {
 TEST(rtm_test, rtm_wait_timeout) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -406,6 +524,7 @@ TEST(rtm_test, rtm_wait_timeout) {
 TEST(rtm_test, verbose_logging) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   rtm_disable_verbose_logging(rtm);
   ASSERT_EQ(rtm->is_verbose, 0u) << "verbose_logging Unable to disable verbose loggin";
@@ -417,6 +536,7 @@ TEST(rtm_test, verbose_logging) {
 TEST(rtm_test, error_handler) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   rtm_set_error_logger(rtm, error_message_recorder);
   ASSERT_EQ(error_message_queue.size(), 0) << "Error message queue isn't empty to start with";
@@ -434,6 +554,7 @@ TEST(rtm_test, log_message) {
 
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   _rtm_log_message(rtm, RTM_OK, str);
 }
@@ -443,6 +564,7 @@ TEST(rtm_test, unsubscribe) {
 
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   std::string const channel = make_channel();
@@ -470,6 +592,7 @@ TEST(rtm_test, check_rtm_fd) {
   int fd;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   fd = rtm_get_fd(rtm);
@@ -490,6 +613,7 @@ TEST(rtm_test, get_user_context) {
 
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, &context);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -505,6 +629,7 @@ TEST(rtm_test, raw_pdu_handler) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   rtm_set_raw_pdu_handler(rtm, raw_pdu_recorder);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
@@ -532,6 +657,7 @@ TEST(rtm_test, rtm_default_pdu_handler) {
   void *memory = alloca(rtm_client_size);
 
   rtm_client_t *rtm = rtm_init(memory, rtm_default_pdu_handler, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -550,6 +676,7 @@ TEST(rtm_test, read_with_body) {
   std::string const channel = make_channel();
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -593,6 +720,7 @@ TEST(rtm_test, rtm_write_json) {
   std::string const channel = make_channel();
 
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -620,6 +748,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
   unsigned int request_id;
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
   int rc = rtm_connect(rtm, endpoint, appkey);
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
 
@@ -673,6 +802,7 @@ TEST(rtm_test, publish_and_receive_all_json_types) {
 TEST(rtm_test, parse_endpoint_test) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   char hostname[255];
   char port[10];
@@ -799,6 +929,7 @@ TEST(rtm_test, parse_endpoint_test) {
 TEST(rtm_test, prepare_path_test) {
   void *memory = alloca(rtm_client_size);
   rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   char path[255];
   rtm_status rc;
@@ -824,6 +955,246 @@ TEST(rtm_test, prepare_path_test) {
   ASSERT_EQ("/foo/v2?appkey=zzzzzz", std::string(path));
 }
 
+TEST(rtm_test, wait_ping) {
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
+  int rc = rtm_connect(rtm, endpoint, appkey);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
+
+  ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 45);
+  rtm_set_ws_ping_interval(rtm, 1);
+  ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 1);
+
+  time_t last_ping_ts = rtm->last_ping_ts;
+  rtm_wait_timeout(rtm, 3);
+  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
+}
+
+TEST(rtm_test, publish_noack_ping) {
+  void *memory = alloca(rtm_client_size);
+  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
+  int rc = rtm_connect(rtm, endpoint, appkey);
+  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
+  rtm_set_ws_ping_interval(rtm, 2);
+
+  time_t last_ping_ts = rtm->last_ping_ts;
+  std::string const channel = make_channel();
+
+  time_t start = time(NULL);
+  while (TRUE) {
+    time_t now = time(NULL);
+    if (now - start > 3) {
+      break;
+    }
+    rc = rtm_publish_string(rtm, channel.c_str(), "my message", nullptr);
+    ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
+  };
+
+  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
+}
+
+std::string _ws_encode(std::string message) {
+  std::stringstream frame;
+
+  size_t size = message.size();
+  frame << "XX"; // Two bytes for minimal header
+  if(size > 126) {
+    if(size <= 0xFFFF) {
+      frame << "XX"; // Four bytes for normal header
+    }
+    else {
+      frame << "XXXXXXXX"; // Ten bytes for large header
+    }
+  }
+  frame << message;
+  std::string rv = frame.str();
+  rv[0] = 0;
+  if(size < 126) {
+    rv[1] = size;
+  }
+  else if(size < 0xFFFF) {
+    rv[1] = 126;
+    for(int i=1+2; i>1; i--) {
+      rv[i] = size & 0xFF;
+      size >>= 8;
+    }
+  }
+  else {
+    rv[1] = 127;
+    for(int i=1+8; i>1; i--) {
+      rv[i] = size & 0xFF;
+      size >>= 8;
+    }
+  }
+  return rv;
+}
+
+TEST(rtm_ws_processing, normal_ws_frame) {
+  char memory[RTM_CLIENT_SIZE(100)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer);
+  rtm->input_length = frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, fragmented_ws_frame) {
+  char memory[RTM_CLIENT_SIZE(100)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\"");
+  frame[0] = (char)(WS_TEXT); // Normal, fragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer);
+  rtm->input_length = frame.size();
+
+  frame = _ws_encode(",\"id\":");
+  frame[0] = WS_CONTINUATION; // Fragment
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  frame = _ws_encode("1}");
+  frame[0] = (char)(0x80 | WS_CONTINUATION); // Last fragment
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_single_frame_skip) {
+  char memory[RTM_CLIENT_SIZE(100)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  rtm->input_length = 10;
+  rtm->skip_next_n_input_bytes = 10;
+
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_fragments_skip) {
+  char memory[RTM_CLIENT_SIZE(200)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+
+  rtm->skip_current_fragmented_message = 1;
+
+  auto frame = _ws_encode("invalid-stuff-that-wont-parse");
+  frame[0] = WS_CONTINUATION; // Continuation frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  frame = _ws_encode("invalid-stuff-that-wont-parse");
+  frame[0] = (char)(0x80 | WS_CONTINUATION); // Last fragment
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_handle_large_input) {
+  char memory[RTM_CLIENT_SIZE(50)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
+
+  std::stringstream large_message;
+  large_message << "{\"action\":\"rtm/publish/ok\",\"id\":1,\"addl\":\"";
+  for(int i=0; i<10000; i++) large_message << "A";
+  large_message << "\"}";
+
+  auto frame = _ws_encode(large_message.str());
+  frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
+
+  std::copy(frame.begin(), frame.begin() + 50, rtm->input_buffer);
+  rtm->input_length = 50;
+
+  ASSERT_EQ(RTM_WOULD_BLOCK, _rtm_handle_input(rtm));
+  ASSERT_NE(nullptr, rtm->dynamic_input_buffer);
+  ASSERT_GE(rtm->dynamic_input_buffer_size, frame.size());
+
+  std::copy(frame.begin() + 50, frame.end(), rtm->dynamic_input_buffer + rtm->input_length);
+  rtm->input_length += frame.size() - 50;
+
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  ASSERT_EQ(nullptr, rtm->dynamic_input_buffer);
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+TEST(rtm_ws_processing, oom_skip_fragmented_input) {
+  char memory[RTM_CLIENT_SIZE(50)];
+  rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
+  rtm_set_allocator(rtm, rtm_null_malloc, rtm_null_free);
+
+  std::stringstream large_message;
+  large_message << "{\"action\":\"rtm/publish/ok\",\"id\":1,\"addl\":\"";
+  for(int i=0; i<10000; i++) large_message << "A";
+  large_message << "\"}";
+
+  for(int repeat=0; repeat<3; repeat++) {
+    auto frame = _ws_encode(large_message.str());
+    if(repeat == 0)
+      frame[0] = (char)(WS_TEXT); // Fragmented frame
+    else if(repeat == 1)
+      frame[0] = (char)(WS_CONTINUATION); // Continuation frame
+    else
+      frame[0] = (char)(0x80 | WS_CONTINUATION); // Last frame
+
+    for(int i=0; i<frame.size(); i += 50) {
+      auto until = std::min((size_t)i+50, frame.size());
+      std::copy(&frame[i], &frame[until], rtm->input_buffer);
+      rtm->input_length = until - i;
+
+      ASSERT_EQ(RTM_WOULD_BLOCK, _rtm_handle_input(rtm));
+    }
+  }
+
+  auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
+  frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
+  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
+  rtm->input_length += frame.size();
+  ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
+
+  event_t event{};
+  ASSERT_EQ(RTM_OK, next_event(rtm, &event));
+  ASSERT_EQ(RTM_ACTION_PUBLISH_OK, event.action);
+}
+
+
+/////////////////////////
+
 class RTMEnvironment: public ::testing::Environment {
   public:
     void TearDown() override {
@@ -837,6 +1208,7 @@ class RTMEnvironment: public ::testing::Environment {
       std::swap(error_message_queue, error_message_queue_empty);
     }
 };
+
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
@@ -858,42 +1230,4 @@ int main(int argc, char **argv) {
   srand(seed);
 
   return RUN_ALL_TESTS();
-}
-
-TEST(rtm_test, wait_ping) {
-  void *memory = alloca(rtm_client_size);
-  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
-  int rc = rtm_connect(rtm, endpoint, appkey);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
-
-  ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 45);
-  rtm_set_ws_ping_interval(rtm, 1);
-  ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 1);
-
-  time_t last_ping_ts = rtm->last_ping_ts;
-  rtm_wait_timeout(rtm, 3);
-  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
-}
-
-TEST(rtm_test, publish_noack_ping) {
-  void *memory = alloca(rtm_client_size);
-  rtm_client_t *rtm = rtm_init(memory, pdu_recorder, nullptr);
-  int rc = rtm_connect(rtm, endpoint, appkey);
-  ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
-  rtm_set_ws_ping_interval(rtm, 2);
-
-  time_t last_ping_ts = rtm->last_ping_ts;
-  std::string const channel = make_channel();
-
-  time_t start = time(NULL);
-  while (TRUE) {
-    time_t now = time(NULL);
-    if (now - start > 3) {
-      break;
-    }
-    rc = rtm_publish_string(rtm, channel.c_str(), "my message", nullptr);
-    ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
-  };
-
-  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
 }
