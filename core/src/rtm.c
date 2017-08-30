@@ -510,7 +510,7 @@ static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, c
     }
 
     buf = _RTM_BUFFER_TO_IO(base_buf);
-    p = _rtm_prepare_pdu(rtm, buf, size, "rtm/subscribe", body, ack_id);
+    p = _rtm_prepare_pdu(rtm, buf, size, action, body, ack_id);
 
     if (!p) {
       rtm->free_fn(rtm, base_buf);
