@@ -102,7 +102,7 @@ extern "C" {
     return rv;
   }
 
-  rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writeable, int timeout) {
+  rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writeable, int user_timeout) {
     auto cli_iter = connections.find(rtm->fd);
     if(cli_iter == connections.end()) {
       return RTM_ERR_CLOSED;
@@ -133,13 +133,14 @@ extern "C" {
           ping_timeout = rtm->ws_ping_interval * 1000;
       }
 
-      if(timeout <= 0) {
+      if(user_timeout <= 0) {
         return RTM_ERR_TIMEOUT;
       }
 
-      delay(10);
-      ping_timeout -= 10;
-      timeout -= 10;
+      const int sleep_interval = 10; // ms
+      delay(sleep_interval);
+      ping_timeout -= sleep_interval;
+      user_timeout -= sleep_interval;
 
       yield();
     }
