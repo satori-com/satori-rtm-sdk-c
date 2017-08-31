@@ -162,7 +162,7 @@ extern "C" {
   ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t output_size) {
     auto cli_iter = connections.find(rtm->fd);
     if(cli_iter == connections.end()) {
-      return RTM_ERR_CLOSED;
+      return -1;
     }
     RTMWiFiClient &client = *cli_iter->second;
 
@@ -172,7 +172,7 @@ extern "C" {
   ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, int wait) {
     auto cli_iter = connections.find(rtm->fd);
     if(cli_iter == connections.end()) {
-      return RTM_ERR_CLOSED;
+      return -1;
     }
     RTMWiFiClient &client = *cli_iter->second;
 
