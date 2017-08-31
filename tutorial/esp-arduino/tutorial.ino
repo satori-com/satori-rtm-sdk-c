@@ -53,6 +53,16 @@ void setup() {
   // be useful to set functions that log to Serial instead.
   rtm_set_allocator(rtm_client, rtm_null_malloc, rtm_null_free);
 
+  // Tell RTM to log to the serial console
+  // Note: This function will only be used if you created the Arduino SDK with
+  // logging enabled (or enabled it afterwards by editing rtm_config.h).  By
+  // default, logging is disabled for embedded platforms as it adds about 4KiB
+  // to the binary.
+  rtm_set_error_logger(rtm_client, [](const char *message) {
+    Serial.print("RTM error: ");
+    Serial.println(message);
+  });
+
   // Repeatedly try to connect
   while(true) {
       int rc = rtm_connect(rtm_client, endpoint, appkey);
