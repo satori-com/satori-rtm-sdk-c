@@ -47,7 +47,6 @@ target_link_libraries(rtm-core-sdk ${TLS_LIBRARIES})
 include(CheckFunctionExists)
 check_function_exists(getenv RTM_HAS_GETENV)
 include(CheckCSourceCompiles)
-check_c_source_compiles("#include <ctype.h>\nint main() { return isspace(' '); }" RTM_HAS_ISSPACE)
 set(RTM_LOGGING ${ENABLE_LOGGING})
 
 configure_file(rtm_config.h.in
