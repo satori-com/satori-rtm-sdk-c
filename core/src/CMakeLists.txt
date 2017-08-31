@@ -13,17 +13,11 @@ else()
 endif()
 
 if(USE_GNUTLS)
-  set(RTM_HAS_SSL 1)
   list(APPEND SOURCES ssl/rtm_gnutls.c)
 elseif(USE_OPENSSL)
-  set(RTM_HAS_SSL 1)
   list(APPEND SOURCES ssl/rtm_openssl.c ssl/rtm_openssl_bio.c)
 elseif(USE_APPLE_SSL)
-  set(RTM_HAS_SSL 1)
   list(APPEND SOURCES ssl/rtm_apple_ssl.c)
-else()
-  set(RTM_HAS_SSL 0)
-  list(APPEND SOURCES rtm_hmac_md5.c)
 endif()
 
 # Sources list is now ready
@@ -119,8 +113,6 @@ if(ARDUINO_SDK)
         set(${DEFINE_NAME} 0)
       endif()
     endforeach()
-
-    set(RTM_HAS_SSL 1)
 
     configure_file(rtm_config.h.in ${ARDUINO_DIR}/rtm_config.h @ONLY)
   endfunction()

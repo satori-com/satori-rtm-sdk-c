@@ -55,11 +55,7 @@ if(NOT(USE_OPENSSL OR USE_APPLE_SSL OR USE_GNUTLS))
       if(GNUTLS_FOUND)
         set(USE_GNUTLS ON)
       else()
-        if(NOT SKIP_TLS)
-          message(FATAL_ERROR "Failed to find a SSL implementation. Please install OpenSSL or GnuTLS.\n"
-            "If you know what you are doing, you can skip this test by defining SKIP_TLS. Mind that TLS "
-            "support is required for connections to Satori.")
-        endif()
+        message(FATAL_ERROR "Failed to find a SSL implementation. Please install OpenSSL or GnuTLS.")
       endif()
     endif()
   endif()
