@@ -176,11 +176,10 @@ extern "C" {
     }
     RTMWiFiClient &client = *cli_iter->second;
 
-    if(!client.connected()) {
-      return -1;
-    }
-
     while(!client.available()) {
+      if(!client.connected()) {
+        return -1;
+      }
       if(!wait) return 0;
       yield();
     }
