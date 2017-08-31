@@ -106,12 +106,19 @@ if(ARDUINO_SDK)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../library.properties.in ${ARDUINO_DIR}/library.properties @ONLY)
 
   function(ArduinoConfig)
-    get_cmake_property(NAMES VARIABLES)
-    foreach(NAME ${NAMES})
-      if(NAME MATCHES "^RTM_")
-        set(${NAME} 0)
+    set(ARDUINO_KEEP_FLAGS "RTM_LOGGING")
+
+    file(READ rtm_config.h.in RTM_CONFIG_CONTENTS)
+    string(REGEX MATCHALL "#cmakedefine [A-Za-z_]+" CONFIG_VARIABLES "${RTM_CONFIG_CONTENTS}")
+    foreach(DEFINE ${CONFIG_VARIABLES})
+      string(SUBSTRING "${DEFINE}" 13 -1 DEFINE_NAME)
+      string(STRIP "${DEFINE_NAME}" DEFINE_NAME)
+      list(FIND ARDUINO_KEEP_FLAGS "${DEFINE_NAME}" INDEX)
+      if(${INDEX} EQUAL -1)
+        set(${DEFINE_NAME} 0)
       endif()
     endforeach()
+
     set(RTM_HAS_SSL 1)
 
     configure_file(rtm_config.h.in ${ARDUINO_DIR}/rtm_config.h @ONLY)
