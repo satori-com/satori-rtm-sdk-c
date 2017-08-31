@@ -153,7 +153,7 @@ static SSL *openssl_create_connection(SSL_CTX *ctx, int socket, const char *host
   return ssl;
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10010000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 /**
  * Check whether a hostname matches a pattern
  *
@@ -168,13 +168,26 @@ static SSL *openssl_create_connection(SSL_CTX *ctx, int socket, const char *host
  * @return TRUE if the pattern matches, FALSE otherwise
  */
 static int check_host(const char *hostname, const char *pattern) {
-  if(pattern[0] == '*') {
+  while(*pattern && *hostname) {
+    if(*pattern == '*') {
+      while(*hostname != '.' && *hostname) hostname++;
+      if(*(++pattern) != '.') return 0;
+    }
+    else {
+      char p = *pattern;
+      char h = *hostname;
+      if((p & ~32) >= 'A' && (p & ~32) <= 'Z') {
+        p &= ~32;
+        h &= ~32;
+      }
+      if(*pattern != *hostname) {
+        return 0;
+      }
+    }
     pattern++;
-    hostname = hostname + strlen(hostname) - strlen(pattern);
+    hostname++;
   }
-  int match = strcasecmp(hostname, pattern);
-
-  return match == 0;
+  return !(*hostname || *pattern);
 }
 #endif
 
@@ -188,7 +201,7 @@ static rtm_status openssl_check_server_cert(rtm_client_t *rtm, SSL *ssl, const c
     return RTM_ERR_TLS;
   }
 
-  #if OPENSSL_VERSION_NUMBER < 0x10010000L
+  #if OPENSSL_VERSION_NUMBER < 0x10100000L
     // Check server name
     int hostname_verifies_ok = 0;
     STACK_OF(GENERAL_NAME) *san_names = X509_get_ext_d2i((X509 *)server_cert, NID_subject_alt_name, NULL, NULL);
