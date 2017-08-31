@@ -2,7 +2,18 @@
 #include <map>
 #include <cstdlib>
 
-// extern char *_rtm_ssl_cert;
+// ESP8266 introduced CA support with 2.4.0, with has not been released in a
+// stable version as of September 2017. The following can be safely removed
+// once the release is a few months old, since the Arduino IDE has an
+// auto-updating mechanism.
+#include <core_version.h>
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0) || defined(ARDUINO_ESP8266_RELEASE_2_2_0) || ARDUINO_ESP8266_RELEASE_2_1_0
+	#define ESP_HAS_NO_CA_SUPPORT
+#endif
+
+#ifndef ESP_HAS_NO_CA_SUPPORT
+  extern char *_rtm_ssl_cert;
+#endif
 
 /**
  * WiFiClientSecure extension that can be used for both encrypted and
@@ -95,7 +106,9 @@ extern "C" {
     RTMWiFiClient &client = *connections[new_fd];
     rtm->fd = new_fd;
 
-    // client.setCACert(_rtm_ssl_cert);
+    #ifndef ESP_HAS_NO_CA_SUPPORT
+      client.setCACert(_rtm_ssl_cert);
+    #endif
 
     rtm_status rv = client.connect(hostname, std::atoi(port)) ? RTM_OK : RTM_ERR_NETWORK;
 
