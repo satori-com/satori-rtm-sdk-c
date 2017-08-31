@@ -47,6 +47,7 @@ target_link_libraries(rtm-core-sdk ${TLS_LIBRARIES})
 include(CheckFunctionExists)
 check_function_exists(getenv RTM_HAS_GETENV)
 include(CheckCSourceCompiles)
+check_c_source_compiles("#include <stdio.h>\nint main() { fprintf(stderr, \".\"); fflush(stderr); return 0; }" RTM_HAS_FIO)
 set(RTM_LOGGING ${ENABLE_LOGGING})
 
 configure_file(rtm_config.h.in

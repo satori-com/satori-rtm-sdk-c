@@ -668,8 +668,12 @@ static const char *const action_table[] = {
 
 #ifdef RTM_LOGGING
 void rtm_default_error_logger(const char *message) {
-  fprintf(stderr, "%s\n", message);
-  fflush(stderr);
+  #ifdef RTM_HAS_FIO
+    fprintf(stderr, "%s\n", message);
+    fflush(stderr);
+  #else
+    (void)message;
+  #endif
 }
 #endif
 
@@ -993,7 +997,9 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
 
 #ifdef RTM_LOGGING
   if (rtm->is_verbose) {
-    fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
+    #ifdef RTM_HAS_FIO
+      fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
+    #endif
   }
 #endif
 
@@ -1602,7 +1608,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         return RTM_ERR_CLOSED;
       } else if (WS_PING == frame_opcode || WS_PONG == frame_opcode) {
         // FIXME pberndt: Reply to PING
-#ifdef RTM_LOGGING
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
         if (rtm->is_verbose) {
           const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
           fprintf(stderr, "RECV: %s\n", frame_type);
@@ -1655,7 +1661,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
           size_t reassembled_payload_length = fragment_target + payload_length - base_input_buffer;
 
-#ifdef RTM_LOGGING
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
           if (rtm->is_verbose) {
             fprintf(stderr, "RECV: %.*s\n", (int)reassembled_payload_length, base_input_buffer);
           }
@@ -1674,7 +1680,7 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         char save = ws_frame[payload_length];
         ws_frame[payload_length] = 0; // be nice, null terminate
 
-#ifdef RTM_LOGGING
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
         if (rtm->is_verbose) {
           fprintf(stderr, "RECV: %.*s\n", (int)payload_length, ws_frame);
         }
