@@ -11,6 +11,9 @@ static int _rtm_isspace(int c) {
   // isspace() is available.
   return c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r' || c == ' ';
 }
+#ifdef isspace
+#undef isspace
+#endif
 #define isspace _rtm_isspace
 
 static char *find_end_of_element(char *json) {
