@@ -1024,6 +1024,10 @@ TEST(rtm_test, publish_noack_ping) {
   ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
 }
 
+TEST(rtm_test, rtm_client_size_test) {
+  ASSERT_GE((size_t)RTM_CLIENT_SIZE(10), (size_t)_RTM_CLIENT_SIZE(10));
+}
+
 std::string _ws_encode(std::string message) {
   std::stringstream frame;
 

@@ -50,7 +50,8 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/rtm_internal.h" _RTM_SRC)
 file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/rtm_internal.h" "${_RTM_SRC}")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/rtm.h" _RTM_SRC)
 file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/rtm.h" "${_RTM_SRC}")
-file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/client_size.c" "#include <stdio.h>\n#include <rtm_internal.h>\nint main() { printf(\"%lu\\n\", (long unsigned)_RTM_CLIENT_SIZE(0)); return 0; }")
+# FIXME The +30 is because this test does not take the SSL additions into account yet.
+file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/client_size.c" "#include <stdio.h>\n#include <rtm_internal.h>\nint main() { printf(\"%lu\\n\", (long unsigned)_RTM_CLIENT_SIZE(0) + 30); return 0; }")
 try_run(CLIENT_SIZE_EXIT_CODE CLIENT_SIZE_COMPILED
   ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size
   ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/client_size.c
