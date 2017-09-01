@@ -116,7 +116,7 @@ if(ARDUINO_SDK)
   endfunction()
   ArduinoConfig()
 
-  set(ARDUINO_FILES ${ARDUINO_DIR}/rtm_config.h ${ARDUINO_DIR}/library.properties ${CMAKE_CURRENT_SOURCE_DIR}/rtm_ssl_cert.c ${CMAKE_CURRENT_SOURCE_DIR}/io/rtm_esp_arduino.cpp ${CMAKE_CURRENT_SOURCE_DIR}/rtm_hmac_md5.c ${BASE_SOURCES} ${BASE_HEADERS})
+  set(ARDUINO_FILES ${ARDUINO_DIR}/rtm_config.h ${ARDUINO_DIR}/library.properties ${CMAKE_CURRENT_SOURCE_DIR}/ssl/rtm_ssl_cert.c ${CMAKE_CURRENT_SOURCE_DIR}/io/rtm_esp_arduino.cpp ${CMAKE_CURRENT_SOURCE_DIR}/rtm_hmac_md5.c ${BASE_SOURCES} ${BASE_HEADERS})
   set(ARDUINO_TARGET ${CMAKE_BINARY_DIR}/satori_esp_arduino_library.zip)
   add_custom_command(
     OUTPUT ${ARDUINO_TARGET}
