@@ -6,7 +6,7 @@ v2.1.0 (2017-09-01)
 * Allow to dynamically allocate memory to support larger messages
 * Allow to specify amount of buffer space available to SDK at compile time
 * Support the ESP8266/Arduino platform
-* Critical Bugfix: Check SSL certificate host names in OpenSSL/Gnutls
+* Check SSL certificate host names in OpenSSL/Gnutls
 * Various minor bug fixes in code that handles invalid input
 
 v2.0.0 (2017-07-17)
