@@ -6,8 +6,6 @@
 #include <string.h>
 #include <sys/poll.h>
 
-#include <panzi/portable_endian.h>
-
 #include "rtm.h"
 #include "rtm_internal.h"
 

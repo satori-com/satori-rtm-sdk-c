@@ -3,13 +3,13 @@ cmake_minimum_required(VERSION 2.8)
 project(satori-sdk-c)
 include(ExternalProject)
 
+option(ARDUINO_SDK "Generate a library for ESP/Arduino" OFF)
 option(TESTS "Build all tests." OFF)
 option(BENCH "Build all benchmarks." OFF)
 option(EXAMPLES "Build all examples." OFF)
 option(TUTORIALS "Build tutorials." OFF)
 
 # Make credentials configurable
-
 set(YOUR_ENDPOINT "" CACHE STRING "Endpoint to use in example/test applications")
 set(YOUR_APPKEY "" CACHE STRING "Appkey to use in example/test applications")
 set(YOUR_ROLE "" CACHE STRING "Role to use in example/test applications")
@@ -106,8 +106,9 @@ if(BENCH)
   set(GBENCH_LIBRARY benchmark)
 endif()
 
+include_directories(vendor)
 include_directories(core/src/)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/core)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/core/src)
 
 add_subdirectory(core)
 

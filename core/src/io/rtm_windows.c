@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <panzi/portable_endian.h>
-
 #include "rtm.h"
 #include "rtm_internal.h"
 

@@ -1,10 +1,20 @@
-#include <ctype.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "rtm_internal.h"
+
+static int _rtm_isspace(int c) {
+  // Use our own isspace() since ESP8266/Arduino have faulty implementations.
+  // GCC and clang are smart enough to optimise the function away if a native
+  // isspace() is available.
+  return c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r' || c == ' ';
+}
+#ifdef isspace
+#undef isspace
+#endif
+#define isspace _rtm_isspace
 
 /**
  * Escape a string such that it can be inserted into ".." as

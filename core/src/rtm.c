@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <panzi/portable_endian.h>
-
 #include "rtm_internal.h"
 
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
@@ -100,7 +98,9 @@ RTM_API rtm_client_t * rtm_init_ex(
   rtm->is_secure = NO;
   rtm->ws_ping_interval = 45;
   rtm->connect_timeout = 5;
+#ifdef RTM_LOGGING
   rtm->error_logger = rtm_default_error_logger;
+#endif
   rtm->malloc_fn = _rtm_nop_malloc;
 
   size_t available_memory_for_buffers = memory_size - sizeof(rtm_client_t) - _RTM_WS_PRE_BUFFER;
@@ -111,9 +111,11 @@ RTM_API rtm_client_t * rtm_init_ex(
   rtm->output_buffer = rtm->input_buffer + buffer_size;
   rtm->output_buffer_size = buffer_size + _RTM_WS_PRE_BUFFER;
 
+#ifdef RTM_HAS_GETENV
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
   }
+#endif
 
   return rtm;
 }
@@ -694,11 +696,16 @@ static const char *const action_table[] = {
     [RTM_ACTION_WRITE_OK] = "rtm/write/ok"
 };
 
+#ifdef RTM_LOGGING
 void rtm_default_error_logger(const char *message) {
-  // FIXME USE NSLog on Mac and iOS
-  fprintf(stderr, "%s\n", message);
-  fflush(stderr);
+  #ifdef RTM_HAS_FIO
+    fprintf(stderr, "%s\n", message);
+    fflush(stderr);
+  #else
+    (void)message;
+  #endif
 }
+#endif
 
 static void *_rtm_nop_malloc(rtm_client_t *rtm, size_t size) {
     _rtm_log_error(rtm, RTM_ERR_OOM, "Would have to allocate %lu bytes of memory; configured to fail hard.", size);
@@ -976,7 +983,8 @@ static rtm_status _rtm_parse_endpoint(
     if(port_length >= _RTM_MAX_PORT_SIZE - 1) {
       return RTM_ERR_OOM;
     }
-    sprintf(port_out, "%.*s", port_length, port_delimiter + 1);
+    memcpy(port_out, port_delimiter + 1, port_length);
+    port_out[port_length] = 0;
     hostname_end = port_delimiter;
   } else {
     strcpy(port_out, auto_port);
@@ -991,7 +999,8 @@ static rtm_status _rtm_parse_endpoint(
   }
   // _rtm_check_hostname_length verifies that hostname_length is smaller than
   // the hostname buffer.
-  sprintf(hostname_out, "%.*s", hostname_length, hostname_start);
+  memcpy(hostname_out, hostname_start, hostname_length);
+  hostname_out[hostname_length] = 0;
 
   return RTM_OK;
 }
@@ -1028,15 +1037,21 @@ static void _rtm_ws_mask(char *buf, size_t len, uint32_t mask) {
  * use.
  */
 static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len) {
+  // FIXME Handle the case len > SIZE_MAX
+
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(io_buffer);
   ASSERT(op <= WS_OPCODE_LAST);
 
   io_buffer += _RTM_WS_PRE_BUFFER;
 
+#ifdef RTM_LOGGING
   if (rtm->is_verbose) {
-    fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
+    #ifdef RTM_HAS_FIO
+      fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
+    #endif
   }
+#endif
 
   // RFC 6455 asks for this mask to come from a strong entropy source, but we
   // cannot afford to block here. Since the application is to increase
@@ -1056,23 +1071,28 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_SMALL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (len | 0x80);
-    *(uint32_t *) (&io_buffer[2]) = mask;
+    // Note: memcpy() used because we cannot rely on proper alignment
+    memcpy(&io_buffer[2], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_SMALL;
 
   } else if (len < 65536) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (126 | 0x80);
-    *(uint16_t *) (&io_buffer[2]) = htobe16(len);
-    *(uint32_t *) (&io_buffer[4]) = mask;
+    uint16_t size = htons(len);
+    // Note: memcpy() used because we cannot rely on proper alignment
+    memcpy(&io_buffer[2], &size, sizeof(size));
+    memcpy(&io_buffer[4], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
 
   } else {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_LARGE;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (127 | 0x80);
-    *(uint64_t *) (&io_buffer[2]) = htobe64(len);
-    *(uint32_t *) (&io_buffer[10]) = mask;
+    uint64_t size = htonll(len);
+    // Note: memcpy() used because we cannot rely on proper alignment
+    memcpy(&io_buffer[2], &size, sizeof(size));
+    memcpy(&io_buffer[10], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_LARGE;
   }
   return _rtm_io_write(rtm, io_buffer, len);
@@ -1395,7 +1415,7 @@ void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler) 
     rtm->handle_raw_pdu = handler;
 }
 
-void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
+void _rtm_log_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
   if (!rtm->error_logger)
@@ -1406,7 +1426,7 @@ void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ..
   va_end(vl);
 }
 
-void _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
+void _rtm_logv_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
 
@@ -1443,7 +1463,7 @@ rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   return rc;
 }
 
-void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message) {
+void _rtm_log_message_impl(rtm_client_t *rtm, rtm_status status, const char *message) {
   ASSERT_NOT_NULL(message);
   if (rtm->error_logger)
     rtm->error_logger(message);
@@ -1563,18 +1583,27 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
       payload_length = frame_payload_length;
       header_length = _RTM_INBOUND_HEADER_SIZE_SMALL;
     } else if (frame_payload_length == 126) { // 126 -> 16 bit size
-      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL) {
-        return_code = RTM_WOULD_BLOCK;
-        break;
-      }
-      payload_length = be16toh(*(uint16_t *) (&ws_frame[2]));
+      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL)
+        return RTM_WOULD_BLOCK;
+      // Note: memcpy() used because we cannot rely on proper alignment
+      uint16_t payload_encoded;
+      memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
+      payload_length = ntohs(payload_encoded);
       header_length = _RTM_INBOUND_HEADER_SIZE_NORMAL;
     } else { // 127 -> 64 bit size
-      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE) {
-        return_code = RTM_WOULD_BLOCK;
-        break;
+      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
+        return RTM_WOULD_BLOCK;
+      uint64_t payload_encoded;
+      // Note: memcpy() used because we cannot rely on proper alignment
+      memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
+      payload_encoded = ntohll(payload_encoded);
+      if(payload_encoded > SIZE_MAX) {
+        // FIXME Handle this case gracefully
+        _rtm_log_error(rtm, RTM_ERR_OOM, "Received message larger than this system can handle");
+        rtm_close(rtm);
+        return RTM_ERR_OOM;
       }
-      payload_length = (size_t)be64toh(*(uint64_t *) (&ws_frame[2]));
+      payload_length = (size_t)payload_encoded;
       header_length = _RTM_INBOUND_HEADER_SIZE_LARGE;
     }
 
@@ -1678,10 +1707,12 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
         return RTM_ERR_CLOSED;
       } else if (WS_PING == frame_opcode || WS_PONG == frame_opcode) {
         // FIXME pberndt: Reply to PING
-        const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
         if (rtm->is_verbose) {
+          const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
           fprintf(stderr, "RECV: %s\n", frame_type);
         }
+#endif
       }
     } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode || WS_CONTINUATION == frame_opcode) { /* data frame */
       if (frame_opcode == WS_CONTINUATION && !rtm->fragmented_message_length && !rtm->skip_current_fragmented_message) {
@@ -1722,9 +1753,11 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
           rtm->fragmented_message_length += payload_length;
           base_input_buffer[rtm->fragmented_message_length] = 0;
 
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
           if (rtm->is_verbose) {
             fprintf(stderr, "RECV: %.*s\n", (int)rtm->fragmented_message_length, base_input_buffer);
           }
+#endif
 
           rtm_text_frame_handler(rtm, base_input_buffer, rtm->fragmented_message_length);
           return_code = RTM_OK;
@@ -1739,9 +1772,11 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
         char save = ws_frame[payload_length];
         ws_frame[payload_length] = 0; // be nice, null terminate
 
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
         if (rtm->is_verbose) {
           fprintf(stderr, "RECV: %.*s\n", (int)payload_length, ws_frame);
         }
+#endif
 
         rtm_text_frame_handler(rtm, ws_frame, payload_length);
         ws_frame[payload_length] = save;

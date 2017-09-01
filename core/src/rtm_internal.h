@@ -4,6 +4,8 @@
 #include "rtm.h"
 
 #include <stdint.h>
+#include <stdarg.h>
+#include <string.h>
 
 #ifdef _WIN32
 
@@ -221,9 +223,19 @@ ssize_t    _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte);
 void _rtm_b64encode_16bytes(char const *input, char *output);
 
 // Logging
-void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...);
-void _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list vl);
-RTM_TEST_API void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message);
+#ifdef RTM_LOGGING
+  #define _rtm_log_error _rtm_log_error_impl
+  #define _rtm_logv_error _rtm_logv_error_impl
+  #define _rtm_log_message _rtm_log_message_impl
+#else
+  #define _rtm_log_error(...) (1)
+  #define _rtm_logv_error(...) (1)
+  #define _rtm_log_message(...) (1)
+#endif
+
+void _rtm_log_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, ...);
+void _rtm_logv_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, va_list vl);
+RTM_TEST_API void _rtm_log_message_impl(rtm_client_t *rtm, rtm_status status, const char *message);
 
 #define TRUE 1
 #define YES 1
@@ -289,6 +301,25 @@ enum WebSocketOpCode {
     WS_CONTROL_COMMANDS_END = 0x0A,
     WS_OPCODE_LAST = 0x0A,
 };
+
+// Byte order
+uint16_t _rtm_ntohs(uint16_t in);
+#undef ntohs
+#define ntohs _rtm_ntohs
+#undef htons
+#define htons _rtm_ntohs
+
+uint32_t _rtm_ntohl(uint32_t in);
+#undef ntohl
+#define ntohl _rtm_ntohl
+#undef htonl
+#define htonl _rtm_ntohl
+
+uint64_t _rtm_ntohll(uint64_t in);
+#undef ntohll
+#define ntohll _rtm_ntohll
+#undef htonll
+#define htonll _rtm_ntohll
 
 #ifdef __cplusplus
 }

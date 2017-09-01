@@ -1,0 +1,10 @@
+name=Satori
+version=@MAJOR_VERSION@.@MINOR_VERSION@.@PATCH_VERSION@
+author=Satori Worldwide, Inc.
+sentence=Access the Satori RTM API from ESP8266/Arduino
+paragraph=This encapsulates Satori's C SDK for ESP8266/Arduino
+url=http://www.satori.com
+category=Communication
+architectures=esp8266
+maintainer=SDK Team <sdk@satori.com>
+includes=rtm.h
