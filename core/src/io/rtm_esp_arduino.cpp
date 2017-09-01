@@ -108,7 +108,7 @@ extern "C" {
     rtm->fd = new_fd;
 
     #ifndef ESP_HAS_NO_CA_SUPPORT
-      client.setCACert(_rtm_ssl_cert, sizeof(_rtm_ssl_cert));
+      client.setCACert(_rtm_ssl_cert, _rtm_ssl_cert_size);
     #endif
 
     rtm_status rv = client.connect(hostname, std::atoi(port)) ? RTM_OK : RTM_ERR_NETWORK;
