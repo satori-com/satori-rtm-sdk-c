@@ -304,22 +304,11 @@ enum WebSocketOpCode {
 
 // Byte order
 uint16_t _rtm_ntohs(uint16_t in);
-#undef ntohs
-#define ntohs _rtm_ntohs
-#undef htons
-#define htons _rtm_ntohs
-
+#define  _rtm_htons _rtm_ntohs
 uint32_t _rtm_ntohl(uint32_t in);
-#undef ntohl
-#define ntohl _rtm_ntohl
-#undef htonl
-#define htonl _rtm_ntohl
-
+#define  _rtm_htonl _rtm_ntohl
 uint64_t _rtm_ntohll(uint64_t in);
-#undef ntohll
-#define ntohll _rtm_ntohll
-#undef htonll
-#define htonll _rtm_ntohll
+#define  _rtm_htonll _rtm_ntohll
 
 #ifdef __cplusplus
 }
