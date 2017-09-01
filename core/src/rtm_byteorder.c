@@ -13,7 +13,7 @@ uint16_t _rtm_ntohs(uint16_t in) {
 }
 
 /**
- * Transform between host and network order for shorts
+ * Transform between host and network order for words
  */
  uint32_t _rtm_ntohl(uint32_t in) {
    uint16_t test = 1;
