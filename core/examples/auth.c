@@ -74,6 +74,9 @@ int authenticate(rtm_client_t *client) {
 }
 
 int main() {
+  client_state state;
+  memset(&state, 0, sizeof(state));
+
   void *memory = malloc(rtm_client_size);
   rtm_client_t *client = rtm_init(memory, &pdu_handler, &state);
   rtm_status rc = rtm_connect(client, endpoint, appkey);
