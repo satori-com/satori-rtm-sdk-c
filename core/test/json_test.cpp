@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
 #include <cstdint>
+#include <rtm.h>
 #include <rtm_internal.h>
 #include <cstdlib> // alloca
 #include <queue>
+#include <vector>
 
 struct subscription_data_t {
   std::string sub_id;
   std::string message;
 };
-
-rtm_client_t *rtm = static_cast<rtm_client_t *>(alloca(rtm_client_size));
 
 TEST(rtm_json, pdu_rtm_standard_response) {
   rtm_pdu_t pdu{};
@@ -22,8 +22,7 @@ TEST(rtm_json, pdu_rtm_standard_response) {
 
   for (auto expected_message : {"\"a\"", "null", "42"}) {
       char *got_message = rtm_iterate(&pdu.message_iterator);
-      ASSERT(got_message);
-      ASSERT_EQ(0, strcmp(expected_message, got_message));
+      ASSERT_STREQ(expected_message, got_message);
   }
 }
 
@@ -53,7 +52,7 @@ TEST(rtm_json, pdu_action_is_absent) {
   rtm_parse_pdu(json, &pdu);
 
   ASSERT_EQ(RTM_ACTION_UNKNOWN, pdu.action);
-  ASSERT_EQ(0, strcmp(R"({"stuff":[1,2,null]})", pdu.body));
+  ASSERT_STREQ(R"({"stuff":[1,2,null]})", pdu.body);
   ASSERT_EQ(42u, pdu.request_id);
 }
 
@@ -90,6 +89,26 @@ TEST(rtm_json, find_element) {
   ASSERT_EQ(nullptr, message);
 }
 
+TEST(rtm_json, handle_invalid_json) {
+  rtm_pdu_t pdu{};
+
+  std::string invalids[] = {
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 )",
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 ]\" )",
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 ],)",
+    R"({"action":"rtm/subscription/data","body" {}})",
+    R"({"action":"rtm/subscription/data","body":)",
+    R"({"action":"rtm/subscription/data","body"})",
+    R"({"action":"rtm/subscription/data","body":[ 1,2,3 }])",
+    R"({"action":"rtm/subscription/data","body":{"a":[{}}]}})",
+  };
+
+  for(auto i : invalids) {
+    std::string i_c = i;
+    ASSERT_EQ(RTM_ERR_PROTOCOL, rtm_parse_pdu(const_cast<char*>(i_c.c_str()), &pdu)) << "Input '" << i << "' went through";
+  }
+}
+
 TEST(rtm_json, escape) {
   char buf[128] = { 0 };
   char *ret = nullptr;
@@ -97,7 +116,7 @@ TEST(rtm_json, escape) {
   //simple string
   const char simple[] = "foo bar";
   ret = _rtm_json_escape(buf, 128, simple);
-  ASSERT_EQ(strlen(simple), ret - buf);
+  ASSERT_EQ(strlen(simple), (size_t)(ret - buf));
   ASSERT_TRUE(0 == strcmp(buf, simple));
 
   // special characters
@@ -109,20 +128,17 @@ TEST(rtm_json, escape) {
   const char unicode_1[] = "Ǆ foo";
   ret = _rtm_json_escape(buf, 128, unicode_1);
   ASSERT_TRUE(0 == strcmp(buf, unicode_1));
-  ASSERT_EQ(strlen(unicode_1), ret - buf);
+  ASSERT_EQ(strlen(unicode_1), (size_t)(ret - buf));
 
   const char unicode_2[] = "௵ foo";
   ret = _rtm_json_escape(buf, 128, unicode_2);
   ASSERT_TRUE(0 == strcmp(buf, unicode_2));
-  ASSERT_EQ(strlen(unicode_2), ret - buf);
+  ASSERT_EQ(strlen(unicode_2), (size_t)(ret - buf));
 
   const char unicode_3[] = "😮 foo";
   ret = _rtm_json_escape(buf, 128, unicode_3);
   ASSERT_TRUE(0 == strcmp(buf, unicode_3));
-  ASSERT_EQ(strlen(unicode_3), ret - buf);
-
-  ret = _rtm_json_escape(buf, -1, "foo bar");
-  ASSERT_EQ(nullptr, ret);
+  ASSERT_EQ(strlen(unicode_3), (size_t)(ret - buf));
 
   ret = _rtm_json_escape(buf, 0, "foo bar");
   ASSERT_EQ(nullptr, ret);

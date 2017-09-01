@@ -22,6 +22,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		A58270DE1F599E680085FFB3 /* rtm_byteorder.c in Sources */ = {isa = PBXBuildFile; fileRef = A58270DD1F599E680085FFB3 /* rtm_byteorder.c */; };
+		A58270E01F599F940085FFB3 /* rtm_config.h in Headers */ = {isa = PBXBuildFile; fileRef = A58270DF1F599F940085FFB3 /* rtm_config.h */; };
 		EF0DECEE1E60BE9200A2355E /* SatoriRtmConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = EF0DECEC1E60BE9200A2355E /* SatoriRtmConnection.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EF0DECEF1E60BE9200A2355E /* SatoriRtmConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = EF0DECED1E60BE9200A2355E /* SatoriRtmConnection.m */; };
 		EF0DECF21E61235800A2355E /* SatoriPdu.h in Headers */ = {isa = PBXBuildFile; fileRef = EF0DECF01E61235800A2355E /* SatoriPdu.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -56,6 +58,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A58270DD1F599E680085FFB3 /* rtm_byteorder.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_byteorder.c; path = ../../../core/src/rtm_byteorder.c; sourceTree = "<group>"; };
+		A58270DF1F599F940085FFB3 /* rtm_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rtm_config.h; sourceTree = "<group>"; };
 		EF0DECEC1E60BE9200A2355E /* SatoriRtmConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SatoriRtmConnection.h; sourceTree = "<group>"; };
 		EF0DECED1E60BE9200A2355E /* SatoriRtmConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SatoriRtmConnection.m; sourceTree = "<group>"; };
 		EF0DECF01E61235800A2355E /* SatoriPdu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SatoriPdu.h; sourceTree = "<group>"; };
@@ -66,10 +70,10 @@
 		EFC8A4491E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SatoriRtmSdkWrapperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFC8A44E1E2D78B30050D8B1 /* SatoriRtmSdkWrapperTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SatoriRtmSdkWrapperTests.m; sourceTree = "<group>"; };
 		EFC8A4501E2D78B30050D8B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_apple_ssl.c; path = ../../../core/src/rtm_apple_ssl.c; sourceTree = "<group>"; };
+		EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_apple_ssl.c; path = ../../../core/src/ssl/rtm_apple_ssl.c; sourceTree = "<group>"; };
 		EFC8A4691E2D7A350050D8B1 /* rtm_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rtm_internal.h; path = ../../../core/src/rtm_internal.h; sourceTree = "<group>"; };
 		EFC8A46A1E2D7A350050D8B1 /* rtm_json.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_json.c; path = ../../../core/src/rtm_json.c; sourceTree = "<group>"; };
-		EFC8A46B1E2D7A350050D8B1 /* rtm_posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_posix.c; path = ../../../core/src/rtm_posix.c; sourceTree = "<group>"; };
+		EFC8A46B1E2D7A350050D8B1 /* rtm_posix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm_posix.c; path = ../../../core/src/io/rtm_posix.c; sourceTree = "<group>"; };
 		EFC8A46D1E2D7A350050D8B1 /* rtm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rtm.c; path = ../../../core/src/rtm.c; sourceTree = "<group>"; };
 		EFC8A46E1E2D7A350050D8B1 /* rtm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rtm.h; path = ../../../core/src/rtm.h; sourceTree = "<group>"; };
 		EFC8A4771E2D7BD90050D8B1 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
@@ -117,6 +121,8 @@
 		EFC8A4421E2D78B30050D8B1 /* SatoriRtmSdkWrapper */ = {
 			isa = PBXGroup;
 			children = (
+				A58270DF1F599F940085FFB3 /* rtm_config.h */,
+				A58270DD1F599E680085FFB3 /* rtm_byteorder.c */,
 				EFC8A4431E2D78B30050D8B1 /* SatoriRtmSdkWrapper.h */,
 				EFC8A4681E2D7A350050D8B1 /* rtm_apple_ssl.c */,
 				EFC8A4691E2D7A350050D8B1 /* rtm_internal.h */,
@@ -159,6 +165,7 @@
 			files = (
 				EFC8A4511E2D78B30050D8B1 /* SatoriRtmSdkWrapper.h in Headers */,
 				EF0DECF21E61235800A2355E /* SatoriPdu.h in Headers */,
+				A58270E01F599F940085FFB3 /* rtm_config.h in Headers */,
 				EF0DECEE1E60BE9200A2355E /* SatoriRtmConnection.h in Headers */,
 				EFC8A4751E2D7A350050D8B1 /* rtm.h in Headers */,
 				EFC8A4701E2D7A350050D8B1 /* rtm_internal.h in Headers */,
@@ -288,6 +295,7 @@
 				EFC8A4741E2D7A350050D8B1 /* rtm.c in Sources */,
 				EFC8A4721E2D7A350050D8B1 /* rtm_posix.c in Sources */,
 				EF0DECF31E61235800A2355E /* SatoriPdu.m in Sources */,
+				A58270DE1F599E680085FFB3 /* rtm_byteorder.c in Sources */,
 				EF0DECEF1E60BE9200A2355E /* SatoriRtmConnection.m in Sources */,
 				EFC8A4711E2D7A350050D8B1 /* rtm_json.c in Sources */,
 			);

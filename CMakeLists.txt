@@ -3,13 +3,13 @@ cmake_minimum_required(VERSION 2.8)
 project(satori-sdk-c)
 include(ExternalProject)
 
+option(ARDUINO_SDK "Generate a library for ESP/Arduino" OFF)
 option(TESTS "Build all tests." OFF)
 option(BENCH "Build all benchmarks." OFF)
 option(EXAMPLES "Build all examples." OFF)
 option(TUTORIALS "Build tutorials." OFF)
 
 # Make credentials configurable
-
 set(YOUR_ENDPOINT "" CACHE STRING "Endpoint to use in example/test applications")
 set(YOUR_APPKEY "" CACHE STRING "Appkey to use in example/test applications")
 set(YOUR_ROLE "" CACHE STRING "Role to use in example/test applications")
@@ -56,8 +56,16 @@ if(NOT GNUInstallDirs_FOUND)
 endif(NOT GNUInstallDirs_FOUND)
 set(CMAKE_INSTALL_PKGCONFIGDIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
 
+# Load dependency paths from conan, if defined
+foreach(P IN ITEMS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+  if(EXISTS "${P}/conanbuildinfo.cmake")
+    include("${P}/conanbuildinfo.cmake")
+    conan_basic_setup()
+  endif()
+endforeach()
+
 set(MAJOR_VERSION 2)
-set(MINOR_VERSION 0)
+set(MINOR_VERSION 1)
 set(PATCH_VERSION 0)
 
 if(TESTS)
@@ -98,8 +106,9 @@ if(BENCH)
   set(GBENCH_LIBRARY benchmark)
 endif()
 
+include_directories(vendor)
 include_directories(core/src/)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/core)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/core/src)
 
 add_subdirectory(core)
 

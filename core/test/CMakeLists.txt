@@ -6,22 +6,12 @@ find_package(Threads REQUIRED)
 
 link_directories(${GTEST_BIN_DIR})
 if(UNIX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x -Wextra")
+elseif(MSVC)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++14")
 endif()
 file(GLOB TEST_FILES *_test.cpp)
 add_executable(rtm_unit_tests ${TEST_FILES})
-
-if(USE_APPLE_SSL)
-add_definitions(-DUSE_APPLE_SSL)
-endif()
-if(USE_OPENSSL)
-add_definitions(-DUSE_OPENSSL)
-set_property(TARGET rtm_unit_tests APPEND PROPERTY INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
-endif()
-if(USE_GNUTLS)
-add_definitions(-DUSE_GNUTLS)
-set_property(TARGET rtm_unit_tests APPEND PROPERTY INCLUDE_DIRECTORIES ${GNUTLS_INCLUDE_DIR})
-endif()
 
 include_directories(
   "../src"

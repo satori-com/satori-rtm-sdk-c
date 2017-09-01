@@ -20,6 +20,9 @@ TUTORIALS = {
     "boost_asio": {"Sent out an animal", "Received animal"},
 }
 
+# Examples to exclude from test runs because they require special setup
+EXCLUDED_EXAMPLES = ("connect_via_https_proxy",)
+
 
 class TemporaryDirectory(object):
     def __init__(self):
@@ -46,12 +49,20 @@ def main():
     with TemporaryDirectory() as build_dir:
         os.chdir(build_dir)
         print "Building in", build_dir
-        subprocess.check_call(["cmake", "-DTUTORIALS=1", start_dir])
+        subprocess.check_call(["cmake", "-DTUTORIALS=1", "-DEXAMPLES=1", start_dir])
         subprocess.check_call(["cmake", "--build", "."])
         print
 
-        for tutorial in TUTORIALS.items():
-            test(*tutorial)
+        for tutorial_name, test_strings in TUTORIALS.items():
+            binary_name = './tutorial/%(n)s/%(n)s_tutorial' % {"n": tutorial_name}
+            test(binary_name, test_strings)
+
+        for example in os.listdir(os.path.join(build_dir, "core/examples")):
+            if example in EXCLUDED_EXAMPLES:
+                continue
+            binary_name = './core/examples/%s' % example
+            if os.access(binary_name, os.X_OK):
+                test(binary_name, ())
 
 def kill_after(process, seconds=10):
     time.sleep(seconds)
@@ -61,10 +72,8 @@ def kill_after(process, seconds=10):
     except:
         pass
 
-def test(tutorial_name, test_strings):
-    print "Testing if tutorial %s works" % tutorial_name
-
-    binary_name = './tutorial/%(n)s/%(n)s_tutorial' % {"n": tutorial_name}
+def test(binary_name, test_strings):
+    print "Testing if tutorial/example %s works" % binary_name
 
     if not os.path.isfile(binary_name):
         print " Executable not found. Skipping tutorial."
@@ -90,7 +99,7 @@ def test(tutorial_name, test_strings):
             print "Test string '%s' did not match against output:\n%s" % (test_string, out)
             raise AssertionError()
 
-    print "Tutorial %s seems to be working fine" % tutorial_name
+    print "Tutorial/example %s seems to be working fine" % binary_name
     print
 
 if __name__ == '__main__':

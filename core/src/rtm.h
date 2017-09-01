@@ -266,7 +266,7 @@ typedef enum {
 } rtm_status;
 
 /**
- * @brief Size of ::rtm_client_t in bytes.
+ * @brief Default size of ::rtm_client_t in bytes.
  */
 RTM_API extern const size_t rtm_client_size;
 
@@ -276,6 +276,81 @@ RTM_API extern const size_t rtm_client_size;
  */
 RTM_API void rtm_set_error_logger(rtm_client_t *rtm, rtm_error_logger_t *error_logger);
 
+
+/**
+ * @brief malloc() like function for use with RTM.
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] size amount of memory to be allocated
+ * @return A pointer to the newly allocated memory, or NULL if the allocation
+ *         failed
+ *
+ * @see ::rtm_set_allocator
+ * @see ::rtm_system_malloc
+ * @see ::rtm_null_malloc
+ */
+typedef void *(rtm_malloc_fn_t)(rtm_client_t *rtm, size_t size);
+
+/**
+ * @brief free() like function for use with RTM.
+ *
+ * @param[in] rtm instance of the client
+ * @param[in] ptr pointer to memory to be released
+ *
+ * @see ::rtm_set_allocator
+ * @see ::rtm_system_free
+ * @see ::rtm_null_free
+ */
+typedef void (rtm_free_fn_t)(rtm_client_t *rtm, void *ptr);
+
+/**
+ * @brief malloc() implementation using the system's malloc()
+ */
+RTM_API void *rtm_system_malloc(rtm_client_t *rtm, size_t size);
+
+/**
+ * @brief free() implementation using the system's free()
+ */
+RTM_API void rtm_system_free(rtm_client_t *rtm, void *mem);
+
+/**
+ * @brief malloc() implementation that always fails gracefully
+ *
+ * This function always returns NULL. Use it if you would like to skip over
+ * frames that are too large to handle.
+ */
+RTM_API void *rtm_null_malloc(rtm_client_t *rtm, size_t size);
+
+/**
+ * @brief free() implementation that does nothing
+ */
+RTM_API void rtm_null_free(rtm_client_t *rtm, void *mem);
+
+/**
+ * @brief Set the allocator used by the RTM structure.
+ *
+ * By default, RTM does not ever allocate any memory and fails hard by closing
+ * the connection if it would need to.
+ *
+ * When the SDK runs out of memory, it invokes the allocator function. If this
+ * function returns non-NULL, it assumes that it was given a pointer to memory
+ * of at least the requested size and uses that memory to perform the requested
+ * action. Once the action is completed, the free() function is called and the
+ * memory is released. If the allocator returns NULL, the SDK tries to
+ * gracefully handle the error condition. It will skip over frames that are too
+ * large to handle, and over fragmented frames that would become too large
+ * after reassembly. To fail hard, close the connection from the malloc()
+ * function.
+ *
+ * The SDK provides default functions for convenience.
+ *
+ * @see ::rtm_system_free
+ * @see ::rtm_null_free
+ * @see ::rtm_system_malloc
+ * @see ::rtm_null_malloc
+ */
+RTM_API void rtm_set_allocator(rtm_client_t *rtm, rtm_malloc_fn_t *malloc_ptr, rtm_free_fn_t *free_ptr);
+
 /**
  * @brief Default error handler.
  *
@@ -283,7 +358,7 @@ RTM_API void rtm_set_error_logger(rtm_client_t *rtm, rtm_error_logger_t *error_l
  *
  * @param[in] message to log as a zero terminated string.
  */
-void rtm_default_error_logger(const char *message);
+RTM_API void rtm_default_error_logger(const char *message);
 
 /**
  * @brief Default message handler prints all messages to stdout.
@@ -292,7 +367,7 @@ void rtm_default_error_logger(const char *message);
  * @param[in] channel name of the channel
  * @param[in] message message to output
  */
-void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
+RTM_API void rtm_default_message_handler(rtm_client_t *rtm, const char *channel,
                                  const char *message);
 
 /**
@@ -334,7 +409,7 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
 /**
  * @brief Initialize an instance of rtm_client_t
  *
- * @param[in] memory a buffer of size RTM_CLIENT_SIZE
+ * @param[in] memory a buffer of size rtm_client_size
  * @param[in] pdu_handler the callback for all PDUs
  * @param[in] user_context an opaque user specified data associated with this 
  *            RTM object
@@ -342,6 +417,7 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  *
  * @return initialized rtm_client_t object
  *
+ * @see ::rtm_init_ex
  * @see ::rtm_close
  * @see ::rtm_get_user_context
  *
@@ -351,6 +427,39 @@ RTM_API void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval
  */
 RTM_API rtm_client_t *rtm_init(
   void *memory,
+  rtm_pdu_handler_t *pdu_handler,
+  void *user_context);
+
+/**
+ * @brief Calculate the size requirements for rtm_client_t
+ *
+ * @param[in] buffer_size Total number of bytes for buffers
+ * @return size of the rtm_client_t structure
+ */
+#define RTM_CLIENT_SIZE(buffer_size) (_RTM_CLIENT_T_SIZE + 2*buffer_size)
+
+/**
+ * @brief Initialize an instance of rtm_client_t with a custom buffer size
+ *
+ * @param[in] memory a buffer of at least rtm_client_min_size bytes
+ * @param[in] memory_size The allocation size of memory
+ * @param[in] pdu_handler the callback for all PDUs
+ * @param[in] user_context an opaque user specified data associated with this
+ *            RTM object
+ *
+ *
+ * @return initialized rtm_client_t object
+ *
+ * @see ::RTM_CLIENT_SIZE
+ * @see ::rtm_init
+ * @see ::rtm_close
+ * @see ::rtm_get_user_context
+ *
+ *
+ */
+RTM_API rtm_client_t *rtm_init_ex(
+  void *memory,
+  size_t memory_size,
   rtm_pdu_handler_t *pdu_handler,
   void *user_context);
 
@@ -593,8 +702,9 @@ RTM_API rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *channel,
  *
  * @param[in] json string.
  * @param[out] pdu_out parsed PDU.
+ * @retval RTM_ERR_* an error occurred
  */
-RTM_API void rtm_parse_pdu(char *json, rtm_pdu_t *pdu_out);
+RTM_API rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu);
 
 /**
  * @brief Read the latest published message.
@@ -758,9 +868,9 @@ RTM_API rtm_status rtm_wait_timeout(rtm_client_t *rtm, int timeout_in_seconds);
  * @param[in] rtm instance of the client
  *
  * @return the status of the operation
- * @retval RTM_OK the operation succeeded and decoded at least one websocket 
+ * @retval RTM_OK the operation succeeded and decoded at least one websocket
  *         frame
- * @retval RTM_WOULD_BLOCK the operation needs more data to process the buffer 
+ * @retval RTM_WOULD_BLOCK the operation needs more data to process the buffer
  *         (got partial frames or no frames at all)
  * @retval RTM_ERR_* when something went wrong
  *

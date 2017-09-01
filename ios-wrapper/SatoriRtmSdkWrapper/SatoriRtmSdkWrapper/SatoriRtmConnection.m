@@ -154,10 +154,6 @@ void on_message(rtm_client_t *rtm, const char* subscriptionId, const char* messa
     return rtm_delete(self.rtm, channel.UTF8String, requestId);
 }
 
-- (rtm_status)search:(NSString *)prefix andRequestId:(unsigned *)requestId {
-    return rtm_search(self.rtm, prefix.UTF8String, requestId);
-}
-
 - (rtm_status)sendPdu:(NSString *)json {
     return rtm_send_pdu(self.rtm, json.UTF8String);
 }

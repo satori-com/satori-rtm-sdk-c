@@ -67,15 +67,25 @@ As an external project
 
 If your project is also built using CMake, you can take advantage of its
 ExternalProject feature. This way downloading and building the SDK is automated
-by CMake itself. See tutorial/simple/CMakeLists.txt for an example.
+by CMake itself.
+
+ESP8266/Arduino support
+-----------------------
+
+The SDK can generate a library for use with Arduino on ESP8266 platforms. Pass "-DARDUINO-SDK=ON" to
+CMake to generate a ZIP file that can be imported into Arduino. You can download a prebuilt library
+from the releases page on Github. Import it into Arduino using **Sketch** → **Include Library** →
+**Add .ZIP library**.
+
 
 TLS support
 -----------
 
-The SDK can take advantage of either OpenSSL, GNUTLS or Apple SSL API for supporting secure (wss://) connections.
+The SDK requires either OpenSSL, GNUTLS or Apple SSL.
 Pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPLE_SSL=ON" respectively to CMake.
 
-If no flags are passed, CMake enables Apple SSL for Mac or OpenSSL for others.
+If no flags are passed, CMake enables Apple SSL for Mac, and for others uses
+OpenSSL or GnuTLS if OpenSSL is not installed.
 
 ## iOS wrapper
 
@@ -99,7 +109,13 @@ You've now installed the SatoriRtmSdkWrapper framework. Refer to *Framework API 
 
 Create a local repository by cloning the satori-rtm-sdk-c to your chosen location. Then,
 
-#### Step 1: Build framework
+#### Step 1: Build locally
+
+Follow the normal installation procedure to build the desktop / server variant
+of the SDK. This will create a configuration header in the build directory
+which is used during compilation of the iOS framework.
+
+#### Step 2: Build framework
 
 There are two options to build the RTM framework for iOS:
 
@@ -118,7 +134,7 @@ Select SatoriRtmSdkWrapper-Universal target and build.
 
 The SatoriRtmSdkWrapper.framework will be built under ios-wrapper/build directory.
 
-#### Step 2: Add framework to your project
+#### Step 3: Add framework to your project
 
 Once you build the framework, open your app's Xcode project and drag-and-drop the framework under "Embedded Binaries" section under the app's target. Choose "Copy items if needed" and "Create groups" in the dialog box.
 

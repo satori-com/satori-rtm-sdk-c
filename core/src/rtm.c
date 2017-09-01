@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -5,12 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <panzi/portable_endian.h>
-
 #include "rtm_internal.h"
 
 #define MAX_INTERESTING_FIELDS_IN_PDU 3
-const size_t rtm_client_size = RTM_CLIENT_SIZE;
+const size_t rtm_client_size = RTM_CLIENT_SIZE(RTM_MAX_MESSAGE_SIZE);
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len);
 void(*rtm_text_frame_handler)(rtm_client_t *rtm, char *message, size_t message_len) = rtm_default_text_frame_handler;
@@ -31,6 +30,14 @@ static char *_rtm_prepare_pdu(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, const char *body, unsigned *ack_id_out);
 static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t size,
     const char *action, unsigned *ack_id_out);
+
+// PDU sending
+static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, enum rtm_field_type_t data_type, unsigned *ack_id);
+static rtm_status _rtm_channel_action(rtm_client_t *rtm, const char *action, const char *channel, unsigned *ack_id);
+static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, const char *body, unsigned *ack_id);
+
+// Stub malloc() doing nothing but printing an error
+static void *_rtm_nop_malloc(rtm_client_t *rtm, size_t size);
 
 /**
  * Try to snprintf to dst
@@ -62,11 +69,20 @@ RTM_API rtm_client_t * rtm_init(
   rtm_pdu_handler_t *pdu_handler,
   void *user_context) {
 
+  return rtm_init_ex(memory, rtm_client_size, pdu_handler, user_context);
+}
+
+RTM_API rtm_client_t * rtm_init_ex(
+  void *memory,
+  size_t memory_size,
+  rtm_pdu_handler_t *pdu_handler,
+  void *user_context) {
+
   if (memory == NULL) {
     return NULL;
   }
 
-  memset(memory, 0, RTM_CLIENT_SIZE);
+  memset(memory, 0, memory_size);
 
   rtm_client_t *rtm = (rtm_client_t *)memory;
   rtm->fd = -1;
@@ -80,11 +96,24 @@ RTM_API rtm_client_t * rtm_init(
   rtm->is_secure = NO;
   rtm->ws_ping_interval = 45;
   rtm->connect_timeout = 5;
+#ifdef RTM_LOGGING
   rtm->error_logger = rtm_default_error_logger;
+#endif
+  rtm->malloc_fn = _rtm_nop_malloc;
 
+  size_t available_memory_for_buffers = memory_size - sizeof(rtm_client_t) - _RTM_WS_PRE_BUFFER;
+  size_t buffer_size = available_memory_for_buffers / 2;
+
+  rtm->input_buffer = (char*)memory + sizeof(rtm_client_t);
+  rtm->input_buffer_size = buffer_size;
+  rtm->output_buffer = rtm->input_buffer + buffer_size;
+  rtm->output_buffer_size = buffer_size + _RTM_WS_PRE_BUFFER;
+
+#ifdef RTM_HAS_GETENV
   if (getenv("DEBUG_SATORI_SDK")) {
     rtm->is_verbose = YES;
   }
+#endif
 
   return rtm;
 }
@@ -96,8 +125,8 @@ RTM_API rtm_client_t * rtm_init(
  * @return RTM_OK if the handshake was successfull, or an error.
  */
 static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostname, char const *port) {
-  int len = snprintf(rtm->output_buffer, _RTM_MAX_BUFFER, "CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
-  if(len < 0 || len >= _RTM_MAX_BUFFER) {
+  int len = snprintf(rtm->output_buffer, rtm->output_buffer_size, "CONNECT %s:%s HTTP/1.0\r\n\r\n", hostname, port);
+  if(len < 0 || (unsigned)len >= rtm->output_buffer_size) {
     return RTM_ERR_OOM;
   }
   int written = _rtm_io_write(rtm, rtm->output_buffer, len);
@@ -105,7 +134,7 @@ static rtm_status perform_proxy_handshake(rtm_client_t *rtm, char const *hostnam
     return RTM_ERR_WRITE;
   }
 
-  const size_t buffer_size = _RTM_MAX_BUFFER;
+  const size_t buffer_size = rtm->input_buffer_size;
   char *input_buffer = rtm->input_buffer;
   size_t input_length = 0;
   while (1) {
@@ -252,6 +281,11 @@ void rtm_close(rtm_client_t *rtm) {
   if (!rtm) {
     return;
   }
+  if (rtm->dynamic_input_buffer) {
+    rtm->free_fn(rtm, rtm->dynamic_input_buffer);
+    rtm->dynamic_input_buffer = NULL;
+    rtm->dynamic_input_buffer_size = 0;
+  }
   _rtm_io_close(rtm);
 }
 
@@ -260,7 +294,7 @@ rtm_status rtm_handshake(rtm_client_t *rtm, const char *role_name, unsigned *ack
   CHECK_MAX_SIZE(role_name, RTM_MAX_ROLE_NAME_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const size_t size = _RTM_MAX_BUFFER;
+  const size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "auth/handshake", ack_id);
@@ -283,7 +317,7 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
   _rtm_calculate_auth_hash(role_secret, nonce, hash);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "auth/authenticate", ack_id);
@@ -299,10 +333,19 @@ rtm_status rtm_authenticate(rtm_client_t *rtm, const char *role_secret, const ch
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
-rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
+/**
+ * Write a PDU containing a channel and a message
+ *
+ * @param action Action field of PDU, e.g. auth/authenticate
+ * @param channel Name of the channel
+ * @param data Data, depends on data_type
+ * @param data_type String or JSON
+ * @param ack_id Stores the ID of the packet if non-null
+ */
+static rtm_status _rtm_channel_action_with_message(rtm_client_t *rtm, const char *action, const char *channel, const char *data, enum rtm_field_type_t data_type, unsigned *ack_id) {
   CHECK_PARAM(rtm);
   CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(string, RTM_MAX_MESSAGE_SIZE);
+  CHECK_MAX_SIZE(data, RTM_MAX_MESSAGE_SIZE);
 
   if (!ack_id) {
     rtm_status rc;
@@ -312,88 +355,192 @@ rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char
     }
   }
 
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  char *base_buf = rtm->output_buffer;
+  char *buf = _RTM_BUFFER_TO_IO(base_buf);
+  size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), string);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
+  do {
+    p = _rtm_prepare_pdu_without_body(rtm, p, size, action, ack_id);
+    p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+    p = _rtm_json_escape(p, size - (p - buf), channel);
+    if (data_type == FIELD_STRING) {
+      // String
+      p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
+      p = _rtm_json_escape(p, size - (p - buf), data);
+      p = _rtm_snprintf(p, size - (p - buf), "\"}}");
+    }
+    else if(data_type == FIELD_JSON) {
+      // Json
+      p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", data);
+    }
 
-  if (!p) {
-    return RTM_ERR_OOM;
+    if (!p) {
+      // Insufficient memory. Allow the user to allocate more.
+      if(base_buf != rtm->output_buffer) {
+        // We tried allocating space before. Increase size by a factor of two,
+        // and retry.
+        rtm->free_fn(rtm, base_buf);
+        size *= 2;
+      }
+      else {
+        // Make a guess on the size of the request. If our guess is not correct,
+        // we will allocate more space in out next attempt.
+        size_t new_size = _RTM_WS_PRE_BUFFER
+          + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":{{\"channel\":\"\",\"message\":\"\"}}")
+          + strlen(action) + (strlen(channel) + strlen(data)) + 1;
+        if(new_size > size) {
+          size = new_size;
+        }
+        else {
+          size *= 2;
+        }
+      }
+
+      base_buf = rtm->malloc_fn(rtm, size);
+
+      if (base_buf) {
+        p = buf = _RTM_BUFFER_TO_IO(base_buf);
+        continue;
+      }
+
+      return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
+    }
+
+    break;
+  } while(1);
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, base_buf, p - buf);
+
+  if (base_buf != rtm->output_buffer) {
+    rtm->free_fn(rtm, base_buf);
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+}
+
+/**
+ * Write a PDU containing a channel
+ *
+ * @param action Action field of PDU, e.g. auth/authenticate
+ * @param channel Name of the channel
+ * @param ack_id Stores the ID of the packet if non-null
+ */
+static rtm_status _rtm_channel_action(rtm_client_t *rtm, const char *action, const char *channel, unsigned *ack_id) {
+  CHECK_PARAM(rtm);
+  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
+
+  char *base_buf = rtm->output_buffer;
+  char *buf = _RTM_BUFFER_TO_IO(base_buf);
+  size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
+  char *p = buf;
+
+  do {
+    p = _rtm_prepare_pdu_without_body(rtm, p, size, action, ack_id);
+    p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
+    p = _rtm_json_escape(p, size - (p - buf), channel);
+    p = _rtm_snprintf(p, size - (p - buf), "\"}}");
+
+    if (!p) {
+      // Insufficient memory. Allow the user to allocate more.
+      if(base_buf != rtm->output_buffer) {
+        // We tried allocating space before. Increase size by a factor of two,
+        // and retry.
+        rtm->free_fn(rtm, base_buf);
+        size *= 2;
+      }
+      else {
+        // Make a guess on the size of the request. If our guess is not correct,
+        // we will allocate more space in out next attempt.
+        size_t new_size = _RTM_WS_PRE_BUFFER
+          + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":{{\"channel\":\"\"}}")
+          + strlen(action) + (strlen(channel)) + 1;
+        if(new_size > size) {
+          size = new_size;
+        }
+        else {
+          size *= 2;
+        }
+      }
+
+      base_buf = rtm->malloc_fn(rtm, size);
+
+      if (base_buf) {
+        p = buf = _RTM_BUFFER_TO_IO(base_buf);
+        continue;
+      }
+
+      return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
+    }
+
+    break;
+  }
+  while(1);
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, base_buf, p - buf);
+
+  if (base_buf != rtm->output_buffer) {
+    rtm->free_fn(rtm, base_buf);
+  }
+
+  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+}
+
+/**
+ * Write a PDU with arbitrary action and body
+ *
+ * @param action Action field of PDU, e.g. auth/authenticate
+ * @param body Body of the PDU
+ */
+static rtm_status _rtm_action_with_body(rtm_client_t *rtm, const char *action, const char *body, unsigned *ack_id) {
+  CHECK_PARAM(rtm);
+
+  char *base_buf = rtm->output_buffer;
+  char *buf = _RTM_BUFFER_TO_IO(base_buf);
+  size_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
+  char *p = _rtm_prepare_pdu(rtm, buf, size, action, body, ack_id);
+
+  if (!p) {
+    // Insufficient memory. Allow the user to allocate more.
+    // 63 bytes for JSON encoding of PDU (assuming a 10 digit ack_id)
+    size = _RTM_WS_PRE_BUFFER + sizeof("{\"action\":\"\",\"id\":123456789,\"body\":}") + strlen(action) + strlen(body);
+    base_buf = rtm->malloc_fn(rtm, size);
+    if (!base_buf) {
+      return rtm->is_closed ? RTM_ERR_CLOSED : RTM_ERR_OOM;
+    }
+
+    buf = _RTM_BUFFER_TO_IO(base_buf);
+    p = _rtm_prepare_pdu(rtm, buf, size, action, body, ack_id);
+
+    if (!p) {
+      rtm->free_fn(rtm, base_buf);
+      return RTM_ERR_OOM;
+    }
+  }
+
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, base_buf, p - buf);
+
+  if (base_buf != rtm->output_buffer) {
+    rtm->free_fn(rtm, base_buf);
+  }
+
+  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+}
+
+rtm_status rtm_publish_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
+  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, string, FIELD_STRING, ack_id);
 }
 
 rtm_status rtm_publish_json(rtm_client_t *rtm, const char *channel, const char *json, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-  }
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/publish", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action_with_message(rtm, "rtm/publish", channel, json, FIELD_JSON, ack_id);
 }
 
 rtm_status rtm_subscribe(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/subscribe", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action(rtm, "rtm/subscribe", channel, ack_id);
 }
 
 rtm_status rtm_subscribe_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_prepare_pdu(rtm, buf, _RTM_MAX_BUFFER, "rtm/subscribe", body, ack_id);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_action_with_body(rtm, "rtm/subscribe", body, ack_id);
 }
 
 rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *subscription_id, unsigned *ack_id) {
@@ -401,7 +548,7 @@ rtm_status rtm_unsubscribe(rtm_client_t *rtm, const char *subscription_id, unsig
   CHECK_MAX_SIZE(subscription_id, RTM_MAX_CHANNEL_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
+  const ssize_t size = rtm->output_buffer_size - _RTM_WS_PRE_BUFFER;
   char *p = buf;
 
   p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/unsubscribe", ack_id);
@@ -438,121 +585,24 @@ void rtm_set_ws_ping_interval(rtm_client_t *rtm, time_t ws_ping_interval) {
 }
 
 rtm_status rtm_read(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_PARAM(channel);
-  CHECK_PARAM(ack_id);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/read", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action(rtm, "rtm/read", channel, ack_id);
 }
 
 rtm_status rtm_read_with_body(rtm_client_t *rtm, const char *body, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_prepare_pdu(rtm, buf, _RTM_MAX_BUFFER, "rtm/read", body, ack_id);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_action_with_body(rtm, "rtm/read", body, ack_id);
 }
 
+
 rtm_status rtm_write_string(rtm_client_t *rtm, const char *channel, const char *string, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(string, RTM_MAX_MESSAGE_SIZE);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-  }
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), string);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, string, FIELD_STRING, ack_id);
 }
 
 rtm_status rtm_write_json(rtm_client_t *rtm, const char *channel, const char *json, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-  CHECK_MAX_SIZE(channel, RTM_MAX_CHANNEL_SIZE);
-  CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
-
-  if (!ack_id) {
-    rtm_status rc;
-    rc = _rtm_check_interval_and_send_ws_ping(rtm);
-    if (RTM_OK != rc) {
-      return rc;
-    }
-  }
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/write", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\",\"message\":%s}}", json);
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action_with_message(rtm, "rtm/write", channel, json, FIELD_JSON, ack_id);
 }
 
 rtm_status rtm_delete(rtm_client_t *rtm, const char *channel, unsigned *ack_id) {
-  CHECK_PARAM(rtm);
-
-  char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  const ssize_t size = _RTM_MAX_BUFFER;
-  char *p = buf;
-
-  p = _rtm_prepare_pdu_without_body(rtm, p, size, "rtm/delete", ack_id);
-  p = _rtm_snprintf(p, size - (p - buf), "{\"channel\":\"");
-  p = _rtm_json_escape(p, size - (p - buf), channel);
-  p = _rtm_snprintf(p, size - (p - buf), "\"}}");
-
-  if (!p) {
-    return RTM_ERR_OOM;
-  }
-
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
-  return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
+  return _rtm_channel_action(rtm, "rtm/delete", channel, ack_id);
 }
 
 rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json) {
@@ -560,13 +610,13 @@ rtm_status rtm_send_pdu(rtm_client_t *rtm, const char *json) {
   CHECK_MAX_SIZE(json, RTM_MAX_MESSAGE_SIZE);
 
   char* const buf = _RTM_BUFFER_TO_IO(rtm->output_buffer);
-  char *p = _rtm_snprintf(buf, _RTM_MAX_BUFFER, "%s", json);
+  char *p = _rtm_snprintf(buf, rtm->output_buffer_size - _RTM_WS_PRE_BUFFER, "%s", json);
 
   if (!p) {
     return RTM_ERR_OOM;
   }
 
-  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, buf, p - buf);
+  ssize_t written = _rtm_ws_write(rtm, WS_TEXT, rtm->output_buffer, p - buf);
   return (written < 0) ? RTM_ERR_WRITE : RTM_OK;
 }
 
@@ -644,10 +694,43 @@ static const char *const action_table[] = {
     [RTM_ACTION_WRITE_OK] = "rtm/write/ok"
 };
 
+#ifdef RTM_LOGGING
 void rtm_default_error_logger(const char *message) {
-  // FIXME USE NSLog on Mac and iOS
-  fprintf(stderr, "%s\n", message);
-  fflush(stderr);
+  #ifdef RTM_HAS_FIO
+    fprintf(stderr, "%s\n", message);
+    fflush(stderr);
+  #else
+    (void)message;
+  #endif
+}
+#endif
+
+static void *_rtm_nop_malloc(rtm_client_t *rtm, size_t size) {
+    _rtm_log_error(rtm, RTM_ERR_OOM, "Would have to allocate %lu bytes of memory; configured to fail hard.", size);
+    rtm_close(rtm);
+    return NULL;
+}
+
+void *rtm_system_malloc(rtm_client_t *rtm, size_t size) {
+  (void)rtm;
+  return malloc(size);
+}
+
+void rtm_system_free(rtm_client_t *rtm, void *mem) {
+  (void)rtm;
+  return free(mem);
+}
+
+void *rtm_null_malloc(rtm_client_t *rtm, size_t size) {
+  (void)rtm;
+  (void)size;
+  return NULL;
+}
+
+void rtm_null_free(rtm_client_t *rtm, void *mem) {
+  // Intentionally empty.
+  (void)rtm;
+  (void)mem;
 }
 
 void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
@@ -711,7 +794,7 @@ const char *rtm_error_string(rtm_status status) {
 // Internal code
 
 static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
-  const ssize_t buffer_size = _RTM_MAX_BUFFER;
+  const size_t buffer_size = rtm->input_buffer_size;
   char *input_buffer = rtm->input_buffer;
   // read HTTP response header
   size_t input_length = 0;
@@ -724,7 +807,7 @@ static rtm_status _rtm_check_http_upgrade_response(rtm_client_t *rtm) {
     }
 
     ssize_t bytes_read = _rtm_io_read(rtm, input_buffer + input_length, buffer_size - input_length, YES);
-    if (bytes_read < 0) {
+    if (bytes_read <= 0) {
       _rtm_io_close(rtm);
       _rtm_log_error(rtm, RTM_ERR_READ, "Error reading from network while waiting for connection response");
       return RTM_ERR_READ;
@@ -755,7 +838,7 @@ static rtm_status _rtm_send_http_upgrade_request(rtm_client_t *rtm, const char *
 
   char *request = rtm->output_buffer;
 
-  char *p = _rtm_snprintf(request, _RTM_MAX_BUFFER,
+  char *p = _rtm_snprintf(request, rtm->output_buffer_size,
       "GET %s HTTP/1.1\r\n"
       "Host: %s\r\n"
       "Upgrade: websocket\r\n"
@@ -765,6 +848,7 @@ static rtm_status _rtm_send_http_upgrade_request(rtm_client_t *rtm, const char *
       path, hostname, sec_key);
 
   if (!p) {
+    _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to send HTTP upgrade request");
     return RTM_ERR_OOM;
   }
 
@@ -814,7 +898,7 @@ static rtm_status _rtm_prepare_path(rtm_client_t *rtm, char *path, const char *a
   size_t size = _RTM_MAX_PATH_SIZE - (end_of_path - path);
 
   int w = snprintf(end_of_path, size, "%s?appkey=%s", RTM_PATH, appkey);
-  if (w == 0 || w >= size) {
+  if (w <= 0 || (unsigned)w >= size) {
     _rtm_log_error(rtm, RTM_ERR_OOM, "Insufficient memory to build path - appkey malformed?");
     return RTM_ERR_OOM;
   }
@@ -902,7 +986,8 @@ static rtm_status _rtm_parse_endpoint(
     if(port_length >= _RTM_MAX_PORT_SIZE - 1) {
       return RTM_ERR_OOM;
     }
-    sprintf(port_out, "%.*s", port_length, port_delimiter + 1);
+    memcpy(port_out, port_delimiter + 1, port_length);
+    port_out[port_length] = 0;
     hostname_end = port_delimiter;
   } else {
     strcpy(port_out, auto_port);
@@ -917,7 +1002,8 @@ static rtm_status _rtm_parse_endpoint(
   }
   // _rtm_check_hostname_length verifies that hostname_length is smaller than
   // the hostname buffer.
-  sprintf(hostname_out, "%.*s", hostname_length, hostname_start);
+  memcpy(hostname_out, hostname_start, hostname_length);
+  hostname_out[hostname_length] = 0;
 
   return RTM_OK;
 }
@@ -954,19 +1040,21 @@ static void _rtm_ws_mask(char *buf, size_t len, uint32_t mask) {
  * use.
  */
 static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, size_t len) {
+  // FIXME Handle the case len > SIZE_MAX
+
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(io_buffer);
   ASSERT(op <= WS_OPCODE_LAST);
 
-  if (len >= _RTM_MAX_BUFFER - _RTM_WS_PRE_BUFFER) {
-      _rtm_log_error(rtm, RTM_ERR_PARAM, "Write overflow");
-      return -1;
-  }
   io_buffer += _RTM_WS_PRE_BUFFER;
 
+#ifdef RTM_LOGGING
   if (rtm->is_verbose) {
-    fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
+    #ifdef RTM_HAS_FIO
+      fprintf(stderr, "SEND: %.*s\n", (int)len, io_buffer);
+    #endif
   }
+#endif
 
   // RFC 6455 asks for this mask to come from a strong entropy source, but we
   // cannot afford to block here. Since the application is to increase
@@ -986,23 +1074,28 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_SMALL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (len | 0x80);
-    *(uint32_t *) (&io_buffer[2]) = mask;
+    // Note: memcpy() used because we cannot rely on proper alignment
+    memcpy(&io_buffer[2], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_SMALL;
 
   } else if (len < 65536) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (126 | 0x80);
-    *(uint16_t *) (&io_buffer[2]) = htobe16(len);
-    *(uint32_t *) (&io_buffer[4]) = mask;
+    uint16_t size = _rtm_htons(len);
+    // Note: memcpy() used because we cannot rely on proper alignment
+    memcpy(&io_buffer[2], &size, sizeof(size));
+    memcpy(&io_buffer[4], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
 
   } else {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_LARGE;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (127 | 0x80);
-    *(uint64_t *) (&io_buffer[2]) = htobe64(len);
-    *(uint32_t *) (&io_buffer[10]) = mask;
+    uint64_t size = _rtm_htonll(len);
+    // Note: memcpy() used because we cannot rely on proper alignment
+    memcpy(&io_buffer[2], &size, sizeof(size));
+    memcpy(&io_buffer[10], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_LARGE;
   }
   return _rtm_io_write(rtm, io_buffer, len);
@@ -1054,78 +1147,76 @@ static char *_rtm_prepare_pdu_without_body(rtm_client_t *rtm, char *buf, ssize_t
   return p;
 }
 
-enum rtm_field_type_t {
-  FIELD_JSON,
-  FIELD_ITERATOR,
-  FIELD_STRING
-};
-
-typedef struct {
-  enum rtm_field_type_t type;
-  char *name;
-  void *dst;
-} field_t;
-
-void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
+rtm_status rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
   ASSERT_NOT_NULL(pdu);
   ASSERT_NOT_NULL(message);
 
-  char *el;
-  ssize_t el_len;
   char *body = NULL;
   enum rtm_action_t action = RTM_ACTION_UNKNOWN;
   char *p = _rtm_json_find_begin_obj(message);
+  int pdu_valid = TRUE;
+  pdu->request_id = 0;
 
-  while (TRUE) {
-    p = _rtm_json_find_field_name(p, &el, &el_len);
+  while (pdu_valid && p) {
+    char *key, *value;
+    size_t key_length, value_length;
 
-    if (el_len <= 0) {
+    p = _rtm_json_find_kv_pair(p, &key, &key_length, &value, &value_length);
+    if (key_length < 2 || !value) {
+      pdu_valid = FALSE;
       break;
     }
 
-    if (!strncmp("\"action\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &el, &el_len);
-      ASSERT(el_len);
-      if (0 != el_len) {
-        // skip quotes
-        el[el_len - 1] = '\0';
-        ++el;
+    if (!strncmp("\"action\"", key, key_length)) {
+      if (value[0] != '"' || value[value_length-1] != '"' || action != RTM_ACTION_UNKNOWN) {
+        pdu_valid = FALSE;
+        break;
+      }
 
-        enum rtm_action_t o;
-        for (o = 1; o < RTM_ACTION_SENTINEL; ++o) {
-            if (!strncmp(action_table[o] , el, el_len)) {
-                action = o;
-                break;
-            }
+      enum rtm_action_t o;
+      for (o = 1; o < RTM_ACTION_SENTINEL; ++o) {
+        if (!strncmp(action_table[o], value + 1, value_length - 2)) {
+          action = o;
+          break;
         }
       }
-    } else if (!strncmp("\"id\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &el, &el_len);
+    } else if (!strncmp("\"id\"", key, key_length)) {
       char *id_end;
-      pdu->request_id = strtoul(el, &id_end, 10); // unsafe
-      if (id_end == NULL || id_end - el != el_len) {
-        pdu->request_id = 0;
+
+      pdu->request_id = strtoul(value, &id_end, 10);
+      if (id_end == NULL || id_end != value + value_length) {
+        pdu_valid = FALSE;
+        break;
       }
-    } else if (!strncmp("\"body\"", el, el_len)) {
-      p = _rtm_json_find_element(p, &el, &el_len);
-      if (0 != el_len) {
-        el[el_len] = '\0';
-        body = el;
-      }
-    } else {
-      // skip json element
-      p = _rtm_json_find_element(p, &el, &el_len);
+    } else if (!strncmp("\"body\"", key, key_length)) {
+      value[value_length] = 0;
+      body = value;
     }
   }
 
-  field_t fields[MAX_INTERESTING_FIELDS_IN_PDU] = {{0}};
+  if (!pdu_valid) {
+    return RTM_ERR_PROTOCOL;
+  }
+
+  field_t fields[MAX_INTERESTING_FIELDS_IN_PDU];
+  memset(fields, 0, sizeof(fields));
 
   pdu->action = action;
   switch (action) {
     case RTM_ACTION_SUBSCRIPTION_ERROR:
+      fields[0].type = FIELD_STRING;
+      fields[0].dst = &pdu->error;
+      fields[0].name = "error";
+
+      fields[1].type = FIELD_STRING;
+      fields[1].dst = &pdu->reason;
+      fields[1].name = "reason";
+
       fields[2].type = FIELD_STRING;
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
+      break;
+
     case RTM_ACTION_GENERAL_ERROR:
     case RTM_ACTION_AUTHENTICATE_ERROR:
     case RTM_ACTION_DELETE_ERROR:
@@ -1143,6 +1234,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->reason;
       fields[1].name = "reason";
       break;
+
     case RTM_ACTION_SUBSCRIPTION_INFO:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->info;
@@ -1156,11 +1248,13 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
       break;
+
     case RTM_ACTION_HANDSHAKE_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->nonce;
       fields[0].name = "nonce";
       break;
+
     case RTM_ACTION_PUBLISH_OK:
     case RTM_ACTION_DELETE_OK:
     case RTM_ACTION_WRITE_OK:
@@ -1168,6 +1262,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[0].dst = &pdu->position;
       fields[0].name = "position";
       break;
+
     case RTM_ACTION_SUBSCRIBE_OK:
     case RTM_ACTION_UNSUBSCRIBE_OK:
       fields[0].type = FIELD_STRING;
@@ -1178,6 +1273,7 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->subscription_id;
       fields[1].name = "subscription_id";
       break;
+
     case RTM_ACTION_READ_OK:
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
@@ -1187,8 +1283,10 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[1].dst = &pdu->message;
       fields[1].name = "message";
       break;
+
     case RTM_ACTION_AUTHENTICATE_OK:
-      return;
+      break;
+
     case RTM_ACTION_SUBSCRIPTION_DATA: // messages are parsed elsewhere
       fields[0].type = FIELD_STRING;
       fields[0].dst = &pdu->position;
@@ -1202,29 +1300,39 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       fields[2].dst = &pdu->subscription_id;
       fields[2].name = "subscription_id";
       break;
+
     case RTM_ACTION_UNKNOWN:
       pdu->body = body;
-      return;
+      return RTM_OK;
+
     case RTM_ACTION_SENTINEL:
       ASSERT_NOT_NULL(0); // never happens
   }
 
   if (!body) {
-    return;
+    return RTM_OK;
   }
 
   p = _rtm_json_find_begin_obj(body);
 
-  while (TRUE) {
-    p = _rtm_json_find_field_name(p, &el, &el_len);
+  while (p) {
+    char *key, *value;
+    size_t key_length, value_length;
 
-    if (el_len <= 0) {
+    p = _rtm_json_find_kv_pair(p, &key, &key_length, &value, &value_length);
+    if (!p && key && !*key) {
+      // Valid, but empty object.
+      break;
+    }
+    if (key_length < 2 || !value) {
+      pdu_valid = FALSE;
       break;
     }
 
-    // special case for auth/handshake/ok
-    if (0 == strncmp("data", el + 1, el_len - 2)) {
-      p = _rtm_json_find_begin_obj(p);
+    // For handshakes, the answer is a nested JSON object {data:{nonce:xxx}}.
+    // We only want the nonce.
+    if (action == RTM_ACTION_HANDSHAKE_OK && !strncmp(key, "\"data\"", key_length)) {
+      p = _rtm_json_find_begin_obj(value);
       continue;
     }
 
@@ -1235,64 +1343,66 @@ void rtm_parse_pdu(char *message, rtm_pdu_t *pdu) {
       if (!field.name) {
         break;
       }
+
       // skip quotes when compare field name
-      if (0 == strncmp(field.name, el + 1, el_len - 2)) {
-        p = _rtm_json_find_element(p, &el, &el_len);
-        if (el_len <= 0) {
-          continue;
-        }
+      if (!strncmp(field.name, key + 1, key_length - 2)) {
         switch (field.type) {
           case FIELD_JSON:
-            el[el_len] = 0;
-            *((char **)field.dst) = el;
+            value[value_length] = 0;
+            *((char **)field.dst) = value;
             break;
           case FIELD_STRING:
-            el[el_len - 1] = 0;
-            *((char **)field.dst) = el + 1;
+            value[value_length-1] = 0;
+            *((char **)field.dst) = value + 1;
             break;
           case FIELD_ITERATOR:
-            el[el_len - 1] = 0;
-            ASSERT(*el == '[');
-            // TODO: skip whitespace
-            ((rtm_list_iterator_t *)field.dst)->position = el + 1;
+            value[value_length] = 0;
+            ((rtm_list_iterator_t *)field.dst)->position = value + 1;
             break;
         }
       }
     }
   }
+
+  if (!pdu_valid) {
+    return RTM_ERR_PROTOCOL;
+  }
+
+  return RTM_OK;
 }
 
-// FIXME: extra element of array comes out as '}'
 char *rtm_iterate(rtm_list_iterator_t const *iterator) {
   rtm_list_iterator_t *iter = (rtm_list_iterator_t *)iterator;
   if (!iter || !iter->position) {
     return NULL;
   }
 
-  char *result = iter->position;
+  char *this_element_cursor;
+  size_t this_element_length;
 
-  char *el;
-  ssize_t el_len;
+  char *next_element = _rtm_json_find_element(iter->position, &this_element_cursor, &this_element_length);
 
-  _rtm_json_find_element(iter->position, &el, &el_len);
-
-  if (el_len <= 0) {
+  if (next_element == NULL) {
     iter->position = NULL;
     return NULL;
-  } else {
-    el[el_len] = 0;
-    if (el[el_len] == ']') {
-      iter->position = NULL;
-    } else {
-      // TODO: skip whitespace
-      iter->position = el + el_len + 1;
-    }
+  }
+  else if (*next_element == ',') {
+    iter->position = next_element + 1;
+  }
+  else if(!*next_element || *next_element == ']') {
+    iter->position = NULL;
+  }
+  else {
+    iter->position = NULL;
+    return NULL;
   }
 
-  return result;
+  this_element_cursor[this_element_length] = 0;
+  return this_element_cursor;
 }
 
 void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t message_len) {
+  (void)message_len;
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
   ASSERT(message_len > 0);
@@ -1303,12 +1413,23 @@ void rtm_default_text_frame_handler(rtm_client_t *rtm, char *message, size_t mes
   }
 
   if (rtm->handle_pdu) {
-      rtm_pdu_t pdu = {0};
-      rtm_parse_pdu(message, &pdu);
+      rtm_pdu_t pdu;
+      memset(&pdu, 0, sizeof(rtm_pdu_t));
+      rtm_status rc = rtm_parse_pdu(message, &pdu);
+      if(rc != RTM_OK) {
+        _rtm_log_error(rtm, rc, "Invalid PDU received");
+        rtm_close(rtm);
+        return;
+      }
 
       rtm->handle_pdu(rtm, &pdu);
   }
   rtm->is_used = NO;
+}
+
+void rtm_set_allocator(rtm_client_t *rtm, rtm_malloc_fn_t *malloc_fn, rtm_free_fn_t *free_fn) {
+  rtm->malloc_fn = malloc_fn;
+  rtm->free_fn = free_fn;
 }
 
 void rtm_set_error_logger(rtm_client_t *rtm, rtm_error_logger_t *error_logger) {
@@ -1319,7 +1440,7 @@ void rtm_set_raw_pdu_handler(rtm_client_t *rtm, rtm_raw_pdu_handler_t *handler) 
     rtm->handle_raw_pdu = handler;
 }
 
-void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
+void _rtm_log_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, ...) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
   if (!rtm->error_logger)
@@ -1330,7 +1451,7 @@ void _rtm_log_error(rtm_client_t *rtm, rtm_status error, const char *message, ..
   va_end(vl);
 }
 
-void _rtm_logv_error(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
+void _rtm_logv_error_impl(rtm_client_t *rtm, rtm_status error, const char *message, va_list args) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(message);
 
@@ -1367,7 +1488,8 @@ rtm_status _rtm_check_interval_and_send_ws_ping(rtm_client_t *rtm) {
   return rc;
 }
 
-void _rtm_log_message(rtm_client_t *rtm, rtm_status status, const char *message) {
+void _rtm_log_message_impl(rtm_client_t *rtm, rtm_status status, const char *message) {
+  (void)status;
   ASSERT_NOT_NULL(message);
   if (rtm->error_logger)
     rtm->error_logger(message);
@@ -1407,52 +1529,77 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
 
   rtm_status return_code = RTM_OK;
 
+  // Send out a Websocket Ping if the last one was too long ago
   return_code = _rtm_check_interval_and_send_ws_ping(rtm);
   if (RTM_OK != return_code) {
     return return_code;
   }
 
-  // will need space for a header if we want to respond to a ping
-  // for instance, the header size will differ...
-  char *const input_buffer = _RTM_BUFFER_TO_IO(rtm->input_buffer);
-
   // Fill the buffer with data available in the socket
-  ssize_t to_read = _RTM_MAX_BUFFER - rtm->input_length;
-  if (to_read > 0) {
-    ssize_t bytes_read = _rtm_io_read(rtm, input_buffer + rtm->input_length, (size_t) to_read, NO);
-    if (bytes_read < 0)
-      return RTM_ERR_READ;
+  return_code = _rtm_fill_input_buffer(rtm);
+  if (RTM_OK != return_code) {
+    return return_code;
+  }
 
-    if (bytes_read == 0) {
-      // No data yet
+  // Handle the actual input
+  return_code = _rtm_handle_input(rtm);
+  if (return_code != RTM_OK && return_code != RTM_WOULD_BLOCK) {
+    rtm_close(rtm);
+  }
+  return return_code;
+}
+
+rtm_status _rtm_handle_input(rtm_client_t *rtm) {
+  rtm_status return_code;
+
+  char *base_input_buffer;
+  size_t base_input_buffer_size;
+  if (rtm->dynamic_input_buffer) {
+    // Dynamically allocated buffer for large data bursts
+    base_input_buffer = rtm->dynamic_input_buffer;
+    base_input_buffer_size = rtm->dynamic_input_buffer_size;
+  }
+  else {
+    // Base buffer used normally
+    base_input_buffer = rtm->input_buffer;
+    base_input_buffer_size = rtm->input_buffer_size;
+  }
+  char *ws_frame = base_input_buffer + rtm->fragmented_message_length;
+
+  if (rtm->skip_next_n_input_bytes > 0) {
+    // We are in the middle of processing a frame that is too large to handle
+    // and the user decided to discard.
+    if (rtm->skip_next_n_input_bytes > rtm->input_length) {
+      rtm->skip_next_n_input_bytes -= rtm->input_length;
+      rtm->input_length = 0;
       return RTM_WOULD_BLOCK;
     }
-
-    rtm->input_length += bytes_read;
+    else {
+      ws_frame += rtm->skip_next_n_input_bytes;
+      rtm->input_length -= rtm->skip_next_n_input_bytes;
+      rtm->skip_next_n_input_bytes = 0;
+    }
   }
 
   // At this point we may have any number of full frames plus maybe one partial frame
 
   // Decode the WS frame.
-  char *ws_frame = input_buffer;
-  ssize_t input_length = rtm->input_length;
 
   // RTM_OK is returned if any data frame presents and no protocol errors
   // RTM_WOULD_BLOCK is returned if there are no data frames and no protocol errors
   // RTM_ERR_PROTCOL is returned if parser detects protocol error
   // RTM_ERR_CLOSE is returned if socket is closed or CLOSE frame is received
   return_code = RTM_WOULD_BLOCK;
-  while (input_length > 2) { // must be at least 4 bytes to read a ws frame
-
+  while (rtm->input_length > 2) { // must be at least 4 bytes to read a ws frame
     // Decode frame header
     unsigned frame_fin = (0 != (ws_frame[0] & 0x80));
     unsigned frame_opcode = (unsigned) (ws_frame[0] & 0x0f);
     size_t frame_payload_length = (size_t) (ws_frame[1] & 0x7f);
     unsigned frame_masked = (0 != (ws_frame[1] & 0x80));
 
-    if (frame_masked) { /* no mask from server */
-      return_code = RTM_ERR_PROTOCOL;
-      goto ws_error;
+    if (frame_masked) {
+      // no mask from server
+      return RTM_ERR_PROTOCOL;
     }
 
     size_t header_length = 0; // two bytes already consumed.
@@ -1462,43 +1609,127 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
       payload_length = frame_payload_length;
       header_length = _RTM_INBOUND_HEADER_SIZE_SMALL;
     } else if (frame_payload_length == 126) { // 126 -> 16 bit size
-      if (input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL)
-        return RTM_WOULD_BLOCK;
-      payload_length = be16toh(*(uint16_t *) (&ws_frame[2]));
+      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL) {
+        return_code = RTM_WOULD_BLOCK;
+        break;
+      }
+      // Note: memcpy() used because we cannot rely on proper alignment
+      uint16_t payload_encoded;
+      memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
+      payload_length = _rtm_ntohs(payload_encoded);
       header_length = _RTM_INBOUND_HEADER_SIZE_NORMAL;
-
     } else { // 127 -> 64 bit size
-      if (input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
-        return RTM_WOULD_BLOCK;
-      payload_length = (size_t)be64toh(*(uint64_t *) (&ws_frame[2]));
+      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE) {
+        return_code = RTM_WOULD_BLOCK;
+        break;
+      }
+      uint64_t payload_encoded;
+      // Note: memcpy() used because we cannot rely on proper alignment
+      memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
+      payload_encoded = _rtm_ntohll(payload_encoded);
+      if(payload_encoded > SIZE_MAX) {
+        // FIXME Handle this case gracefully
+        _rtm_log_error(rtm, RTM_ERR_OOM, "Received message larger than this system can handle");
+        rtm_close(rtm);
+        return RTM_ERR_OOM;
+      }
+      payload_length = (size_t)payload_encoded;
       header_length = _RTM_INBOUND_HEADER_SIZE_LARGE;
     }
 
-    if (payload_length >= RTM_MAX_MESSAGE_SIZE) {
-      // if the frame is bigger than the internal buffer, it will never be decoded.
-      _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "message size beyond RTM limit – size=%d", payload_length);
-      return_code = RTM_ERR_PROTOCOL;
-      // FIXME pberndt: skip this many bytes, do not drop connection
-      goto ws_error;
-    }
+    // FIXME pberndt Check for payload_length oferflow
 
-    if (input_length < header_length + payload_length) {  // wait for more data to process the payload
+    size_t buffer_space_used = rtm->fragmented_message_length + rtm->input_length;
+    size_t buffer_space_left = (base_input_buffer_size > buffer_space_used) ? (base_input_buffer_size - buffer_space_used) : 0;
+    size_t payload_already_buffered = rtm->input_length > header_length ? rtm->input_length - header_length : 0;
+    size_t payload_missing = (payload_length > payload_already_buffered) ? (payload_length - payload_already_buffered) : 0;
+
+    if (payload_missing > buffer_space_left) {
+      // Insufficient memory to ever read this frame.
+
+      if (rtm->skip_current_fragmented_message && frame_opcode == WS_CONTINUATION) {
+        // This is a huge packet within a series of huge packets that we want
+        // to skip. If it has frame_fin set, skip it, but mark the series as
+        // ended.
+        rtm->skip_current_fragmented_message = !frame_fin;
+      }
+      else if (rtm->skip_current_fragmented_message && !frame_fin) {
+        // This is the start of a fragmented packet, but we are already in the
+        // process of skipping one.
+        _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence start of fragmented frame");
+        return RTM_ERR_PROTOCOL;
+      }
+
+      size_t amount_to_allocate = header_length + payload_length + 1;
+      if(!frame_fin) {
+        // Fragmented frame. Allocate even more space.
+        amount_to_allocate *= 2;
+      }
+      amount_to_allocate += rtm->fragmented_message_length;
+
+      char *memory = rtm->malloc_fn(rtm, amount_to_allocate);
+      if (!memory) {
+        // The user decided against allocating more memory.
+        if (rtm->is_closed) {
+          return RTM_ERR_CLOSED;
+        }
+
+        // If the user did not close the connection in the malloc() function
+        // and malloc failed, skip the packet or series of packets.
+
+        if (!frame_fin) {
+          // This packet is part of a series of fragmented packets. Discard them
+          // all.
+          rtm->skip_current_fragmented_message = 1;
+          rtm->fragmented_message_length = 0;
+        }
+
+        rtm->skip_next_n_input_bytes = payload_length - (rtm->input_length - header_length);
+        rtm->input_length = 0;
+      }
+      else {
+        // The user decided to allocate some memory for us.
+
+        // Move the partial frame and any fragmented frames to the newly
+        // allocated memory chunk
+        if(rtm->fragmented_message_length) {
+          memcpy(memory, base_input_buffer, rtm->fragmented_message_length);
+          memcpy(memory + rtm->fragmented_message_length, ws_frame, rtm->input_length);
+        }
+        else {
+          memcpy(memory, ws_frame, rtm->input_length);
+        }
+
+        if(rtm->dynamic_input_buffer) {
+          rtm->free_fn(rtm, rtm->dynamic_input_buffer);
+        }
+
+        rtm->dynamic_input_buffer = memory;
+        rtm->dynamic_input_buffer_size = amount_to_allocate;
+        base_input_buffer = memory;
+        base_input_buffer_size = amount_to_allocate;
+        ws_frame = memory + rtm->fragmented_message_length;
+      }
+
       return_code = RTM_WOULD_BLOCK;
       break;
     }
 
-    input_length -= header_length;
+    if (rtm->input_length < header_length + payload_length) {  // wait for more data to process the payload
+      return_code = RTM_WOULD_BLOCK;
+      break;
+    }
+
+    rtm->input_length -= header_length;
     ws_frame += header_length;
 
     // PING/PONG/CLOSE
     if (frame_opcode >= WS_CONTROL_COMMANDS_START && frame_opcode <= WS_CONTROL_COMMANDS_END) {
-
       if (!frame_fin || payload_length > _RTM_MAX_CONTROL_FRAME_SIZE) {
         // control frames must be single fragment, 125 bytes or less
         _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "malformed control frame received – opcode=%d size=%d",
-                                    frame_opcode, frame_payload_length);
-        return_code = RTM_ERR_PROTOCOL;
-        goto ws_error;
+                                    frame_opcode, payload_length);
+        return RTM_ERR_PROTOCOL;
       }
 
       if (WS_CLOSE == frame_opcode) {
@@ -1506,31 +1737,80 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
         return RTM_ERR_CLOSED;
       } else if (WS_PING == frame_opcode || WS_PONG == frame_opcode) {
         // FIXME pberndt: Reply to PING
-        const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
         if (rtm->is_verbose) {
+          const char* frame_type = (frame_opcode == WS_PONG) ? "pong" : "ping";
           fprintf(stderr, "RECV: %s\n", frame_type);
         }
+#endif
       }
-    } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode) { /* data frame */
+    } else if (WS_TEXT == frame_opcode || WS_BINARY == frame_opcode || WS_CONTINUATION == frame_opcode) { /* data frame */
+      if (frame_opcode == WS_CONTINUATION && !rtm->fragmented_message_length && !rtm->skip_current_fragmented_message) {
+        _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence continuation frame");
+        return RTM_ERR_PROTOCOL;
+      }
+
       if (!frame_fin) {
-        // TODO: add split frame support?
-        // FIXME pberndt: Or least simply skip fragmented frames instead of failing hard
-        _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unhandled split frame.");
-        return_code = RTM_ERR_PROTOCOL;
-        goto ws_error;
+        // Fragmented frame
+        if (rtm->skip_current_fragmented_message) {
+          // We discarded parts of this packet sequence. So discard this one,
+          // too.
+        }
+        else {
+          if (frame_opcode != WS_CONTINUATION && rtm->fragmented_message_length) {
+            _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received out of sequence start of fragmented frame");
+            return RTM_ERR_PROTOCOL;
+          }
+
+          // Store body data away (essentially: remove WebSocket header)
+          // We always have enough memory to do that, because the frame is in the
+          // same buffer as are the fragments.
+          memmove(base_input_buffer + rtm->fragmented_message_length, ws_frame, payload_length);
+          rtm->fragmented_message_length += payload_length;
+        }
       }
+      else if (frame_opcode == WS_CONTINUATION) {
+        // Last in a series of fragmented frames.
 
-      return_code = RTM_OK;
+        if (rtm->skip_current_fragmented_message) {
+          // We discarded parts of this packet sequence. So discard this one,
+          // too. Then mark the sequence as ended.
+          rtm->skip_current_fragmented_message = 0;
+        }
+        else {
+          // Reassemble the message, then invoke handler.
+          memmove(base_input_buffer + rtm->fragmented_message_length, ws_frame, payload_length);
+          rtm->fragmented_message_length += payload_length;
+          base_input_buffer[rtm->fragmented_message_length] = 0;
 
-      char save = ws_frame[payload_length];
-      ws_frame[payload_length] = 0; // be nice, null terminate
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
+          if (rtm->is_verbose) {
+            fprintf(stderr, "RECV: %.*s\n", (int)rtm->fragmented_message_length, base_input_buffer);
+          }
+#endif
 
-      if (rtm->is_verbose) {
-        fprintf(stderr, "RECV: %.*s\n", (int)payload_length, ws_frame);
+          rtm_text_frame_handler(rtm, base_input_buffer, rtm->fragmented_message_length);
+          return_code = RTM_OK;
+
+          rtm->fragmented_message_length = 0;
+        }
       }
+      else if (frame_opcode == WS_TEXT || frame_opcode == WS_BINARY) {
+        // Normal, non-fragmented frame.
+        return_code = RTM_OK;
 
-      rtm_text_frame_handler(rtm, ws_frame, payload_length);
-      ws_frame[payload_length] = save;
+        char save = ws_frame[payload_length];
+        ws_frame[payload_length] = 0; // be nice, null terminate
+
+#if defined(RTM_LOGGING) && defined(RTM_HAS_FIO)
+        if (rtm->is_verbose) {
+          fprintf(stderr, "RECV: %.*s\n", (int)payload_length, ws_frame);
+        }
+#endif
+
+        rtm_text_frame_handler(rtm, ws_frame, payload_length);
+        ws_frame[payload_length] = save;
+      }
 
       if (rtm->is_closed) {
         _rtm_io_close(rtm);
@@ -1539,11 +1819,26 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else {
       // unhandled opcode
       _rtm_log_error(rtm, RTM_ERR_PROTOCOL, "received unknown frame with opcode=%d", frame_opcode);
-      return_code = RTM_ERR_PROTOCOL;
-      goto ws_error;
+      return RTM_ERR_PROTOCOL;
     }
-    input_length -= payload_length;
+    rtm->input_length -= payload_length;
     ws_frame += payload_length;
+  }
+
+  /*
+   * Discard the huge frame buffer if it isn't needed anymore
+   */
+  if (rtm->dynamic_input_buffer && !rtm->fragmented_message_length && return_code == RTM_OK && rtm->input_length < rtm->input_buffer_size) {
+    if (rtm->input_length > 0) {
+      memcpy(rtm->input_buffer, ws_frame, rtm->input_length);
+    }
+
+    rtm->free_fn(rtm, rtm->dynamic_input_buffer);
+    rtm->dynamic_input_buffer = NULL;
+    rtm->dynamic_input_buffer_size = 0;
+
+    base_input_buffer = rtm->input_buffer;
+    ws_frame = base_input_buffer;
   }
 
   /*
@@ -1551,17 +1846,48 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
    * it will always be at the beginning of the buffer next time around, so we are guaranteed to have
    * memory space for a full frame
    */
-  rtm->input_length -= ws_frame - input_buffer;
-  if (rtm->input_length > 0) {
-    memmove(input_buffer, ws_frame, rtm->input_length);
+  char *new_read_buffer = base_input_buffer + rtm->fragmented_message_length;
+  if (rtm->input_length > 0 && ws_frame != new_read_buffer) {
+    memmove(new_read_buffer, ws_frame, rtm->input_length);
   }
   return return_code;
-
-  ws_error:
-  // abort?
-  _rtm_io_close(rtm);
-  return return_code;
 }
+
+rtm_status _rtm_fill_input_buffer(rtm_client_t *rtm) {
+  char *base_input_buffer;
+  size_t base_input_buffer_size;
+  if (rtm->dynamic_input_buffer) {
+    // Dynamically allocated buffer for large data bursts
+    base_input_buffer = rtm->dynamic_input_buffer;
+    base_input_buffer_size = rtm->dynamic_input_buffer_size;
+  }
+  else {
+    // Base buffer used normally
+    base_input_buffer = rtm->input_buffer;
+    base_input_buffer_size = rtm->input_buffer_size;
+  }
+
+  char *read_buffer = base_input_buffer + rtm->fragmented_message_length;
+  ssize_t to_read = base_input_buffer_size - rtm->input_length - rtm->fragmented_message_length;
+
+  if (to_read > 0) {
+    ssize_t bytes_read = _rtm_io_read(rtm, read_buffer + rtm->input_length, (size_t) to_read, NO);
+
+    if (bytes_read <= 0) {
+      if (errno == EAGAIN) {
+        // No data yet
+        return RTM_WOULD_BLOCK;
+      }
+
+      return RTM_ERR_READ;
+    }
+
+    rtm->input_length += bytes_read;
+  }
+
+  return RTM_OK;
+}
+
 
 #if defined(RTM_TEST_ENV)
 rtm_status _rtm_test_parse_endpoint(
