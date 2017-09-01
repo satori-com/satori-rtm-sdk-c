@@ -109,7 +109,13 @@ You've now installed the SatoriRtmSdkWrapper framework. Refer to *Framework API 
 
 Create a local repository by cloning the satori-rtm-sdk-c to your chosen location. Then,
 
-#### Step 1: Build framework
+#### Step 1: Build locally
+
+Follow the normal installation procedure to build the desktop / server variant
+of the SDK. This will create a configuration header in the build directory
+which is used during compilation of the iOS framework.
+
+#### Step 2: Build framework
 
 There are two options to build the RTM framework for iOS:
 
@@ -128,7 +134,7 @@ Select SatoriRtmSdkWrapper-Universal target and build.
 
 The SatoriRtmSdkWrapper.framework will be built under ios-wrapper/build directory.
 
-#### Step 2: Add framework to your project
+#### Step 3: Add framework to your project
 
 Once you build the framework, open your app's Xcode project and drag-and-drop the framework under "Embedded Binaries" section under the app's target. Choose "Copy items if needed" and "Create groups" in the dialog box.
 
