@@ -67,15 +67,25 @@ As an external project
 
 If your project is also built using CMake, you can take advantage of its
 ExternalProject feature. This way downloading and building the SDK is automated
-by CMake itself. See tutorial/simple/CMakeLists.txt for an example.
+by CMake itself.
+
+ESP8266/Arduino support
+-----------------------
+
+The SDK can generate a library for use with Arduino on ESP8266 platforms. Pass "-DARDUINO-SDK=ON" to
+CMake to generate a ZIP file that can be imported into Arduino. You can download a prebuilt library
+from the releases page on Github. Import it into Arduino using **Sketch** → **Include Library** →
+**Add .ZIP library**.
+
 
 TLS support
 -----------
 
-The SDK can take advantage of either OpenSSL, GNUTLS or Apple SSL API for supporting secure (wss://) connections.
+The SDK requires either OpenSSL, GNUTLS or Apple SSL.
 Pass one of "-DUSE_OPENSSL=ON", "-DUSE_GNUTLS=ON" or "-DUSE_APPLE_SSL=ON" respectively to CMake.
 
-If no flags are passed, CMake enables Apple SSL for Mac or OpenSSL for others.
+If no flags are passed, CMake enables Apple SSL for Mac, and for others uses
+OpenSSL or GnuTLS if OpenSSL is not installed.
 
 ## iOS wrapper
 
