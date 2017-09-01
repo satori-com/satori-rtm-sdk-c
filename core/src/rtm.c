@@ -701,7 +701,6 @@ void rtm_default_pdu_handler(rtm_client_t *rtm, const rtm_pdu_t *pdu) {
 }
 
 const char *rtm_error_string(rtm_status status) {
-#ifdef RTM_LOGGING
   switch (status) {
     case RTM_OK:
       return "RTM_OK: No error.";
@@ -730,9 +729,6 @@ const char *rtm_error_string(rtm_status status) {
     default:
       return "RTM_UNKNOWN: Unknown status of operation.";
   }
-#else
-  return "";
-#endif
 }
 
 // Internal code
