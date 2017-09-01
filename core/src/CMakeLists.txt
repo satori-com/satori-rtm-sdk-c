@@ -87,48 +87,6 @@ install(TARGETS rtm-core-sdk
 if(ARDUINO_SDK)
   set(ARDUINO_DIR ${CMAKE_CURRENT_BINARY_DIR}/arduino)
 
-  # For certificate validation in recent versions of the ESP8266/Arduino SDK.
-  # The following extracts the last certificate from the certificate chain at the
-  # endpoint and prints it as a c string.  Works with any posix compatible sed.
-  set(SED_EXTRACT_CERT_SCRIPT_FILE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/extract.sed")
-  set(SED_EXTRACT_CERT_SCRIPT "bo
-  : o
-    # Outer scope: Not within a certificate
-    $ {
-      # At end of script, print the hold buffer
-      x
-      p
-    }
-    /-BEGIN CERTIFICATE-/{
-      # When a certificate starts, put the first line into hold buffer and branch
-      # to inner, wrapping the input as a C string.
-      s/.*/\"&\\\\n\"/
-      h
-      b i
-    }
-    d
-  : i
-    # In a certificate:
-    n
-    s/.*/\"&\\\\n\"/
-    # Append line to hold space
-    H
-    /-END CERTIFICATE-/{
-      # At end of certificate, branch back to outer
-      n
-      b o
-    }
-    b i")
-  file(WRITE "${SED_EXTRACT_CERT_SCRIPT_FILE}" "${SED_EXTRACT_CERT_SCRIPT}")
-  set(TEST_ENDPOINT zkng8p1v.api.satori.com)
-  add_custom_command(
-    OUTPUT ${ARDUINO_DIR}/ssl_cert.c
-    COMMAND echo 'const char *_rtm_ssl_cert = ' > ${ARDUINO_DIR}/ssl_cert.c
-    COMMAND openssl s_client -showcerts -connect ${TEST_ENDPOINT}:443 </dev/null 2>&1 | sed -n -f "${SED_EXTRACT_CERT_SCRIPT_FILE}" >> ${ARDUINO_DIR}/ssl_cert.c
-    COMMAND echo '\\;' >> ${ARDUINO_DIR}/ssl_cert.c
-    COMMAND grep -q "BEGIN CERTIFICATE" ${ARDUINO_DIR}/ssl_cert.c
-  )
-
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../library.properties.in ${ARDUINO_DIR}/library.properties @ONLY)
 
   function(ArduinoConfig)
@@ -138,7 +96,7 @@ if(ARDUINO_SDK)
   endfunction()
   ArduinoConfig()
 
-  set(ARDUINO_FILES ${ARDUINO_DIR}/rtm_config.h ${ARDUINO_DIR}/library.properties ${ARDUINO_DIR}/ssl_cert.c ${CMAKE_CURRENT_SOURCE_DIR}/io/rtm_esp_arduino.cpp ${CMAKE_CURRENT_SOURCE_DIR}/rtm_hmac_md5.c ${BASE_SOURCES} ${BASE_HEADERS})
+  set(ARDUINO_FILES ${ARDUINO_DIR}/rtm_config.h ${ARDUINO_DIR}/library.properties ${CMAKE_CURRENT_SOURCE_DIR}/rtm_ssl_cert.c ${CMAKE_CURRENT_SOURCE_DIR}/io/rtm_esp_arduino.cpp ${CMAKE_CURRENT_SOURCE_DIR}/rtm_hmac_md5.c ${BASE_SOURCES} ${BASE_HEADERS})
   set(ARDUINO_TARGET ${CMAKE_BINARY_DIR}/satori_esp_arduino_library.zip)
   add_custom_command(
     OUTPUT ${ARDUINO_TARGET}
