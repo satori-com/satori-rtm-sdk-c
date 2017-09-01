@@ -1609,16 +1609,20 @@ rtm_status _rtm_handle_input(rtm_client_t *rtm) {
       payload_length = frame_payload_length;
       header_length = _RTM_INBOUND_HEADER_SIZE_SMALL;
     } else if (frame_payload_length == 126) { // 126 -> 16 bit size
-      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL)
-        return RTM_WOULD_BLOCK;
+      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL) {
+        return_code = RTM_WOULD_BLOCK;
+        break;
+      }
       // Note: memcpy() used because we cannot rely on proper alignment
       uint16_t payload_encoded;
       memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
       payload_length = _rtm_ntohs(payload_encoded);
       header_length = _RTM_INBOUND_HEADER_SIZE_NORMAL;
     } else { // 127 -> 64 bit size
-      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
-        return RTM_WOULD_BLOCK;
+      if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE) {
+        return_code = RTM_WOULD_BLOCK;
+        break;
+      }
       uint64_t payload_encoded;
       // Note: memcpy() used because we cannot rely on proper alignment
       memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
