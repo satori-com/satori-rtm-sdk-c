@@ -205,41 +205,23 @@ enum WebSocketOpCode {
 };
 
 // Byte order
-#ifdef _RTM_ACTIVE_ENDIAN_TEST
-  uint16_t _rtm_ntohs(uint16_t in);
-  uint64_t _rtm_ntohll(uint64_t in);
-#elif (defined(_WIN16) || defined(_WIN32) || defined(_WIN64))
-  #if !defined(__WINDOWS__)
-    #define __WINDOWS__
-  #endif
-  #include <Winsock2.h>
-  #if BYTE_ORDER == LITTLE_ENDIAN
-    #define _rtm_ntohs ntohs
-    #define _rtm_ntohll ntohll
-  #else
-    #define _rtm_ntohs(x) x
-    #define _rtm_ntohll(x) x
-  #endif
-#elif defined(__linux__) || defined(__CYGWIN__)
-  #include <endian.h>
+uint16_t _rtm_ntohs(uint16_t in);
+#undef ntohs
+#define ntohs _rtm_ntohs
+#undef htons
+#define htons _rtm_ntohs
 
-  #define _rtm_ntohs be16toh
-  #define _rtm_ntohll be64toh
-#elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
-  #include <sys/endian.h>
+uint32_t _rtm_ntohl(uint32_t in);
+#undef ntohl
+#define ntohl _rtm_ntohl
+#undef htonl
+#define htonl _rtm_ntohl
 
-  #define _rtm_ntohs be16toh
-  #define _rtm_ntohll be64toh
-#elif defined(__APPLE__)
-  #include <libkern/OSByteOrder.h>
-
-  #define _rtm_ntohs OSSwapBigToHostInt16
-  #define _rtm_ntohll OSSwapBigToHostInt64
-#else
-  #define _RTM_ACTIVE_ENDIAN_TEST
-  uint16_t _rtm_ntohs(uint16_t in);
-  uint64_t _rtm_ntohll(uint64_t in);
-#endif
+uint64_t _rtm_ntohll(uint64_t in);
+#undef ntohll
+#define ntohll _rtm_ntohll
+#undef htonll
+#define htonll _rtm_ntohll
 
 #ifdef __cplusplus
 }

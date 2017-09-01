@@ -1017,14 +1017,16 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_SMALL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (len | 0x80);
-    *(uint32_t *) (&io_buffer[2]) = mask;
+    // Note: memcpy() used because we cannot rely on proper alignment
+    memcpy(&io_buffer[2], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_SMALL;
 
   } else if (len < 65536) {
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (126 | 0x80);
-    uint16_t size = _rtm_ntohs(len);
+    uint16_t size = htons(len);
+    // Note: memcpy() used because we cannot rely on proper alignment
     memcpy(&io_buffer[2], &size, sizeof(size));
     memcpy(&io_buffer[4], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_NORMAL;
@@ -1033,7 +1035,8 @@ static ssize_t _rtm_ws_write(rtm_client_t *rtm, uint8_t op, char *io_buffer, siz
     io_buffer -= _RTM_OUTBOUND_HEADER_SIZE_LARGE;
     io_buffer[0] = (char) (0x80 | op);
     io_buffer[1] = (char) (127 | 0x80);
-    uint64_t size = _rtm_ntohll(len);
+    uint64_t size = htonll(len);
+    // Note: memcpy() used because we cannot rely on proper alignment
     memcpy(&io_buffer[2], &size, sizeof(size));
     memcpy(&io_buffer[10], &mask, sizeof(mask));
     len += _RTM_OUTBOUND_HEADER_SIZE_LARGE;
@@ -1529,16 +1532,18 @@ rtm_status rtm_poll(rtm_client_t *rtm) {
     } else if (frame_payload_length == 126) { // 126 -> 16 bit size
       if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_NORMAL)
         return RTM_WOULD_BLOCK;
+      // Note: memcpy() used because we cannot rely on proper alignment
       uint16_t payload_encoded;
       memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
-      payload_length = _rtm_ntohs(payload_encoded);
+      payload_length = ntohs(payload_encoded);
       header_length = _RTM_INBOUND_HEADER_SIZE_NORMAL;
     } else { // 127 -> 64 bit size
       if (rtm->input_length < _RTM_INBOUND_HEADER_SIZE_LARGE)
         return RTM_WOULD_BLOCK;
       uint64_t payload_encoded;
+      // Note: memcpy() used because we cannot rely on proper alignment
       memcpy(&payload_encoded, &ws_frame[2], sizeof(payload_encoded));
-      payload_encoded = _rtm_ntohll(payload_encoded);
+      payload_encoded = ntohll(payload_encoded);
       if(payload_encoded > SIZE_MAX) {
         // FIXME Handle this case gracefully
         _rtm_log_error(rtm, RTM_ERR_OOM, "Received message larger than this system can handle");
