@@ -109,10 +109,7 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
     return rc;
 
   rc = gtls_handshake(rtm);
-  if (RTM_OK != rc)
-    return rc;
-
-  return gtls_handshake(rtm);
+  return rc;
 
 }
 
