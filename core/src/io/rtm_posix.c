@@ -13,7 +13,7 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(address);
 
-  rtm->fd = -1;
+  rtm->priv.fd = -1;
 
   int fd = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
   if (fd < 0) {
@@ -32,13 +32,13 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
     if (result < 0) {
       _rtm_log_error(rtm, RTM_ERR_CONNECT, "setting SO_NOSIGPIPE returned %d", result);
     } else {
-      if (rtm->is_verbose) {
+      if (rtm->priv.is_verbose) {
         _rtm_log_message(rtm, RTM_OK, "Set SO_NOSIGPIPE successfully");
       }
     }
   }
 #else
-  if (rtm->is_verbose) {
+  if (rtm->priv.is_verbose) {
     _rtm_log_message(rtm, RTM_OK, "SO_NOSIGPIPE is not defined for this platform");
   }
 #endif
@@ -46,7 +46,7 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
   try_again:
 
   if (connect(fd, address->ai_addr, address->ai_addrlen) != -1) {
-    rtm->fd = fd;
+    rtm->priv.fd = fd;
     return RTM_OK;
   }
 
@@ -62,11 +62,11 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
       pfd.revents = 0;  // get ready to receive the events
 
       time_t dt = (time(NULL) - start_time);
-      if (dt > rtm->connect_timeout) {
+      if (dt > rtm->priv.connect_timeout) {
         break;
       }
 
-      poll_result = poll(&pfd, 1, (int) (rtm->connect_timeout - dt) * 1000);
+      poll_result = poll(&pfd, 1, (int) (rtm->priv.connect_timeout - dt) * 1000);
       if (poll_result < 0 && (EAGAIN == errno || EINTR == errno)) {
         poll_result = 0;
       } else if (poll_result == 1) {
@@ -79,7 +79,7 @@ static rtm_status connect_to_address(rtm_client_t *rtm, const struct addrinfo *a
 
     if (poll_result == 1) {
       // connection established!
-      rtm->fd = fd;
+      rtm->priv.fd = fd;
       return RTM_OK;
     } else {
       close(fd);
@@ -101,7 +101,7 @@ rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostn
   ASSERT_NOT_NULL(hostname);
   ASSERT_NOT_NULL(port);
 
-  rtm->fd = -1;
+  rtm->priv.fd = -1;
 
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
@@ -132,12 +132,12 @@ rtm_status _rtm_io_connect_to_host_and_port(rtm_client_t *rtm, const char *hostn
 
 rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writable, int timeout) {
   struct pollfd pfd;
-  pfd.fd = rtm->fd;
+  pfd.fd = rtm->priv.fd;
   pfd.events = (short) (((writable != 0) ? POLLOUT : 0) | ((readable != 0) ? POLLIN : 0));
   pfd.revents = 0;
 
   int poll_result, effective_timeout;
-  int const ping_interval_ms = rtm->ws_ping_interval * 1000;
+  int const ping_interval_ms = rtm->priv.ws_ping_interval * 1000;
   unsigned ping_repeat;
   do {
     ping_repeat = FALSE;
@@ -175,7 +175,7 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
   if (output_size == 0)
     return 0;
 
-  if (rtm->is_secure) {
+  if (rtm->priv.is_secure) {
     return _rtm_io_write_tls(rtm, output_buffer, output_size);
   }
 
@@ -183,7 +183,7 @@ ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t outpu
   ssize_t written = 0;
 
   while (output_size > 0) {
-    write_result = write(rtm->fd, (char*) output_buffer + written, output_size);
+    write_result = write(rtm->priv.fd, (char*) output_buffer + written, output_size);
     if (write_result >= 0) {
       written += write_result;
       output_size -= write_result;
@@ -206,13 +206,13 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
   if (input_size == 0)
     return 0;
 
-  if (rtm->is_secure) {
+  if (rtm->priv.is_secure) {
     return _rtm_io_read_tls(rtm, input_buffer, input_size, wait);
   }
 
   ssize_t read_result;
   while (TRUE) {
-    read_result = read(rtm->fd, input_buffer, input_size);
+    read_result = read(rtm->priv.fd, input_buffer, input_size);
     if (read_result >= 0) {
       return read_result;
     } else if (EINTR == errno) {
@@ -232,17 +232,17 @@ ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, i
 rtm_status _rtm_io_close(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
 
-  if (rtm->is_secure) {
+  if (rtm->priv.is_secure) {
     _rtm_io_close_tls_session(rtm);
-    rtm->is_secure = NO;
+    rtm->priv.is_secure = NO;
   }
 
-  if (rtm->fd >= 0) {
-    close(rtm->fd);
-    rtm->fd = -1;
+  if (rtm->priv.fd >= 0) {
+    close(rtm->priv.fd);
+    rtm->priv.fd = -1;
   }
-  if (rtm->is_used) {
-    rtm->is_closed = YES;
+  if (rtm->priv.is_used) {
+    rtm->priv.is_closed = YES;
   }
   return RTM_OK;
 }

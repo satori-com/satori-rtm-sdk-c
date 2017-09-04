@@ -13,11 +13,13 @@ static char const *role_secret = YOUR_ROLE_SECRET;
 static char const *ssid = YOUR_SSID;
 static char const *psk = YOUR_PSK;
 
-// RTM leaves it to you how much memory to allocate. There is a minimum (see
-// RTM_CLIENT_SIZE), but 1 KiB works. The more you allocate, the more data
-// the SDK can buffer and the more data you can send in one burst. But all
-// memory you allocate to RTM is lost to other parts of your sketch.
-char *client_mem[1000];
+// RTM leaves it to you how much memory to allocate. There is a macro,
+// RTM_CLIENT_SIZE_WITH_BUFFERS, which gives you the exact number of
+// bytes required to have read and write buffers of a given size.
+// The more you allocate, the more data the SDK can buffer and the more data
+// you can send in one burst. But all memory you allocate to RTM is lost to
+// other parts of your sketch.
+alignas(rtm_client_t) char *client_mem[RTM_CLIENT_SIZE_WITH_BUFFERS(1000)];
 rtm_client_t *rtm_client;
 
 // Tutorial state, see below
