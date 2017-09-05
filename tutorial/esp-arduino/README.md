@@ -1,5 +1,5 @@
-tutorial.ino is an example for ESP/Arduino compatible boards, most notably for
-the ESP8266.
+The subfolders contain examples for ESP/Arduino compatible boards, most notably
+for the ESP8266.
 
 If you haven't got the Satori library available for your Arduino IDE yet,
 you can generate it using
