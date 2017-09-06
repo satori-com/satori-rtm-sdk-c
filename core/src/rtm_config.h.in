@@ -19,5 +19,6 @@
 #cmakedefine RTM_USE_APPLE_SSL
 #cmakedefine RTM_USE_OPENSSL
 #cmakedefine RTM_USE_GNUTLS
+#cmakedefine RTM_BUILD_STATIC
 
 #endif // CORE_RTM_CONFIG_H__INCLUDED

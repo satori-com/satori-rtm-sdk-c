@@ -65,7 +65,7 @@ extern "C" {
 
 #if defined(rtm_core_sdk_EXPORTS) && defined(_WIN32)
 #define RTM_API __declspec(dllexport)
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(RTM_BUILD_STATIC)
 #define RTM_API __declspec(dllimport)
 #else
 #define RTM_API

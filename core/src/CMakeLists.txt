@@ -23,8 +23,10 @@ endif()
 # Sources list is now ready
 if(BUILD_STATIC)
     add_library(rtm-core-sdk STATIC ${SOURCES})
+    set(RTM_BUILD_STATIC 1)
 else()
     add_library(rtm-core-sdk SHARED ${SOURCES})
+    set(RTM_BUILD_STATIC 0)
 endif()
 
 set_target_properties(rtm-core-sdk PROPERTIES LINKER_LANGUAGE C)
