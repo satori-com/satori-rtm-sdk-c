@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
 s.name         = "SatoriRtmSdkWrapper"
-s.version      = "2.0.0"
+s.version      = "2.1.0"
 s.summary      = "An iOS wrapper for C SDK for Satori RTM."
 s.description  = <<-DESC
 The Satori RTM C SDK wrapper for iOS enables you to integrate your iOS apps with Satori. Using the wrapper, you can publish and subscribe messages to RTM.

@@ -1,4 +1,4 @@
-v2.1.0 (2017-09-01)
+v2.1.0 (2017-09-06)
 -------------------
 
 * Added measures to prevent SIGPIPE in case of a network error
