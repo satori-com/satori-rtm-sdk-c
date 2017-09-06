@@ -47,13 +47,13 @@ static rtm_status gtls_create_session(rtm_client_t *rtm, const char *hostname) {
   ASSERT_NOT_NULL(hostname);
   rtm->priv.session = NULL;
 
-  gnutls_init(&rtm->session, GNUTLS_CLIENT);
-  gnutls_priority_set_direct(rtm->session, "NORMAL", 0);
-  gnutls_credentials_set(rtm->session, GNUTLS_CRD_ANON, anoncred);
-  gnutls_credentials_set(rtm->session, GNUTLS_CRD_CERTIFICATE, xcred);
-  gnutls_server_name_set(rtm->session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
+  gnutls_init(&rtm->priv.session, GNUTLS_CLIENT);
+  gnutls_priority_set_direct(rtm->priv.session, "NORMAL", 0);
+  gnutls_credentials_set(rtm->priv.session, GNUTLS_CRD_ANON, anoncred);
+  gnutls_credentials_set(rtm->priv.session, GNUTLS_CRD_CERTIFICATE, xcred);
+  gnutls_server_name_set(rtm->priv.session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
 #if GNUTLS_VERSION_NUMBER >= 0x030406
-  gnutls_session_set_verify_cert(rtm->session, hostname, 0);
+  gnutls_session_set_verify_cert(rtm->priv.session, hostname, 0);
 #else
   #warning GnuTLS certificate validation only supported from version 3.4.6 on
 #endif
