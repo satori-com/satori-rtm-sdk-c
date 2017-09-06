@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
-#include <stdalign.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,15 +82,15 @@ RTM_API rtm_client_t * rtm_init_ex(
     return NULL;
   }
 
-  if (memory_size < alignof(rtm_client_t)) {
+  if (memory_size < _Alignof(rtm_client_t)) {
     return NULL;
   }
 
   // Align memory to the alignment requirements of rtm_client_t
-  size_t malalignment = (size_t)memory % alignof(rtm_client_t);
+  size_t malalignment = (size_t)memory % _Alignof(rtm_client_t);
   if (malalignment) {
-    memory_size -= alignof(rtm_client_t) - malalignment;
-    memory += alignof(rtm_client_t) - malalignment;
+    memory_size -= _Alignof(rtm_client_t) - malalignment;
+    memory += _Alignof(rtm_client_t) - malalignment;
   }
 
   if (memory_size < RTM_CLIENT_SIZE_WITH_BUFFERS(0)) {
