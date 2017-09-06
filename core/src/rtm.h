@@ -36,6 +36,15 @@ extern "C" {
 
 #include <rtm_config.h>
 
+#ifdef _WIN32
+  #if !defined(__WINDOWS__)
+    #define __WINDOWS__
+  #endif
+  #include <Winsock2.h>
+  #include <BaseTsd.h>
+  typedef SSIZE_T ssize_t;
+#endif
+
 #if defined(RTM_USE_GNUTLS)
 
 #include <gnutls/gnutls.h>

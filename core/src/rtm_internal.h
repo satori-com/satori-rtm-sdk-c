@@ -7,18 +7,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-#ifdef _WIN32
-
-#if !defined(__WINDOWS__)
-  #define __WINDOWS__
-#endif
-#include <Winsock2.h>
-
-#include <BaseTsd.h>
-
-typedef SSIZE_T ssize_t;
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
