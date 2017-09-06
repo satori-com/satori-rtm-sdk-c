@@ -17,8 +17,8 @@ static char const *appkey = YOUR_APPKEY;
 static char const *ssid = YOUR_SSID;
 static char const *psk = YOUR_PSK;
 
-// Reserve 1kB of memory for RTM's buffers
-alignas(rtm_client_t) char *rtm_mem[RTM_CLIENT_SIZE_WITH_BUFFERS(1000)];
+// Reserve 2x250 bytes of memory for RTM's buffers
+alignas(rtm_client_t) char *rtm_mem[RTM_CLIENT_SIZE_WITH_BUFFERS(250)];
 rtm_client_t *rtm_client;
 
 // These variables track the program's state
