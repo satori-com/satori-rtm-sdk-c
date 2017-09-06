@@ -90,7 +90,7 @@ RTM_API rtm_client_t * rtm_init_ex(
   size_t malalignment = (size_t)memory % _Alignof(rtm_client_t);
   if (malalignment) {
     memory_size -= _Alignof(rtm_client_t) - malalignment;
-    char *new_memory = memory + _Alignof(rtm_client_t) - malalignment;
+    char *new_memory = (char*)memory + _Alignof(rtm_client_t) - malalignment;
     memory = new_memory;
   }
 
