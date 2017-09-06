@@ -12,7 +12,6 @@ option(USE_GNUTLS "Use GNUTLS backend" OFF)
 option(USE_OPENSSL "Use OpenSSL backend" OFF)
 option(USE_APPLE_SSL "Use Apple TLS backend" OFF)
 option(DOC "Build the documentation" OFF)
-option(BUILD_STATIC "Build static version" OFF)
 option(COVERAGE "Generate coverage statistics" OFF)
 
 # Set global compiler flags
