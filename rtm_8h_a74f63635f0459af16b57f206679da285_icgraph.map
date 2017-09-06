@@ -1,0 +1,6 @@
+<map id="rtm_close" name="rtm_close">
+<area shape="rect" id="node2" href="$rtm_8h.html#a065f39d8529968def798008c928f8353" title="get next element in iterator or NULL if there are none " alt="" coords="132,5,218,31"/>
+<area shape="rect" id="node3" href="$rtm_8h.html#a1feb331d37003f570b853342041deb59" title="Poll the underlying socket for any PDUs and execute the user&#39;s callbacks. " alt="" coords="141,55,209,80"/>
+<area shape="rect" id="node4" href="$rtm_8h.html#a53f6f0a28c1b818dba50af0ac68b82c8" title="Wait for any PDUs and execute the user&#39;s callbacks. " alt="" coords="291,29,363,55"/>
+<area shape="rect" id="node5" href="$rtm_8h.html#afbb999f37ed9b5d74e22f93efef34311" title="Wait with timeout for any PDUs and execute the user&#39;s callbacks. " alt="" coords="266,79,388,104"/>
+</map>

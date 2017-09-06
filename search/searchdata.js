@@ -1,7 +1,7 @@
 var indexSectionsWithContent =
 {
-  0: "_cfr",
-  1: "_fr",
+  0: "_cfmr",
+  1: "_fmr",
   2: "r",
   3: "r",
   4: "r",

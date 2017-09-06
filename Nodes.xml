@@ -47,11 +47,6 @@
                 <Anchor>a0d39ffd9f47191bc9473a2a839bdfb09</Anchor>
                </Node>
                <Node>
-                <Name>channel_iterator</Name>
-                <Path>struct__rtm__pdu.html</Path>
-                <Anchor>ac9f9edf673006ddff13730677c48b1c3</Anchor>
-               </Node>
-               <Node>
                 <Name>error</Name>
                 <Path>struct__rtm__pdu.html</Path>
                 <Anchor>a72a57c9f0f709c7e7e76bf8c5f55af58</Anchor>
@@ -99,6 +94,33 @@
               </Subnodes>
              </Node>
              <Node>
+              <Name>_rtm_client_priv</Name>
+              <Path>struct__rtm__client__priv.html</Path>
+              <Subnodes>
+              </Subnodes>
+             </Node>
+             <Node>
+              <Name>rtm_client</Name>
+              <Path>structrtm__client.html</Path>
+              <Subnodes>
+               <Node>
+                <Name>priv</Name>
+                <Path>structrtm__client.html</Path>
+                <Anchor>a89321e91074fccc5012af3865e7515c2</Anchor>
+               </Node>
+              </Subnodes>
+             </Node>
+             <Node>
+              <Name>_RTM_SCRATCH_BUFFER_SIZE</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a240cdae822f826abbf7bd89e8d8bd741</Anchor>
+             </Node>
+             <Node>
+              <Name>_RTM_WS_PRE_BUFFER</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a9e95e7366b0ff30677eea2c6cae19119</Anchor>
+             </Node>
+             <Node>
               <Name>RTM_API</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>aa7d90704c30b17913e2d9f7705bd506b</Anchor>
@@ -107,6 +129,16 @@
               <Name>RTM_AUTHENTICATION_HASH_SIZE</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>a426f7c8a0b0c11d395ae3e56ddbfbb34</Anchor>
+             </Node>
+             <Node>
+              <Name>RTM_CLIENT_SIZE</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a7d8d2ceff2adf5b09139322d60016b34</Anchor>
+             </Node>
+             <Node>
+              <Name>RTM_CLIENT_SIZE_WITH_BUFFERS</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a90f4776b8a4c1a9cc2d7b61575bf98ac</Anchor>
              </Node>
              <Node>
               <Name>RTM_MAX_APPKEY_SIZE</Name>
@@ -139,14 +171,29 @@
               <Anchor>a3d2296fbb5829a589efec8d12703e256</Anchor>
              </Node>
              <Node>
+              <Name>RTM_TEST_API</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>ad0bcd2de8095547c131fe4f06a452130</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_client_t</Name>
               <Path>rtm_8h.html</Path>
-              <Anchor>a0f68a9585c25eca96358e223d2a2f6c7</Anchor>
+              <Anchor>a8fa86321502ffd60505728dd212bb0c3</Anchor>
              </Node>
              <Node>
               <Name>rtm_error_logger_t</Name>
               <Path>rtm_8h.html</Path>
-              <Anchor>a3db8bd23afa763bb9e43ab36f6c37171</Anchor>
+              <Anchor>a36d6336cf0f01a2db5de2eeb8bd83e9e</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_free_fn_t</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>aaf68dd0dbc3d5fbff112e3bc33f0bf81</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_malloc_fn_t</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a6b9f5db95794b18e9d4216f8aaf5a2ac</Anchor>
              </Node>
              <Node>
               <Name>rtm_message_handler_t</Name>
@@ -234,21 +281,6 @@
                 <Anchor>ab9d53f2fd076509f1059196abb331d55a0fba02e42805feab2510072fe3814687</Anchor>
                </Node>
                <Node>
-                <Name>RTM_ACTION_SEARCH_DATA</Name>
-                <Path>rtm_8h.html</Path>
-                <Anchor>ab9d53f2fd076509f1059196abb331d55ae925e37c541ca8e0fe728f674e2f0ff8</Anchor>
-               </Node>
-               <Node>
-                <Name>RTM_ACTION_SEARCH_ERROR</Name>
-                <Path>rtm_8h.html</Path>
-                <Anchor>ab9d53f2fd076509f1059196abb331d55ae0cdef0674fd44e6b219075b73982d82</Anchor>
-               </Node>
-               <Node>
-                <Name>RTM_ACTION_SEARCH_OK</Name>
-                <Path>rtm_8h.html</Path>
-                <Anchor>ab9d53f2fd076509f1059196abb331d55a8fb76bfd625ccf511ae28001894a53ec</Anchor>
-               </Node>
-               <Node>
                 <Name>RTM_ACTION_SUBSCRIBE_ERROR</Name>
                 <Path>rtm_8h.html</Path>
                 <Anchor>ab9d53f2fd076509f1059196abb331d55af8a5640d4ac911a6ff294fe1c43e98dd</Anchor>
@@ -314,6 +346,11 @@
                 <Name>RTM_WOULD_BLOCK</Name>
                 <Path>rtm_8h.html</Path>
                 <Anchor>a14c1c9f22306549de95a3d4117da124babc0b9242533d061f58d93b9368f8c34e</Anchor>
+               </Node>
+               <Node>
+                <Name>RTM_ERR_OOM</Name>
+                <Path>rtm_8h.html</Path>
+                <Anchor>a14c1c9f22306549de95a3d4117da124ba7b5af53be3e167a73348e4393ba3d0a8</Anchor>
                </Node>
                <Node>
                 <Name>RTM_ERR_PARAM</Name>
@@ -383,14 +420,19 @@
               <Anchor>a7ea7668c0cedee2e5eac4959ac957ee6</Anchor>
              </Node>
              <Node>
+              <Name>rtm_connect_via_https_proxy</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a1415c8f7a89aa0cfb4f3a773fc894329</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_default_error_logger</Name>
               <Path>rtm_8h.html</Path>
-              <Anchor>af8b23bbc548152e3384fd071e1e1d819</Anchor>
+              <Anchor>a0230710f2b2dbc0d44772605e1def00a</Anchor>
              </Node>
              <Node>
               <Name>rtm_default_message_handler</Name>
               <Path>rtm_8h.html</Path>
-              <Anchor>adb1ccf1c1bb6be7394e2f3d275cf1f95</Anchor>
+              <Anchor>ad580fca04357c792dfb04863b96f1b59</Anchor>
              </Node>
              <Node>
               <Name>rtm_default_pdu_handler</Name>
@@ -443,14 +485,29 @@
               <Anchor>a749eeb668d1e3b8088a24df19f2dbd31</Anchor>
              </Node>
              <Node>
+              <Name>rtm_init_ex</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>ad968a69fce3bb5210591d9e370653bfc</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_iterate</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>a065f39d8529968def798008c928f8353</Anchor>
              </Node>
              <Node>
+              <Name>rtm_null_free</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a12adc737cb90c596f2d49f7995b02425</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_null_malloc</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>adcc743f076c638dcb588b1a21e32314f</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_parse_pdu</Name>
               <Path>rtm_8h.html</Path>
-              <Anchor>ae1456d9bb9896ddb9e5c9deda258c423</Anchor>
+              <Anchor>a77cf8e2ae56162d82fe82beabf4dddec</Anchor>
              </Node>
              <Node>
               <Name>rtm_poll</Name>
@@ -478,11 +535,6 @@
               <Anchor>acaa8a63e20597cc682da38c1273c1581</Anchor>
              </Node>
              <Node>
-              <Name>rtm_search</Name>
-              <Path>rtm_8h.html</Path>
-              <Anchor>a18404579d8ea289e4e894bc3b202f87a</Anchor>
-             </Node>
-             <Node>
               <Name>rtm_send_pdu</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>ab480eeddbe24f0a892f200deb9327dfc</Anchor>
@@ -493,9 +545,19 @@
               <Anchor>a15e0ecc89976efe0ce29673cf2593756</Anchor>
              </Node>
              <Node>
+              <Name>rtm_set_allocator</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a21e8dcfbe897b8554e30c530900c4f89</Anchor>
+             </Node>
+             <Node>
               <Name>rtm_set_connection_timeout</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>a12d06c4f2919491bc857f9f3b4eaf1b1</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_set_error_logger</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a2a4814d3b142d9bd855c61725af02baf</Anchor>
              </Node>
              <Node>
               <Name>rtm_set_raw_pdu_handler</Name>
@@ -516,6 +578,16 @@
               <Name>rtm_subscribe_with_body</Name>
               <Path>rtm_8h.html</Path>
               <Anchor>a47fff9fe0000dd756a81caa91a5538ac</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_system_free</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>a3b849322413c270d1e8f41289d44dee6</Anchor>
+             </Node>
+             <Node>
+              <Name>rtm_system_malloc</Name>
+              <Path>rtm_8h.html</Path>
+              <Anchor>ab4707bd1111b55a798ff021d02d7f409</Anchor>
              </Node>
              <Node>
               <Name>rtm_unsubscribe</Name>
@@ -547,12 +619,15 @@
               <Path>rtm_8h.html</Path>
               <Anchor>a96be59feb12b3e857102d136646b62d6</Anchor>
              </Node>
-             <Node>
-              <Name>rtm_error_logger</Name>
-              <Path>rtm_8h.html</Path>
-              <Anchor>a605ab446c987f03628ac51d7056086b0</Anchor>
-             </Node>
             </Subnodes>
+           </Node>
+           <Node>
+            <Name>rtm_internal.h</Name>
+            <Path>rtm__internal_8h_source.html</Path>
+           </Node>
+           <Node>
+            <Name>rtm_openssl_bio.h</Name>
+            <Path>rtm__openssl__bio_8h_source.html</Path>
            </Node>
           </Subnodes>
          </Node>

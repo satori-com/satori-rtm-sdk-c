@@ -79,6 +79,28 @@
   </Token>
   <Token>
     <TokenIdentifier>
+      <Name>RTM_CLIENT_SIZE_WITH_BUFFERS</Name>
+      <APILanguage>unknown</APILanguage>
+      <Type>macro</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a90f4776b8a4c1a9cc2d7b61575bf98ac</Anchor>
+    <Abstract>Calculate the size requirements for a RTM client. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>RTM_CLIENT_SIZE</Name>
+      <APILanguage>unknown</APILanguage>
+      <Type>macro</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a7d8d2ceff2adf5b09139322d60016b34</Anchor>
+    <Abstract>Preferred size of a RTM client. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
       <Name>rtm_pdu_t</Name>
       <APILanguage>c</APILanguage>
       <Type>tdef</Type>
@@ -95,7 +117,7 @@
       <Type>tdef</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
-    <Anchor>a0f68a9585c25eca96358e223d2a2f6c7</Anchor>
+    <Anchor>a8fa86321502ffd60505728dd212bb0c3</Anchor>
     <Abstract>Opaque rtm client structure. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
@@ -128,8 +150,30 @@
       <Type>tdef</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
-    <Anchor>a3db8bd23afa763bb9e43ab36f6c37171</Anchor>
-    <Abstract>Global error logging function. </Abstract>
+    <Anchor>a36d6336cf0f01a2db5de2eeb8bd83e9e</Anchor>
+    <Abstract>Error logging function. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_malloc_fn_t</Name>
+      <APILanguage>c</APILanguage>
+      <Type>tdef</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a6b9f5db95794b18e9d4216f8aaf5a2ac</Anchor>
+    <Abstract>malloc() like function for use with RTM. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_free_fn_t</Name>
+      <APILanguage>c</APILanguage>
+      <Type>tdef</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>aaf68dd0dbc3d5fbff112e3bc33f0bf81</Anchor>
+    <Abstract>free() like function for use with RTM. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -145,12 +189,78 @@
   </Token>
   <Token>
     <TokenIdentifier>
+      <Name>rtm_set_error_logger</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a2a4814d3b142d9bd855c61725af02baf</Anchor>
+    <Abstract>Set the error logger used by the RTM structure. The default value is rtm_default_error_logger. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_system_malloc</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>ab4707bd1111b55a798ff021d02d7f409</Anchor>
+    <Abstract>malloc() implementation using the system&amp;#39;s malloc() </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_system_free</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a3b849322413c270d1e8f41289d44dee6</Anchor>
+    <Abstract>free() implementation using the system&amp;#39;s free() </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_null_malloc</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>adcc743f076c638dcb588b1a21e32314f</Anchor>
+    <Abstract>malloc() implementation that always fails gracefully </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_null_free</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a12adc737cb90c596f2d49f7995b02425</Anchor>
+    <Abstract>free() implementation that does nothing </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_set_allocator</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a21e8dcfbe897b8554e30c530900c4f89</Anchor>
+    <Abstract>Set the allocator used by the RTM structure. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
       <Name>rtm_default_error_logger</Name>
       <APILanguage>c</APILanguage>
       <Type>func</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
-    <Anchor>af8b23bbc548152e3384fd071e1e1d819</Anchor>
+    <Anchor>a0230710f2b2dbc0d44772605e1def00a</Anchor>
     <Abstract>Default error handler. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
@@ -161,7 +271,7 @@
       <Type>func</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
-    <Anchor>adb1ccf1c1bb6be7394e2f3d275cf1f95</Anchor>
+    <Anchor>ad580fca04357c792dfb04863b96f1b59</Anchor>
     <Abstract>Default message handler prints all messages to stdout. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
@@ -222,13 +332,35 @@
   </Token>
   <Token>
     <TokenIdentifier>
+      <Name>rtm_init_ex</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>ad968a69fce3bb5210591d9e370653bfc</Anchor>
+    <Abstract>Initialize an instance of rtm_client_t with a custom buffer size. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
       <Name>rtm_connect</Name>
       <APILanguage>c</APILanguage>
       <Type>func</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
     <Anchor>a7ea7668c0cedee2e5eac4959ac957ee6</Anchor>
-    <Abstract>Initialize an instance of rtm_client_t and connects to RTM. </Abstract>
+    <Abstract>Connects to RTM. </Abstract>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_connect_via_https_proxy</Name>
+      <APILanguage>c</APILanguage>
+      <Type>func</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a1415c8f7a89aa0cfb4f3a773fc894329</Anchor>
+    <Abstract>Connects to RTM via an https proxy. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -359,7 +491,7 @@
       <Type>func</Type>
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
-    <Anchor>ae1456d9bb9896ddb9e5c9deda258c423</Anchor>
+    <Anchor>a77cf8e2ae56162d82fe82beabf4dddec</Anchor>
     <Abstract>Parse string as top-level PDU object. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
@@ -427,17 +559,6 @@
     <Path>rtm_8h.html</Path>
     <Anchor>ad58e69721464a899e43d685383854afd</Anchor>
     <Abstract>Delete the value of a specific channel. </Abstract>
-    <DeclaredIn>rtm.h</DeclaredIn>
-  </Token>
-  <Token>
-    <TokenIdentifier>
-      <Name>rtm_search</Name>
-      <APILanguage>c</APILanguage>
-      <Type>func</Type>
-    </TokenIdentifier>
-    <Path>rtm_8h.html</Path>
-    <Anchor>a18404579d8ea289e4e894bc3b202f87a</Anchor>
-    <Abstract>Search all channels with a given prefix. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -525,18 +646,7 @@
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
     <Anchor>a96be59feb12b3e857102d136646b62d6</Anchor>
-    <Abstract>Size of rtm_client_t in bytes. </Abstract>
-    <DeclaredIn>rtm.h</DeclaredIn>
-  </Token>
-  <Token>
-    <TokenIdentifier>
-      <Name>rtm_error_logger</Name>
-      <APILanguage>c</APILanguage>
-      <Type>data</Type>
-    </TokenIdentifier>
-    <Path>rtm_8h.html</Path>
-    <Anchor>a605ab446c987f03628ac51d7056086b0</Anchor>
-    <Abstract>Global pointer to the rtm_error_logger() function. The default value is rtm_default_error_logger. </Abstract>
+    <Abstract>Default size of rtm_client_t in bytes. </Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -557,6 +667,16 @@
     </TokenIdentifier>
     <Path>rtm_8h.html</Path>
     <Anchor>a14c1c9f22306549de95a3d4117da124babc0b9242533d061f58d93b9368f8c34e</Anchor>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>RTM_ERR_OOM</Name>
+      <APILanguage>c</APILanguage>
+      <Type>econst</Type>
+    </TokenIdentifier>
+    <Path>rtm_8h.html</Path>
+    <Anchor>a14c1c9f22306549de95a3d4117da124ba7b5af53be3e167a73348e4393ba3d0a8</Anchor>
     <DeclaredIn>rtm.h</DeclaredIn>
   </Token>
   <Token>
@@ -661,6 +781,16 @@
   </Token>
   <Token>
     <TokenIdentifier>
+      <Name>_rtm_client_priv</Name>
+      <APILanguage>c</APILanguage>
+      <Type>cl</Type>
+      <Scope>_rtm_client_priv</Scope>
+    </TokenIdentifier>
+    <Path>struct__rtm__client__priv.html</Path>
+    <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
       <Name>_rtm_pdu</Name>
       <APILanguage>c</APILanguage>
       <Type>cl</Type>
@@ -681,6 +811,24 @@
   </Token>
   <Token>
     <TokenIdentifier>
+      <Name>MD5_CTX</Name>
+      <APILanguage>c</APILanguage>
+      <Type>cl</Type>
+      <Scope>MD5_CTX</Scope>
+    </TokenIdentifier>
+    <Path>struct_m_d5___c_t_x.html</Path>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>rtm_client</Name>
+      <APILanguage>c</APILanguage>
+      <Type>cl</Type>
+      <Scope>rtm_client</Scope>
+    </TokenIdentifier>
+    <Path>structrtm__client.html</Path>
+  </Token>
+  <Token>
+    <TokenIdentifier>
       <Name>rtm_list_iterator_t</Name>
       <APILanguage>c</APILanguage>
       <Type>cl</Type>
@@ -689,5 +837,14 @@
     <Path>structrtm__list__iterator__t.html</Path>
     <Abstract>SDK uses this type to return collections of strings, for example messages in subscription_data PDUs...</Abstract>
     <DeclaredIn>rtm.h</DeclaredIn>
+  </Token>
+  <Token>
+    <TokenIdentifier>
+      <Name>RTMWiFiClient</Name>
+      <APILanguage>c</APILanguage>
+      <Type>cl</Type>
+      <Scope>RTMWiFiClient</Scope>
+    </TokenIdentifier>
+    <Path>class_r_t_m_wi_fi_client.html</Path>
   </Token>
 </Tokens>
