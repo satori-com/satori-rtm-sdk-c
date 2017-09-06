@@ -44,27 +44,6 @@ include(CheckCSourceCompiles)
 check_c_source_compiles("#include <stdio.h>\nint main() { fprintf(stderr, \".\"); fflush(stderr); return 0; }" RTM_HAS_FIO)
 set(RTM_LOGGING ${ENABLE_LOGGING})
 
-# Determine size of rtm_client_t
-file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/rtm_config.h" "#define _RTM_CLIENT_T_SIZE 0")
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/rtm_internal.h" _RTM_SRC)
-file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/rtm_internal.h" "${_RTM_SRC}")
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/rtm.h" _RTM_SRC)
-file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/rtm.h" "${_RTM_SRC}")
-# FIXME The +30 is because this test does not take the SSL additions into account yet.
-file(WRITE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/client_size.c" "#include <stdio.h>\n#include <rtm_internal.h>\nint main() { printf(\"%lu\\n\", (long unsigned)_RTM_CLIENT_SIZE(0) + 30); return 0; }")
-try_run(CLIENT_SIZE_EXIT_CODE CLIENT_SIZE_COMPILED
-  ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size
-  ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size/client_size.c
-  CMAKE_FLAGS
-    -DINCLUDE_DIRECTORIES=${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp_client_size
-  RUN_OUTPUT_VARIABLE
-    _RTM_CLIENT_T_SIZE
-  COMPILE_OUTPUT_VARIABLE
-    CLIENT_SIZE_COMPILE_OUTPUT)
-if (NOT (CLIENT_SIZE_EXIT_CODE EQUAL 0))
-  message(FATAL_ERROR "Failed to determine sizeof(client_t): ${CLIENT_SIZE_COMPILE_OUTPUT}")
-endif()
-
 configure_file(rtm_config.h.in
   rtm_config.h
   @ONLY)
@@ -113,6 +92,9 @@ if(ARDUINO_SDK)
   function(ArduinoConfig)
     set(RTM_HAS_GETENV 0)
     set(RTM_HAS_FIO 0)
+    set(RTM_USE_GNUTLS 0)
+    set(RTM_USE_OPENSSL 0)
+    set(RTM_USE_APPLE_SSL 0)
     configure_file(rtm_config.h.in ${ARDUINO_DIR}/rtm_config.h @ONLY)
   endfunction()
   ArduinoConfig()

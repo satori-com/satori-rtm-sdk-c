@@ -122,7 +122,7 @@ static std::string make_channel(int len = 6) {
 }
 
 TEST(rtm_test, init_ex) {
-  size_t size = RTM_CLIENT_SIZE(2*10240);
+  size_t size = RTM_CLIENT_SIZE_WITH_BUFFERS(2*10240);
   void *memory = alloca(size);
 
   rtm_client_t *rtm = rtm_init_ex(memory, size, rtm_default_pdu_handler, nullptr);
@@ -131,7 +131,7 @@ TEST(rtm_test, init_ex) {
 }
 
 TEST(rtm_test, init_ex_fail_too_small) {
-  size_t size = RTM_CLIENT_SIZE(0);
+  size_t size = RTM_CLIENT_SIZE_WITH_BUFFERS(0);
   void *memory = alloca(size);
 
   rtm_client_t *rtm = rtm_init_ex(memory, size, rtm_default_pdu_handler, nullptr);
@@ -140,7 +140,7 @@ TEST(rtm_test, init_ex_fail_too_small) {
 }
 
 TEST(rtm_test, test_allocators) {
-  size_t size = RTM_CLIENT_SIZE(512);
+  size_t size = RTM_CLIENT_SIZE_WITH_BUFFERS(512);
   void *memory = alloca(size);
 
   struct alloc_t {
@@ -556,10 +556,10 @@ TEST(rtm_test, verbose_logging) {
   rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
   rtm_disable_verbose_logging(rtm);
-  ASSERT_EQ(rtm->is_verbose, 0u) << "verbose_logging Unable to disable verbose loggin";
+  ASSERT_EQ(rtm->priv.is_verbose, 0u) << "verbose_logging Unable to disable verbose loggin";
 
   rtm_enable_verbose_logging(rtm);
-  ASSERT_EQ(rtm->is_verbose, 1u) << "verbose_logging Unable to enable verbose loggin";
+  ASSERT_EQ(rtm->priv.is_verbose, 1u) << "verbose_logging Unable to enable verbose loggin";
 }
 
 TEST(rtm_test, error_handler) {
@@ -995,9 +995,9 @@ TEST(rtm_test, wait_ping) {
   rtm_set_ws_ping_interval(rtm, 1);
   ASSERT_EQ(rtm_get_ws_ping_interval(rtm), 1);
 
-  time_t last_ping_ts = rtm->last_ping_ts;
+  time_t last_ping_ts = rtm->priv.last_ping_ts;
   rtm_wait_timeout(rtm, 3);
-  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
+  ASSERT_GT(rtm->priv.last_ping_ts, last_ping_ts);
 }
 
 TEST(rtm_test, publish_noack_ping) {
@@ -1008,7 +1008,7 @@ TEST(rtm_test, publish_noack_ping) {
   ASSERT_EQ(RTM_OK, rc)<< "Failed to create RTM connection";
   rtm_set_ws_ping_interval(rtm, 2);
 
-  time_t last_ping_ts = rtm->last_ping_ts;
+  time_t last_ping_ts = rtm->priv.last_ping_ts;
   std::string const channel = make_channel();
 
   time_t start = time(NULL);
@@ -1021,11 +1021,7 @@ TEST(rtm_test, publish_noack_ping) {
     ASSERT_EQ(RTM_OK, rc)<< "Failed while publish to channel";
   };
 
-  ASSERT_GT(rtm->last_ping_ts, last_ping_ts);
-}
-
-TEST(rtm_test, rtm_client_size_test) {
-  ASSERT_GE((size_t)RTM_CLIENT_SIZE(10), (size_t)_RTM_CLIENT_SIZE(10));
+  ASSERT_GT(rtm->priv.last_ping_ts, last_ping_ts);
 }
 
 std::string _ws_encode(std::string message) {
@@ -1065,13 +1061,13 @@ std::string _ws_encode(std::string message) {
 }
 
 TEST(rtm_ws_processing, normal_ws_frame) {
-  char memory[RTM_CLIENT_SIZE(100)];
+  char memory[RTM_CLIENT_SIZE_WITH_BUFFERS(100)];
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
 
   auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
   frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer);
-  rtm->input_length = frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer);
+  rtm->priv.input_length = frame.size();
 
   ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
 
@@ -1081,23 +1077,23 @@ TEST(rtm_ws_processing, normal_ws_frame) {
 }
 
 TEST(rtm_ws_processing, fragmented_ws_frame) {
-  char memory[RTM_CLIENT_SIZE(100)];
+  char memory[RTM_CLIENT_SIZE_WITH_BUFFERS(100)];
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
 
   auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\"");
   frame[0] = (char)(WS_TEXT); // Normal, fragmented frame
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer);
-  rtm->input_length = frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer);
+  rtm->priv.input_length = frame.size();
 
   frame = _ws_encode(",\"id\":");
   frame[0] = WS_CONTINUATION; // Fragment
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
-  rtm->input_length += frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size();
 
   frame = _ws_encode("1}");
   frame[0] = (char)(0x80 | WS_CONTINUATION); // Last fragment
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
-  rtm->input_length += frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size();
 
   ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
 
@@ -1107,17 +1103,17 @@ TEST(rtm_ws_processing, fragmented_ws_frame) {
 }
 
 TEST(rtm_ws_processing, oom_single_frame_skip) {
-  char memory[RTM_CLIENT_SIZE(100)];
+  char memory[RTM_CLIENT_SIZE_WITH_BUFFERS(100)];
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
 
-  rtm->input_length = 10;
-  rtm->skip_next_n_input_bytes = 10;
+  rtm->priv.input_length = 10;
+  rtm->priv.skip_next_n_input_bytes = 10;
 
 
   auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
   frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
-  rtm->input_length += frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size();
 
   ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
 
@@ -1127,25 +1123,25 @@ TEST(rtm_ws_processing, oom_single_frame_skip) {
 }
 
 TEST(rtm_ws_processing, oom_fragments_skip) {
-  char memory[RTM_CLIENT_SIZE(200)];
+  char memory[RTM_CLIENT_SIZE_WITH_BUFFERS(200)];
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
 
-  rtm->skip_current_fragmented_message = 1;
+  rtm->priv.skip_current_fragmented_message = 1;
 
   auto frame = _ws_encode("invalid-stuff-that-wont-parse");
   frame[0] = WS_CONTINUATION; // Continuation frame
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
-  rtm->input_length += frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size();
 
   frame = _ws_encode("invalid-stuff-that-wont-parse");
   frame[0] = (char)(0x80 | WS_CONTINUATION); // Last fragment
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
-  rtm->input_length += frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size();
 
   frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
   frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
-  rtm->input_length += frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size();
 
   ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
 
@@ -1155,7 +1151,7 @@ TEST(rtm_ws_processing, oom_fragments_skip) {
 }
 
 TEST(rtm_ws_processing, oom_handle_large_input) {
-  char memory[RTM_CLIENT_SIZE(50)];
+  char memory[RTM_CLIENT_SIZE_WITH_BUFFERS(50)];
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
   rtm_set_allocator(rtm, rtm_system_malloc, rtm_system_free);
 
@@ -1167,19 +1163,19 @@ TEST(rtm_ws_processing, oom_handle_large_input) {
   auto frame = _ws_encode(large_message.str());
   frame[0] = (char)(0x80 | WS_TEXT); // Normal, unfragmented frame
 
-  std::copy(frame.begin(), frame.begin() + 50, rtm->input_buffer);
-  rtm->input_length = 50;
+  std::copy(frame.begin(), frame.begin() + 50, rtm->priv.input_buffer);
+  rtm->priv.input_length = 50;
 
   ASSERT_EQ(RTM_WOULD_BLOCK, _rtm_handle_input(rtm));
-  ASSERT_NE(nullptr, rtm->dynamic_input_buffer);
-  ASSERT_GE(rtm->dynamic_input_buffer_size, frame.size());
+  ASSERT_NE(nullptr, rtm->priv.dynamic_input_buffer);
+  ASSERT_GE(rtm->priv.dynamic_input_buffer_size, frame.size());
 
-  std::copy(frame.begin() + 50, frame.end(), rtm->dynamic_input_buffer + rtm->input_length);
-  rtm->input_length += frame.size() - 50;
+  std::copy(frame.begin() + 50, frame.end(), rtm->priv.dynamic_input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size() - 50;
 
   ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
 
-  ASSERT_EQ(nullptr, rtm->dynamic_input_buffer);
+  ASSERT_EQ(nullptr, rtm->priv.dynamic_input_buffer);
 
   event_t event{};
   ASSERT_EQ(RTM_OK, next_event(rtm, &event));
@@ -1187,7 +1183,7 @@ TEST(rtm_ws_processing, oom_handle_large_input) {
 }
 
 TEST(rtm_ws_processing, oom_skip_fragmented_input) {
-  char memory[RTM_CLIENT_SIZE(50)];
+  char memory[RTM_CLIENT_SIZE_WITH_BUFFERS(50)];
   rtm_client_t *rtm = rtm_init_ex(memory, sizeof(memory), pdu_recorder, nullptr);
   rtm_set_allocator(rtm, rtm_null_malloc, rtm_null_free);
 
@@ -1207,8 +1203,8 @@ TEST(rtm_ws_processing, oom_skip_fragmented_input) {
 
     for(size_t i=0; i<frame.size(); i += 50) {
       auto until = (std::min)(i+50, frame.size());
-      std::copy(&frame[i], &frame[until], rtm->input_buffer);
-      rtm->input_length = until - i;
+      std::copy(&frame[i], &frame[until], rtm->priv.input_buffer);
+      rtm->priv.input_length = until - i;
 
       ASSERT_EQ(RTM_WOULD_BLOCK, _rtm_handle_input(rtm));
     }
@@ -1216,8 +1212,8 @@ TEST(rtm_ws_processing, oom_skip_fragmented_input) {
 
   auto frame = _ws_encode("{\"action\":\"rtm/publish/ok\",\"id\":1}");
   frame[0] = (char)(0x80 | 1); // Normal, unfragmented frame
-  std::copy(frame.begin(), frame.end(), rtm->input_buffer + rtm->input_length);
-  rtm->input_length += frame.size();
+  std::copy(frame.begin(), frame.end(), rtm->priv.input_buffer + rtm->priv.input_length);
+  rtm->priv.input_length += frame.size();
   ASSERT_EQ(RTM_OK, _rtm_handle_input(rtm));
 
   event_t event{};

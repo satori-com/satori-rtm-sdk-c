@@ -57,7 +57,7 @@ static rtm_status openssl_initialize(rtm_client_t *rtm) {
 #if defined(_WIN32) && defined(_MSC_VER)
 static rtm_status openssl_load_windows_certificates(rtm_client_t *rtm)
 {
-  SSL_CTX *ssl = rtm->ssl_context;
+  SSL_CTX *ssl = rtm->priv.ssl_context;
 
   DWORD flags
     = CERT_STORE_READONLY_FLAG
@@ -247,7 +247,7 @@ static rtm_status openssl_check_server_cert(rtm_client_t *rtm, SSL *ssl, const c
 static void print_ssl_error(rtm_client_t *rtm, int ret){
   unsigned long e;
 
-  int err = SSL_get_error(rtm->ssl_connection, ret);
+  int err = SSL_get_error(rtm->priv.ssl_connection, ret);
 
   switch (err) {
     case SSL_ERROR_WANT_CONNECT:
@@ -283,11 +283,11 @@ static rtm_status openssl_handshake(rtm_client_t *rtm, const char *hostname) {
   ASSERT_NOT_NULL(hostname);
 
   while (TRUE) {
-    int connect_result = SSL_connect(rtm->ssl_connection);
+    int connect_result = SSL_connect(rtm->priv.ssl_connection);
     if (connect_result == 1) {
-      return openssl_check_server_cert(rtm, rtm->ssl_connection, hostname);
+      return openssl_check_server_cert(rtm, rtm->priv.ssl_connection, hostname);
     }
-    int reason = SSL_get_error(rtm->ssl_connection, connect_result);
+    int reason = SSL_get_error(rtm->priv.ssl_connection, connect_result);
 
     rtm_status rc;
     if (reason == SSL_ERROR_WANT_READ || reason == SSL_ERROR_WANT_WRITE) {
@@ -316,8 +316,8 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
     is_openssl_initialized = YES;
   }
 
-  rtm->ssl_context = openssl_create_context();
-  if (NULL == rtm->ssl_context) {
+  rtm->priv.ssl_context = openssl_create_context();
+  if (NULL == rtm->priv.ssl_context) {
     _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to create context");
     return RTM_ERR_TLS;
   }
@@ -330,7 +330,7 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
           "Certificate loading failed\n");
   }
 #else
-  int cert_load_result = SSL_CTX_set_default_verify_paths(rtm->ssl_context);
+  int cert_load_result = SSL_CTX_set_default_verify_paths(rtm->priv.ssl_context);
   if (0 == cert_load_result) {
       unsigned long ssl_err = ERR_get_error();
       _rtm_log_error(
@@ -340,11 +340,11 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
   }
 #endif
 
-  rtm->ssl_connection = openssl_create_connection(rtm->ssl_context, rtm->fd, hostname);
-  if (NULL == rtm->ssl_connection) {
+  rtm->priv.ssl_connection = openssl_create_connection(rtm->priv.ssl_context, rtm->priv.fd, hostname);
+  if (NULL == rtm->priv.ssl_connection) {
     _rtm_log_error(rtm, RTM_ERR_TLS, "OpenSSL failed to connect");
-    SSL_CTX_free(rtm->ssl_context);
-    rtm->ssl_context = NULL;
+    SSL_CTX_free(rtm->priv.ssl_context);
+    rtm->priv.ssl_context = NULL;
     return RTM_ERR_TLS;
   }
 
@@ -361,13 +361,13 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
 rtm_status _rtm_io_close_tls_session(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
   // assert rtm?
-  if (rtm->ssl_connection) {
-    SSL_free(rtm->ssl_connection);
-    rtm->ssl_connection = NULL;
+  if (rtm->priv.ssl_connection) {
+    SSL_free(rtm->priv.ssl_connection);
+    rtm->priv.ssl_connection = NULL;
   }
-  if (rtm->ssl_context) {
-    SSL_CTX_free(rtm->ssl_context);
-    rtm->ssl_context = NULL;
+  if (rtm->priv.ssl_context) {
+    SSL_CTX_free(rtm->priv.ssl_context);
+    rtm->priv.ssl_context = NULL;
   }
   return RTM_OK;
 }
@@ -379,14 +379,14 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
   errno = 0;
 
   while (TRUE) {
-    int read_result = SSL_read(rtm->ssl_connection, buf, (int) nbyte);
+    int read_result = SSL_read(rtm->priv.ssl_connection, buf, (int) nbyte);
 
     if (read_result >= 0) {
       return read_result;
     }
 
     rtm_status rc = RTM_OK;
-    int reason = SSL_get_error(rtm->ssl_connection, read_result);
+    int reason = SSL_get_error(rtm->priv.ssl_connection, read_result);
 
     if (reason == SSL_ERROR_WANT_READ || reason == SSL_ERROR_WANT_WRITE) {
       if (!wait) {
@@ -412,8 +412,8 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
   ssize_t sent = 0;
 
   while (nbyte > 0) {
-    int write_result = SSL_write(rtm->ssl_connection, buf + sent, (int) nbyte);
-    int reason = SSL_get_error(rtm->ssl_connection, write_result);
+    int write_result = SSL_write(rtm->priv.ssl_connection, buf + sent, (int) nbyte);
+    int reason = SSL_get_error(rtm->priv.ssl_connection, write_result);
     rtm_status rc = RTM_OK;
     if (reason == SSL_ERROR_NONE) {
       nbyte -= write_result;

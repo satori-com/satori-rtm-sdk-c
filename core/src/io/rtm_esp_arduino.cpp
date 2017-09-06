@@ -105,7 +105,7 @@ extern "C" {
     connections.insert({new_fd, new RTMWiFiClient()});
 
     RTMWiFiClient &client = *connections[new_fd];
-    rtm->fd = new_fd;
+    rtm->priv.fd = new_fd;
 
     #ifndef ESP_HAS_NO_CA_SUPPORT
       client.setCACert(_rtm_ssl_cert, _rtm_ssl_cert_size);
@@ -117,7 +117,7 @@ extern "C" {
   }
 
   rtm_status _rtm_io_wait(rtm_client_t *rtm, int readable, int writeable, int user_timeout) {
-    auto cli_iter = connections.find(rtm->fd);
+    auto cli_iter = connections.find(rtm->priv.fd);
     if(cli_iter == connections.end()) {
       return RTM_ERR_CLOSED;
     }
@@ -131,7 +131,7 @@ extern "C" {
       return RTM_OK;
     }
 
-    int ping_timeout = rtm->ws_ping_interval * 1000;
+    int ping_timeout = rtm->priv.ws_ping_interval * 1000;
 
     while(true) {
       if(client.available()) {
@@ -144,7 +144,7 @@ extern "C" {
             return rc;
           }
 
-          ping_timeout = rtm->ws_ping_interval * 1000;
+          ping_timeout = rtm->priv.ws_ping_interval * 1000;
       }
 
       if(user_timeout <= 0) {
@@ -161,7 +161,7 @@ extern "C" {
   }
 
   ssize_t _rtm_io_write(rtm_client_t *rtm, const char *output_buffer, size_t output_size) {
-    auto cli_iter = connections.find(rtm->fd);
+    auto cli_iter = connections.find(rtm->priv.fd);
     if(cli_iter == connections.end()) {
       return -1;
     }
@@ -171,7 +171,7 @@ extern "C" {
   }
 
   ssize_t _rtm_io_read(rtm_client_t *rtm, char *input_buffer, size_t input_size, int wait) {
-    auto cli_iter = connections.find(rtm->fd);
+    auto cli_iter = connections.find(rtm->priv.fd);
     if(cli_iter == connections.end()) {
       return -1;
     }
@@ -190,7 +190,7 @@ extern "C" {
   }
 
   rtm_status _rtm_io_close(rtm_client_t *rtm) {
-    auto cli_iter = connections.find(rtm->fd);
+    auto cli_iter = connections.find(rtm->priv.fd);
     if(cli_iter == connections.end()) {
       return RTM_ERR_CLOSED;
     }
@@ -201,7 +201,7 @@ extern "C" {
   }
 
   rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *host) {
-    auto cli_iter = connections.find(rtm->fd);
+    auto cli_iter = connections.find(rtm->priv.fd);
     if(cli_iter == connections.end()) {
       return RTM_ERR_CLOSED;
     }

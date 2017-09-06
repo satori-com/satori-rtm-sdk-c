@@ -45,7 +45,7 @@ static rtm_status gtls_initialize(rtm_client_t *rtm) {
 static rtm_status gtls_create_session(rtm_client_t *rtm, const char *hostname) {
   ASSERT_NOT_NULL(rtm);
   ASSERT_NOT_NULL(hostname);
-  rtm->session = NULL;
+  rtm->priv.session = NULL;
 
   gnutls_init(&rtm->session, GNUTLS_CLIENT);
   gnutls_priority_set_direct(rtm->session, "NORMAL", 0);
@@ -59,10 +59,10 @@ static rtm_status gtls_create_session(rtm_client_t *rtm, const char *hostname) {
 #endif
 
 #if GNUTLS_VERSION_MAJOR >= 3
-  gnutls_transport_set_int(rtm->session, rtm->fd);
-  gnutls_handshake_set_timeout(rtm->session, rtm->connect_timeout * 1000);
+  gnutls_transport_set_int(rtm->priv.session, rtm->priv.fd);
+  gnutls_handshake_set_timeout(rtm->priv.session, rtm->priv.connect_timeout * 1000);
 #else
-  gnutls_transport_set_ptr(rtm->session, (void *) (long) rtm->fd);
+  gnutls_transport_set_ptr(rtm->priv.session, (void *) (long) rtm->priv.fd);
 #endif
   return RTM_OK;
 }
@@ -71,16 +71,16 @@ static rtm_status gtls_handshake(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
   int ret;
   do {
-    ret = gnutls_handshake(rtm->session);
+    ret = gnutls_handshake(rtm->priv.session);
     if (ret < 0 && ret == GNUTLS_E_AGAIN)
       _rtm_io_wait(rtm, 1, 1, -1);
   } while (ret < 0 && gnutls_error_is_fatal(ret) == 0);
 
   if (ret < 0) {
-    gnutls_deinit(rtm->session);
+    gnutls_deinit(rtm->priv.session);
     _rtm_log_error(rtm, RTM_ERR_TLS, "TLS handshake failed – reason %s – %s",
                    gnutls_strerror(ret),
-                   gnutls_alert_get_name(gnutls_alert_get(rtm->session)));
+                   gnutls_alert_get_name(gnutls_alert_get(rtm->priv.session)));
     return RTM_ERR_TLS;
   }
   return RTM_OK;
@@ -120,9 +120,9 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *hostname) {
 rtm_status _rtm_io_close_tls_session(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
 
-  if (rtm->session) {
-    gnutls_deinit(rtm->session);
-    rtm->session = NULL;
+  if (rtm->priv.session) {
+    gnutls_deinit(rtm->priv.session);
+    rtm->priv.session = NULL;
   }
 
   return RTM_OK;
@@ -135,7 +135,7 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
   errno = 0;
 
   while (TRUE) {
-    ssize_t read_result = gnutls_record_recv(rtm->session, buf, nbyte);
+    ssize_t read_result = gnutls_record_recv(rtm->priv.session, buf, nbyte);
     if (read_result >= 0) {
       return read_result;
     } else if (!wait && read_result == GNUTLS_E_AGAIN) {
@@ -154,7 +154,7 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
   ssize_t written = 0;
 
   while (nbyte > 0) {
-    ssize_t write_result = gnutls_record_send(rtm->session, buf + written, nbyte);
+    ssize_t write_result = gnutls_record_send(rtm->priv.session, buf + written, nbyte);
     if (write_result >= 0) {
       written += write_result;
       nbyte -= write_result;

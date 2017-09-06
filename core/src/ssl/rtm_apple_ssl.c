@@ -101,15 +101,15 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *host) {
 
   OSStatus status;
 
-  rtm->sslContext = SSLCreateContext(kCFAllocatorDefault, kSSLClientSide, kSSLStreamType);
+  rtm->priv.sslContext = SSLCreateContext(kCFAllocatorDefault, kSSLClientSide, kSSLStreamType);
 
-  SSLSetIOFuncs(rtm->sslContext, read_from_socket, write_to_socket);
-  SSLSetConnection(rtm->sslContext, (SSLConnectionRef) (long) rtm->fd);
-  SSLSetProtocolVersionMin(rtm->sslContext, kTLSProtocol12);
-  SSLSetPeerDomainName(rtm->sslContext, host, strlen(host));
+  SSLSetIOFuncs(rtm->priv.sslContext, read_from_socket, write_to_socket);
+  SSLSetConnection(rtm->priv.sslContext, (SSLConnectionRef) (long) rtm->priv.fd);
+  SSLSetProtocolVersionMin(rtm->priv.sslContext, kTLSProtocol12);
+  SSLSetPeerDomainName(rtm->priv.sslContext, host, strlen(host));
 
   do {
-    status = SSLHandshake(rtm->sslContext);
+    status = SSLHandshake(rtm->priv.sslContext);
 
     if (errSSLWouldBlock == status)
       _rtm_io_wait(rtm, YES, YES, -1);
@@ -117,8 +117,8 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *host) {
   } while (errSSLWouldBlock == status);
 
   if (noErr != status) {
-    SSLClose(rtm->sslContext);
-    CFRelease(rtm->sslContext);
+    SSLClose(rtm->priv.sslContext);
+    CFRelease(rtm->priv.sslContext);
     _rtm_log_error(rtm, RTM_ERR_TLS, "TLS handshake failed. OSStatus=%d", status);
     return RTM_ERR_TLS;
   }
@@ -129,8 +129,8 @@ rtm_status _rtm_io_open_tls_session(rtm_client_t *rtm, const char *host) {
 rtm_status _rtm_io_close_tls_session(rtm_client_t *rtm) {
   ASSERT_NOT_NULL(rtm);
 
-  SSLClose(rtm->sslContext);
-  CFRelease(rtm->sslContext);
+  SSLClose(rtm->priv.sslContext);
+  CFRelease(rtm->priv.sslContext);
 
   return RTM_OK;
 }
@@ -144,7 +144,7 @@ ssize_t _rtm_io_read_tls(rtm_client_t *rtm, char *buf, size_t nbyte, int wait) {
   OSStatus status = errSSLWouldBlock;
   while (errSSLWouldBlock == status) {
     size_t processed = 0;
-    status = SSLRead(rtm->sslContext, buf, nbyte, &processed);
+    status = SSLRead(rtm->priv.sslContext, buf, nbyte, &processed);
 
     if (processed > 0)
       return (ssize_t) processed;
@@ -173,7 +173,7 @@ ssize_t _rtm_io_write_tls(rtm_client_t *rtm, const char *buf, size_t nbyte) {
   OSStatus status;
   do {
     size_t processed = 0;
-    status = SSLWrite(rtm->sslContext, buf, nbyte, &processed);
+    status = SSLWrite(rtm->priv.sslContext, buf, nbyte, &processed);
     ret += processed;
     buf += processed;
     nbyte -= processed;

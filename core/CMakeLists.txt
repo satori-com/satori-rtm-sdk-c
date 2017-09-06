@@ -70,24 +70,24 @@ if(USE_GNUTLS)
   message(STATUS "GNU TLS: " ${GNUTLS_VERSION_STRING})
 
   include_directories(${GNUTLS_INCLUDE_DIR})
-  add_definitions(-DUSE_GNUTLS ${GNUTLS_DEFINITIONS})
+  set(RTM_USE_GNUTLS ON)
   set(TLS_LIBRARIES ${GNUTLS_LIBRARIES})
   set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} gnutls")
 elseif(USE_OPENSSL)
     find_package(OpenSSL REQUIRED)
     message(STATUS "OpenSSL: " ${OPENSSL_VERSION})
 
+    set(RTM_USE_OPENSSL ON)
     add_definitions(${OPENSSL_DEFINITIONS})
     include_directories(${OPENSSL_INCLUDE_DIR})
     set(TLS_LIBRARIES ${OPENSSL_LIBRARIES})
 
-  add_definitions(-DUSE_OPENSSL)
   set(PKG_CONFIG_REQUIRES "${PKG_CONFIG_REQUIRES} openssl")
 
 elseif(USE_APPLE_SSL)
   message(STATUS "Selected Apple Security framework")
 
-  add_definitions(-DUSE_APPLE_SSL)
+  set(RTM_USE_APPLE_SSL ON)
   set(TLS_LIBRARIES "-framework foundation" "-framework security")
   set(PKG_CONFIG_LIBS "${PKG_CONFIG_LIBS} -framework foundation -framework security")
 endif()

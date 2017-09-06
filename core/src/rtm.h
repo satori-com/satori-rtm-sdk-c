@@ -36,6 +36,24 @@ extern "C" {
 
 #include <rtm_config.h>
 
+#if defined(RTM_USE_GNUTLS)
+
+#include <gnutls/gnutls.h>
+
+#elif defined(RTM_USE_OPENSSL)
+
+#include <openssl/conf.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
+#elif defined(RTM_USE_APPLE_SSL)
+
+#include <Security/Security.h>
+#include <Security/SecureTransport.h>
+
+#endif
+
+
 #if defined(rtm_core_sdk_EXPORTS) && defined(_WIN32)
 #define RTM_API __declspec(dllexport)
 #elif defined(_WIN32)
@@ -49,6 +67,9 @@ extern "C" {
 #else
 #define RTM_TEST_API
 #endif
+
+#define _RTM_SCRATCH_BUFFER_SIZE (256)
+#define _RTM_WS_PRE_BUFFER 16
 
 /**
  * @brief Maximum size of a channel name.
@@ -187,7 +208,7 @@ typedef struct _rtm_pdu {
 /**
  * @brief Opaque rtm client structure.
  */
-typedef struct _rtm_client rtm_client_t;
+typedef struct rtm_client rtm_client_t;
 
 /**
  * @brief Type of callback function invoked when client receives messages from RTM.
@@ -431,12 +452,17 @@ RTM_API rtm_client_t *rtm_init(
   void *user_context);
 
 /**
- * @brief Calculate the size requirements for rtm_client_t
+ * @brief Calculate the size requirements for a RTM client
  *
  * @param[in] buffer_size Total number of bytes for buffers
  * @return size of the rtm_client_t structure
  */
-#define RTM_CLIENT_SIZE(buffer_size) (_RTM_CLIENT_T_SIZE + 2*buffer_size)
+#define RTM_CLIENT_SIZE_WITH_BUFFERS(buffer_size) (sizeof(struct _rtm_client_priv) + _RTM_WS_PRE_BUFFER + 2*buffer_size)
+
+/**
+ * @brief Preferred size of a RTM client
+ */
+#define RTM_CLIENT_SIZE (RTM_CLIENT_SIZE_WITH_BUFFERS(RTM_MAX_MESSAGE_SIZE))
 
 /**
  * @brief Initialize an instance of rtm_client_t with a custom buffer size
@@ -905,6 +931,134 @@ RTM_API void *rtm_get_user_context(rtm_client_t *rtm);
  * @returns a human-readable description of status.
  */
 RTM_API const char *rtm_error_string(rtm_status status);
+
+/**
+ * Internal representation of the RTM client's state
+ *
+ * This structure is private and not part of the public API.
+ */
+struct _rtm_client_priv {
+  //!< @privatesection
+
+  void *user; /*!< User specified context pointer. @see ::rtm_get_user_context. */
+  int fd; /*!< File descriptor for the socket used by the SDK */
+
+  /**
+   * Total number of bytes in the current input buffer currently used for
+   * storing a partial frame reconstructed from a number of
+   * fragmented/continuation frames
+   */
+  size_t fragmented_message_length;
+
+  /**
+   * Total number of bytes in the current input buffer currently used for
+   * storing unprocessed input
+   */
+  size_t input_length;
+
+  /**
+   * Number of bytes to be skipped when reading incoming data. Incoming bytes
+   * are normaly stored in the input buffer. If this variable is non-zero, then
+   * the next that-many bytes are instead discarded.
+   */
+  size_t skip_next_n_input_bytes;
+
+  unsigned is_closed: 1; /*!< Whether the SDK is currently connected */
+  unsigned is_used: 1; /*!< Whether there is a pending operation in the SDK */
+  unsigned is_verbose: 1; /*!< Whether to verbosely log debug information */
+
+  /**
+   * Whether the current fragmented message should be skipped instead of
+   * processing it.
+   *
+   * The SDK normally reassembles messages from fragments. If the user knows
+   * that there isn't enough memory available to store the whole message,
+   * then they can decide to skip a message completely.
+   **/
+  unsigned skip_current_fragmented_message: 1;
+
+  unsigned last_request_id; /*!< The largest request ID used so far */
+  unsigned last_ping_ts; /*!< Timestamp of the last websocket ping */
+  time_t ws_ping_interval; /*!< How often to send websocket pings */
+
+  unsigned is_secure: 1; /*!< Whether this connection uses TLS */
+  #if defined(RTM_USE_GNUTLS)
+    gnutls_session_t session;
+  #elif defined(RTM_USE_OPENSSL)
+    SSL_CTX *ssl_context;
+    SSL *ssl_connection;
+  #elif defined(RTM_USE_APPLE_SSL)
+    SSLContextRef sslContext;
+  #endif
+
+  unsigned connect_timeout; /*!< Number of seconds to wait for connect() to succeed */
+  rtm_pdu_handler_t *handle_pdu; /*!< PDU handler function pointer */
+  rtm_raw_pdu_handler_t *handle_raw_pdu; /*!< Raw PDU handler function pointer */
+
+  rtm_error_logger_t *error_logger; /*!< Error logger function pointer */
+  rtm_malloc_fn_t *malloc_fn; /*!< malloc() function pointer */
+  rtm_free_fn_t *free_fn; /*!< free() function pointer */
+
+  /**
+   * The scratch buffer is used for format error messages
+   */
+  char scratch_buffer[_RTM_SCRATCH_BUFFER_SIZE];
+
+  // The buffers are padded so we are always guaranteed to have
+  // enough bytes to pre pad any buffer with websocket framing
+
+  /**
+   * The input buffer is used to store incoming data until it is processed.
+   *
+   * It's memory layout is as follows:
+   *
+   * input_buffer + 0:
+   *   The payload of a fragmented message which is yet to be received
+   *   completely
+   *
+   * input_buffer + fragmented_message_length:
+   *   Any (partially) received frames that have not been processed yet
+   *
+   * input_buffer + fragmented_message_length + input_length:
+   *   Unused buffer space
+   *
+   * input_buffer + input_buffer_size:
+   *   End of the input buffer
+   *
+   * If the memory in the input buffer does not suffice to store a message,
+   * the SDK might use the dynamic_input_buffer instead. It will take care
+   * of allocating memory & moving the data around.
+   *
+   * @see ::rtm_set_allocator
+   *
+   */
+  char *input_buffer;
+  size_t input_buffer_size; /*!< Input buffer size */
+
+  /**
+   * The output buffer is used to construct outgoing data
+   *
+   * Any messages constructed within this buffer must be offset by
+   * _RTM_WS_PRE_BUFFER bytes, because the function used to send websocket
+   * frames will prepend a websocket header to messages which can be up to
+   * _RTM_WS_PRE_BUFFER bytes long.
+   *
+   * If the buffer size is not enough to store a message, the SDK might
+   * dynamically allocate space instead.
+   *
+   * @see ::rtm_set_allocator
+   */
+  size_t output_buffer_size;
+  char *output_buffer;
+
+  size_t dynamic_input_buffer_size; /*!< Dynamic input buffer. @see input_buffer */
+  char *dynamic_input_buffer; /*!< Size of the dynamic input buffer */
+};
+
+struct rtm_client {
+  struct _rtm_client_priv priv;
+};
+
 
 #ifdef __cplusplus
 }
