@@ -2,7 +2,7 @@ import MapKit
 import PlaygroundSupport
 import SatoriRtmSdkWrapper
 //: ![Satori](SatoriLogo.jpg)
-//: ## Using Filters with Open Data Channel
+//: ## Using Filters with Live Data Channel
 /*:
  [Meetup-RSVP Channel]: https://www.satori.com/channels/Meetup-RSVP
  - Important:

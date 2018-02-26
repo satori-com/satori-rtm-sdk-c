@@ -157,7 +157,7 @@ int main(void) {
   if (should_authenticate) {
     // Perform authentication process to obtain permissions to subscribe
     // and publish to the channel. This step is not necessary if you just
-    // want to read from an open data channel.
+    // want to read from a live data channel.
     status = handshake_and_authenticate(rtm);
     if (RTM_OK != status) {
       goto cleanup;

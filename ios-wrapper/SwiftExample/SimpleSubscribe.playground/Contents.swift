@@ -2,7 +2,7 @@ import UIKit
 import PlaygroundSupport
 import SatoriRtmSdkWrapper
 //: ![Satori](SatoriLogo.jpg)
-//: ## Subscribing to an Open Data Channel
+//: ## Subscribing to an Live Data Channel
 /*:
  [big-rss Channel]: https://www.satori.com/channels/big-rss
  - Important:

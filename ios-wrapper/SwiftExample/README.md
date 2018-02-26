@@ -1,7 +1,11 @@
 # Swift Playground Examples using iOS-Wrapper
 ------------------------------------------------
 
-The Swift Playgrounds `SimpleSubscribe` and `FilterSubscibe` included in this repository show how to use the Satori C sdk iOS-Wrapper to subscribe to the Open Data Channels on [Satori](https://www.satori.com/). The purpose of these playgrounds is to demonstrate the simplicity of using the Satori iOS-wrapper to subscribe to open data channels and also to provide you with an interactive way to play with the subscription parameters and Views to understand the subscription concepts better.
+The Swift Playgrounds `SimpleSubscribe` and `FilterSubscibe` included in this repository show how to use the
+C sdk iOS-Wrapper to subscribe to the Live Data Channels on [Satori](https://www.satori.com/). The purpose of
+these playgrounds is to demonstrate the simplicity of using the Satori iOS-wrapper to subscribe to live data
+channels and also to provide you with an interactive way to play with the subscription parameters and Views to
+understand the subscription concepts better.
 
 
 ## Prerequisites
@@ -10,7 +14,7 @@ The Swift Playgrounds `SimpleSubscribe` and `FilterSubscibe` included in this re
 
 * Xcode 8.0 or greater
 * Basic iOS, Swift development knowledge
-* Appkeys for [BIG RSS](https://www.satori.com/channels/big-rss) and [Meetup RSVP](https://www.satori.com/channels/Meetup-RSVP) Open Data Channels
+* Appkeys for [BIG RSS](https://www.satori.com/channels/big-rss) and [Meetup RSVP](https://www.satori.com/channels/Meetup-RSVP) Live Data Channels
 
 
 
@@ -35,13 +39,13 @@ The Swift Playgrounds `SimpleSubscribe` and `FilterSubscibe` included in this re
 **SimpleSubscribe**
 
 
-The SimpleSubscribe Playground subscribes to the [big-rss](https://www.satori.com/channels/big-rss) open data channel. It parses the subscription data and displays the RSS feed `Title` and `Published On` field values in a auto-scrolling read-only textview in the Xcode Assistant Editor window.
+The SimpleSubscribe Playground subscribes to the [big-rss](https://www.satori.com/channels/big-rss) live data channel. It parses the subscription data and displays the RSS feed `Title` and `Published On` field values in a auto-scrolling read-only textview in the Xcode Assistant Editor window.
 
 [Simple Subscribe Demo](https://satori-a.akamaihd.net/swift-playground/SimpleSubscribe.gif)
 
 **FilterSubscribe**
 
 
-The FilterSubscribe Playground subscribes to the [Meetup-RSVP](https://www.satori.com/channels/Meetup-RSVP) open data channel. The playground applies a View(formerly Filter) to the channel to only subscribe for the events that are happening in the USA. It parses the subscription data and displays a location pin for each of the meetups on the US map as they occur in real time.
+The FilterSubscribe Playground subscribes to the [Meetup-RSVP](https://www.satori.com/channels/Meetup-RSVP) live data channel. The playground applies a View(formerly Filter) to the channel to only subscribe for the events that are happening in the USA. It parses the subscription data and displays a location pin for each of the meetups on the US map as they occur in real time.
 
 [Filter Subscribe Demo](https://satori-a.akamaihd.net/swift-playground/FilterSubscribe.gif)
